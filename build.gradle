@@ -1,0 +1,56 @@
+plugins {
+    id 'java'
+    id 'java-gradle-plugin'
+    id 'maven-publish'
+}
+
+group 'io.github.guqing.plugin'
+version '1.0-SNAPSHOT'
+
+repositories {
+    mavenCentral()
+}
+
+publishing {
+    repositories {
+        maven {
+            name = "SonatypeSnapShotsPackages"
+            url = uri("https://s01.oss.sonatype.org/content/repositories/snapshots/")
+            credentials {
+                username = project.findProperty("ossr.user") ?: System.getenv("OSSR_USERNAME")
+                password = project.findProperty("ossr.password") ?: System.getenv("OSSR_PASSWORD")
+            }
+        }
+    }
+    publications {
+        ossr(MavenPublication) {
+            from(components.java)
+            versionMapping {
+                usage('java-api') {
+                    fromResolutionOf('runtimeClasspath')
+                }
+                usage('java-runtime') {
+                    fromResolutionResult()
+                }
+            }
+        }
+    }
+}
+
+gradlePlugin {
+    plugins {
+        pluginDevelopment {
+            id = 'io.github.guqing.plugin-development'
+            implementationClass = 'io.github.guqing.plugin.PluginDevelopment'
+        }
+    }
+}
+
+dependencies {
+    testImplementation 'org.junit.jupiter:junit-jupiter-api:5.8.1'
+    testRuntimeOnly 'org.junit.jupiter:junit-jupiter-engine:5.8.1'
+}
+
+test {
+    useJUnitPlatform()
+}
