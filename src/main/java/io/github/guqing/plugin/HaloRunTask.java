@@ -12,6 +12,7 @@ public class HaloRunTask extends DefaultTask {
 
     @TaskAction
     public void runHalo() {
+        getProject().getExtensions().getByName(HaloPluginEnv.EXTENSION_NAME);
         getProject().exec(action -> {
             action.commandLine("/usr/bin/java", "-jar",
                 JAR_PATH);

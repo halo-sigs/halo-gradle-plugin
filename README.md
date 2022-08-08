@@ -1,2 +1,2 @@
 # gradle-plugin-halo
-Gradle plugin for halo plugin development.
+This is a Gradle plugin for building Halo plugins, written in Java.
