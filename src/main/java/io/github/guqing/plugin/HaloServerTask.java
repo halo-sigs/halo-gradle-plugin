@@ -1,74 +1,45 @@
 package io.github.guqing.plugin;
 
-import groovy.transform.CompileStatic;
-import groovy.transform.Internal;
 import java.io.File;
-import java.util.ArrayList;
-import java.util.List;
-import javax.inject.Inject;
-import org.gradle.api.Action;
-import org.gradle.api.tasks.Classpath;
-import org.gradle.api.tasks.Input;
-import org.gradle.api.DefaultTask;
-import org.gradle.api.artifacts.Configuration;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.util.Set;
 import org.gradle.api.provider.Property;
-import org.gradle.api.provider.Provider;
-import org.gradle.api.tasks.options.Option;
-import org.gradle.process.JavaExecSpec;
+import org.gradle.api.tasks.Input;
+import org.gradle.api.tasks.JavaExec;
+import org.gradle.api.tasks.SourceSet;
 
-@CompileStatic
-public class HaloServerTask extends DefaultTask {
+/**
+ * @author guqing
+ * @since 2.0.0
+ */
+public class HaloServerTask extends JavaExec {
     public static final String TASK_NAME = "server";
-    private final List<Action<JavaExecSpec>> execSpecActions = new ArrayList<>();
-    @Classpath
-    final Property<Configuration> haloServerRuntime =
-        getProject().getObjects().property(Configuration.class);
 
     @Input
-    final Property<File> haloHome = getProject().getObjects().property(File.class);
+    final Property<Path> haloHome = getProject().getObjects().property(Path.class);
 
-    @Input
-    @Option(option = "port", description = "Port to start Halo on (default: 8090)")
-    final Property<String> port = getProject().getObjects().property(String.class)
-        .convention("8090");
-
-    @Internal
-    final Provider<String> extractedMainClass = haloServerRuntime.map(it -> {
-        it.getResolvedConfiguration().getFirstLevelModuleDependencies()
-            .stream()
-            .filter(resolvedDependency -> {
-                return "halo".equals(resolvedDependency.getModuleName());
-            }).findFirst().get();
-        return "";
-    });
-
-
-    @Inject
-    public HaloServerTask() {
-        doFirst(action -> {
-            System.out.println("--->" + haloHome.get());
-            getProject().javaexec(s -> {
-                s.classpath(haloServerRuntime.get());
-                s.args("-Dserver.port=" + port.get());
-                s.systemProperty("HALO_HOME", haloHome.get());
-                execSpecActions.forEach(spec -> spec.execute(s));
-            });
-        });
-    }
-
-    void execSpec(Action<JavaExecSpec> action) {
-        execSpecActions.add(action);
-    }
-
-    public Property<File> getHaloHome() {
+    public Property<Path> getHaloHome() {
         return haloHome;
     }
 
-    public Property<Configuration> getHaloServerRuntime() {
-        return haloServerRuntime;
+    public void sourceResources(SourceSet sourceSet) {
+        File resourcesDir = sourceSet.getOutput().getResourcesDir();
+        Set<File> srcDirs = sourceSet.getResources().getSrcDirs();
+        setClasspath(getProject().files(srcDirs, getClasspath())
+            .filter((file) -> !file.equals(resourcesDir)));
     }
 
-    public Property<String> getPort() {
-        return port;
+    @Override
+    public void exec() {
+        classpath(Paths.get(haloHome.get().resolve("halo.jar").toString()));
+        args(haloHome.get().resolve("halo.jar").toFile(),
+            "--halo.work-dir=" + haloHome.get(),
+            "--halo.plugin.runtime-mode=development",
+            "--halo.plugin.plugins-root=/Users/guqing/Development/workspace/plugins",
+            "--initial-extension-locations=classpath:plugin.yaml",
+            "--springdoc.api-docs.enabled=true",
+            "--springdoc.swagger-ui.enabled=true");
+        super.exec();
     }
 }
