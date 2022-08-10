@@ -1,7 +1,13 @@
 package io.github.guqing.plugin;
 
+import java.io.File;
+import java.util.Set;
 import org.gradle.api.Plugin;
 import org.gradle.api.Project;
+import org.gradle.api.file.SourceDirectorySet;
+import org.gradle.api.plugins.JavaPlugin;
+import org.gradle.api.tasks.SourceSet;
+import org.gradle.api.tasks.SourceSetContainer;
 
 /**
  * @author guqing
@@ -11,38 +17,52 @@ public class PluginDevelopment implements Plugin<Project> {
 
     @Override
     public void apply(Project project) {
+        project.getPluginManager().apply(JavaPlugin.class);
         System.out.println("Halo plugin development gradle plugin run...");
 
         HaloPluginEnv pluginEnv = project.getExtensions()
             .create(HaloPluginEnv.EXTENSION_NAME, HaloPluginEnv.class, project);
+        // populate plugin manifest info
+        File manifestFile = getPluginManifest(project);
+        pluginEnv.setManifestFile(manifestFile);
+
+        PluginManifest pluginManifest = YamlUtils.read(manifestFile, PluginManifest.class);
+        pluginEnv.setRequire(pluginManifest.getSpec().getRequire());
+        pluginEnv.setVersion(pluginManifest.getSpec().getVersion());
+
+        project.getTasks().register(InstallHaloTask.TASK_NAME, InstallHaloTask.class, it -> {
+            it.setDescription("Install Halo server executable jar locally.");
+            it.setGroup("Halo Server");
+            it.serverRepository.set(pluginEnv.getServerRepository());
+        });
 
         project.getTasks().register(HaloServerTask.TASK_NAME, HaloServerTask.class, it -> {
             it.setDescription("Run Halo server locally with the plugin being developed");
             it.setGroup("Halo Server");
             it.haloHome.set(pluginEnv.getWorkDir());
+            it.manifest.set(pluginEnv.getManifestFile());
+            it.dependsOn(InstallHaloTask.TASK_NAME);
         });
+    }
 
+    private File getPluginManifest(Project project) {
+        SourceSetContainer sourceSetContainer =
+            (SourceSetContainer) project.getProperties().get("sourceSets");
+        File mainResourceDir = sourceSetContainer.stream()
+            .filter(set -> "main".equals(set.getName()))
+            .map(SourceSet::getResources)
+            .map(SourceDirectorySet::getSrcDirs)
+            .flatMap(Set::stream)
+            .findFirst()
+            .orElseThrow();
 
-//        Configuration serverRuntime =
-//            project.getConfigurations().create("haloServerRuntimeOnly", c -> {
-//                c.withDependencies(action -> {
-//                    action.add(project.getDependencies().create("io.github.guqing:spring-demo:0.0.1-SNAPSHOT"));
-//                });
-//            });
-
-//        project.getTasks().register(HaloServerTask.TASK_NAME, HaloServerTask.class, it -> {
-//            it.setDescription("Run Halo server locally with the plugin being developed");
-//            it.setGroup("Halo Server");
-////            it.haloServerRuntime.set(serverRuntime);
-//            it.haloHome.set(pluginEnv.getWorkDir().toFile());
-//            String sysPropPort = System.getProperty("server.port");
-//            if (sysPropPort != null) {
-//                it.port.convention(sysPropPort);
-//            }
-//            String propPort = (String) project.findProperty("server.port");
-//            if (propPort != null) {
-//                it.port.convention(propPort);
-//            }
-//        });
+        for (String filename : HaloPluginEnv.MANIFEST) {
+            File manifestFile = new File(mainResourceDir, filename);
+            if (manifestFile.exists()) {
+                return manifestFile;
+            }
+        }
+        throw new IllegalStateException(
+            "The plugin manifest file [plugin.yaml] not found in " + mainResourceDir);
     }
 }

@@ -46,11 +46,21 @@ gradlePlugin {
     }
 }
 
+ext {
+    jackjson = '2.13.3'
+    jacksonYaml = '2.8.3'
+    lang3 = '3.12.0'
+    semver4j = '3.1.0'
+    lombok = '1.18.22'
+}
+
 dependencies {
-    implementation 'org.apache.commons:commons-lang3:3.12.0'
-    implementation 'com.vdurmont:semver4j:3.1.0'
-    compileOnly 'org.projectlombok:lombok:1.18.22'
-    annotationProcessor 'org.projectlombok:lombok:1.18.22'
+    implementation "com.fasterxml.jackson.dataformat:jackson-dataformat-yaml:$jacksonYaml"
+    implementation "com.fasterxml.jackson.core:jackson-databind:$jackjson"
+    implementation "org.apache.commons:commons-lang3:$lang3"
+    implementation "com.vdurmont:semver4j:$semver4j"
+    compileOnly "org.projectlombok:lombok:$lombok"
+    annotationProcessor "org.projectlombok:lombok:$lombok"
 
     testImplementation 'org.junit.jupiter:junit-jupiter-api:5.8.1'
     testRuntimeOnly 'org.junit.jupiter:junit-jupiter-engine:5.8.1'
