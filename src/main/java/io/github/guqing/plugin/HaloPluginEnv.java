@@ -1,8 +1,10 @@
 package io.github.guqing.plugin;
 
 import java.nio.file.Path;
+import lombok.Data;
 import org.gradle.api.Project;
 
+@Data
 public class HaloPluginEnv {
     public static final String EXTENSION_NAME = "haloPluginEnv";
 
@@ -14,16 +16,12 @@ public class HaloPluginEnv {
 
     private Path workDir;
 
-    public void setWorkDir(Path workDir) {
-        this.workDir = workDir;
-    }
+    private String require;
+
+    private String version;
 
     public Path getWorkDir() {
         return workDir == null ? project.getProjectDir()
             .toPath().resolve("work") : workDir;
-    }
-
-    public Project getProject() {
-        return project;
     }
 }
