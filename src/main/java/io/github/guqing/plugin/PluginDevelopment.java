@@ -4,6 +4,7 @@ import java.io.File;
 import java.util.Set;
 import org.gradle.api.Plugin;
 import org.gradle.api.Project;
+import org.gradle.api.artifacts.Configuration;
 import org.gradle.api.file.SourceDirectorySet;
 import org.gradle.api.plugins.JavaPlugin;
 import org.gradle.api.tasks.SourceSet;
@@ -14,7 +15,8 @@ import org.gradle.api.tasks.SourceSetContainer;
  * @since 2.0.0
  */
 public class PluginDevelopment implements Plugin<Project> {
-
+    public static final String HALO_SERVER_DEPENDENCY_CONFIGURATION_NAME = "haloServer";
+    public static final String GROUP = "halo server";
     @Override
     public void apply(Project project) {
         project.getPluginManager().apply(JavaPlugin.class);
@@ -32,13 +34,17 @@ public class PluginDevelopment implements Plugin<Project> {
 
         project.getTasks().register(InstallHaloTask.TASK_NAME, InstallHaloTask.class, it -> {
             it.setDescription("Install Halo server executable jar locally.");
-            it.setGroup("Halo Server");
+            it.setGroup(GROUP);
+            Configuration configuration =
+                project.getConfigurations().create(HALO_SERVER_DEPENDENCY_CONFIGURATION_NAME);
+            it.configurationProperty.set(configuration);
             it.serverRepository.set(pluginEnv.getServerRepository());
         });
 
         project.getTasks().register(HaloServerTask.TASK_NAME, HaloServerTask.class, it -> {
             it.setDescription("Run Halo server locally with the plugin being developed");
-            it.setGroup("Halo Server");
+            it.setGroup(GROUP);
+            it.pluginEnvProperty.set(pluginEnv);
             it.haloHome.set(pluginEnv.getWorkDir());
             it.manifest.set(pluginEnv.getManifestFile());
             it.dependsOn(InstallHaloTask.TASK_NAME);

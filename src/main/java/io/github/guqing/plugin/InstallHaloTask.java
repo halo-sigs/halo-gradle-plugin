@@ -1,6 +1,5 @@
 package io.github.guqing.plugin;
 
-import com.vdurmont.semver4j.Semver;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.MalformedURLException;
@@ -8,8 +7,8 @@ import java.net.URL;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
-import org.apache.commons.lang3.StringUtils;
 import org.gradle.api.DefaultTask;
+import org.gradle.api.artifacts.Configuration;
 import org.gradle.api.provider.Property;
 import org.gradle.api.tasks.Input;
 import org.gradle.api.tasks.TaskAction;
@@ -19,10 +18,14 @@ import org.gradle.api.tasks.TaskAction;
  * @since 2.0.0
  */
 public class InstallHaloTask extends DefaultTask {
-    public static final String TASK_NAME = "install";
+    public static final String TASK_NAME = "serverInstall";
 
     @Input
     final Property<String> serverRepository = getProject().getObjects().property(String.class);
+
+    @Input
+    final Property<Configuration> configurationProperty = getProject().getObjects()
+        .property(Configuration.class);
 
     @TaskAction
     public void downloadJar() throws MalformedURLException {
@@ -47,13 +50,18 @@ public class InstallHaloTask extends DefaultTask {
     }
 
     private String downloadUrl(String version) {
-        String repository = StringUtils.appendIfMissing(serverRepository.get(), "/");
-        String v = StringUtils.removeStart(version, "v");
-        Semver semver = new Semver(v);
-        return repository + "halo-" + semver.getValue() + ".jar";
+        return "https://s01.oss.sonatype.org/service/local/repositories/snapshots/content/io/github/guqing/halo/2.0.0-SNAPSHOT/halo-2.0.0-20220917.111240-1-plain.jar";
+//        String repository = StringUtils.appendIfMissing(serverRepository.get(), "/");
+//        String v = StringUtils.removeStart(version, "v");
+//        Semver semver = new Semver(v);
+//        return repository + "halo-" + semver.getValue() + ".jar";
     }
 
     public Property<String> getServerRepository() {
         return serverRepository;
+    }
+
+    public Property<Configuration> getConfigurationProperty() {
+        return configurationProperty;
     }
 }

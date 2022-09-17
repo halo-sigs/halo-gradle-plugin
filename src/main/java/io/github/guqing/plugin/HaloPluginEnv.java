@@ -8,7 +8,7 @@ import org.gradle.api.Project;
 @Data
 public class HaloPluginEnv {
     public static final String[] MANIFEST = {"plugin.yaml", "plugin.yml"};
-    public static final String EXTENSION_NAME = "haloPluginEnv";
+    public static final String EXTENSION_NAME = "haloPlugin";
     private static final String DEFAULT_REPOSITORY = "https://dl.halo.run/release";
     private final Project project;
 
@@ -26,9 +26,11 @@ public class HaloPluginEnv {
 
     private String version;
 
+    private HaloSecurity security = new HaloSecurity();
+
     public Path getWorkDir() {
         return workDir == null ? project.getProjectDir()
-            .toPath().resolve("work") : workDir;
+            .toPath().resolve("workplace") : workDir;
     }
 
     public String getRequire() {
@@ -36,5 +38,11 @@ public class HaloPluginEnv {
             return "1.5.3";
         }
         return require;
+    }
+
+    @Data
+    public static class HaloSecurity {
+        String superAdminUsername = "admin";
+        String superAdminPassword = "123456";
     }
 }
