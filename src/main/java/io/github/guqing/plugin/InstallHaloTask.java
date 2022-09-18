@@ -50,6 +50,7 @@ public class InstallHaloTask extends DefaultTask {
     }
 
     private String downloadUrl(String version) {
+        // https://docs.gradle.org/7.4/userguide/build_environment.html#gradle_system_properties
         return "https://s01.oss.sonatype.org/service/local/repositories/snapshots/content/io/github/guqing/halo/2.0.0-SNAPSHOT/halo-2.0.0-20220917.111240-1-plain.jar";
 //        String repository = StringUtils.appendIfMissing(serverRepository.get(), "/");
 //        String v = StringUtils.removeStart(version, "v");

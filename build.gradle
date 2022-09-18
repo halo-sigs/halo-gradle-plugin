@@ -59,6 +59,8 @@ dependencies {
     implementation "com.fasterxml.jackson.core:jackson-databind:$jackjson"
     implementation "org.apache.commons:commons-lang3:$lang3"
     implementation "com.vdurmont:semver4j:$semver4j"
+    implementation 'org.ow2.asm:asm:9.1'
+    implementation 'org.ow2.asm:asm-commons:9.1'
     compileOnly "org.projectlombok:lombok:$lombok"
     annotationProcessor "org.projectlombok:lombok:$lombok"
 
