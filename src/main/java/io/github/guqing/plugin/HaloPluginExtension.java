@@ -1,6 +1,8 @@
 package io.github.guqing.plugin;
 
 import java.io.File;
+import java.io.IOException;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import lombok.Data;
 import org.gradle.api.Project;
@@ -40,8 +42,16 @@ public class HaloPluginExtension {
     private HaloSecurity security = new HaloSecurity();
 
     public Path getWorkDir() {
-        return workDir == null ? project.getProjectDir()
+        Path path = workDir == null ? project.getProjectDir()
             .toPath().resolve("workplace") : workDir;
+        if (!Files.exists(path)) {
+            try {
+                Files.createDirectories(path);
+            } catch (IOException e) {
+                throw new RuntimeException(e);
+            }
+        }
+        return path;
     }
 
     public String getRequire() {

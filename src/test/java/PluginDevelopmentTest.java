@@ -74,7 +74,7 @@ public class PluginDevelopmentTest {
         GradleRunner.create()
             .withProjectDir(
                 Paths.get("/Users/guqing/Develop/workspace/plugins/plugin-links").toFile())
-            .withArguments(PluginComponentsIndexTask.TASK_NAME)
+            .withArguments(InstallHaloTask.TASK_NAME)
             .withDebug(true)
             .forwardOutput()
             .build();

@@ -1,5 +1,7 @@
 package io.github.guqing.plugin;
 
+import java.io.BufferedInputStream;
+import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.MalformedURLException;
@@ -28,7 +30,7 @@ public class InstallHaloTask extends DefaultTask {
         .property(Configuration.class);
 
     @TaskAction
-    public void downloadJar() throws MalformedURLException {
+    public void downloadJar() throws IOException {
         HaloPluginExtension pluginEnv = (HaloPluginExtension) getProject()
             .getExtensions()
             .getByName(HaloPluginExtension.EXTENSION_NAME);
@@ -37,9 +39,15 @@ public class InstallHaloTask extends DefaultTask {
             return;
         }
         URL website = new URL(downloadUrl(pluginEnv.getRequire()));
-        try (InputStream in = website.openStream()) {
-            Files.copy(in, targetJarPath, StandardCopyOption.REPLACE_EXISTING);
+        try (BufferedInputStream in = new BufferedInputStream(website.openStream());
+             FileOutputStream fileOutputStream = new FileOutputStream(targetJarPath.toFile())) {
+            byte[] dataBuffer = new byte[1024];
+            int bytesRead;
+            while ((bytesRead = in.read(dataBuffer, 0, 1024)) != -1) {
+                fileOutputStream.write(dataBuffer, 0, bytesRead);
+            }
         } catch (IOException e) {
+            // handle exception
             try {
                 Files.deleteIfExists(targetJarPath);
             } catch (IOException ex) {
@@ -51,7 +59,7 @@ public class InstallHaloTask extends DefaultTask {
 
     private String downloadUrl(String version) {
         // https://docs.gradle.org/7.4/userguide/build_environment.html#gradle_system_properties
-        return "https://s01.oss.sonatype.org/service/local/repositories/snapshots/content/io/github/guqing/halo/2.0.0-SNAPSHOT/halo-2.0.0-20220917.111240-1-plain.jar";
+        return "http://image-guqing.test.upcdn.net/halo-2.0.0-SNAPSHOT.jar";
 //        String repository = StringUtils.appendIfMissing(serverRepository.get(), "/");
 //        String v = StringUtils.removeStart(version, "v");
 //        Semver semver = new Semver(v);
