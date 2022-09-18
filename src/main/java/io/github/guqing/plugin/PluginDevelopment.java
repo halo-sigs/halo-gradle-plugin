@@ -2,22 +2,14 @@ package io.github.guqing.plugin;
 
 import java.io.File;
 import java.util.Set;
-import lombok.val;
-import org.gradle.BuildAdapter;
-import org.gradle.BuildListener;
-import org.gradle.BuildResult;
 import org.gradle.api.Plugin;
 import org.gradle.api.Project;
-import org.gradle.api.Task;
 import org.gradle.api.artifacts.Configuration;
 import org.gradle.api.file.FileCollection;
 import org.gradle.api.file.SourceDirectorySet;
-import org.gradle.api.initialization.Settings;
-import org.gradle.api.invocation.Gradle;
 import org.gradle.api.plugins.JavaPlugin;
 import org.gradle.api.tasks.SourceSet;
 import org.gradle.api.tasks.SourceSetContainer;
-import org.gradle.composite.internal.DefaultIncludedBuildTaskGraph;
 
 /**
  * @author guqing
@@ -32,15 +24,15 @@ public class PluginDevelopment implements Plugin<Project> {
         project.getPluginManager().apply(JavaPlugin.class);
         System.out.println("Halo plugin development gradle plugin run...");
 
-        HaloPluginEnv pluginEnv = project.getExtensions()
-            .create(HaloPluginEnv.EXTENSION_NAME, HaloPluginEnv.class, project);
+        HaloPluginExtension haloPluginExt = project.getExtensions()
+            .create(HaloPluginExtension.EXTENSION_NAME, HaloPluginExtension.class, project);
         // populate plugin manifest info
         File manifestFile = getPluginManifest(project);
-        pluginEnv.setManifestFile(manifestFile);
+        haloPluginExt.setManifestFile(manifestFile);
 
         PluginManifest pluginManifest = YamlUtils.read(manifestFile, PluginManifest.class);
-        pluginEnv.setRequire(pluginManifest.getSpec().getRequire());
-        pluginEnv.setVersion(pluginManifest.getSpec().getVersion());
+        haloPluginExt.setRequire(pluginManifest.getSpec().getRequire());
+        haloPluginExt.setVersion(pluginManifest.getSpec().getVersion());
 
         project.getTasks()
             .register(PluginComponentsIndexTask.TASK_NAME, PluginComponentsIndexTask.class, it -> {
@@ -59,15 +51,15 @@ public class PluginDevelopment implements Plugin<Project> {
             Configuration configuration =
                 project.getConfigurations().create(HALO_SERVER_DEPENDENCY_CONFIGURATION_NAME);
             it.configurationProperty.set(configuration);
-            it.serverRepository.set(pluginEnv.getServerRepository());
+            it.serverRepository.set(haloPluginExt.getServerRepository());
         });
 
         project.getTasks().register(HaloServerTask.TASK_NAME, HaloServerTask.class, it -> {
             it.setDescription("Run Halo server locally with the plugin being developed");
             it.setGroup(GROUP);
-            it.pluginEnvProperty.set(pluginEnv);
-            it.haloHome.set(pluginEnv.getWorkDir());
-            it.manifest.set(pluginEnv.getManifestFile());
+            it.pluginEnvProperty.set(haloPluginExt);
+            it.haloHome.set(haloPluginExt.getWorkDir());
+            it.manifest.set(haloPluginExt.getManifestFile());
             it.dependsOn(InstallHaloTask.TASK_NAME);
         });
     }
@@ -83,7 +75,7 @@ public class PluginDevelopment implements Plugin<Project> {
             .findFirst()
             .orElseThrow();
 
-        for (String filename : HaloPluginEnv.MANIFEST) {
+        for (String filename : HaloPluginExtension.MANIFEST) {
             File manifestFile = new File(mainResourceDir, filename);
             if (manifestFile.exists()) {
                 return manifestFile;

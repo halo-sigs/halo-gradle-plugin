@@ -29,9 +29,9 @@ public class InstallHaloTask extends DefaultTask {
 
     @TaskAction
     public void downloadJar() throws MalformedURLException {
-        HaloPluginEnv pluginEnv = (HaloPluginEnv) getProject()
+        HaloPluginExtension pluginEnv = (HaloPluginExtension) getProject()
             .getExtensions()
-            .getByName(HaloPluginEnv.EXTENSION_NAME);
+            .getByName(HaloPluginExtension.EXTENSION_NAME);
         Path targetJarPath = pluginEnv.getWorkDir().resolve("halo.jar");
         if (Files.exists(targetJarPath)) {
             return;

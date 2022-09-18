@@ -4,15 +4,26 @@ import java.io.File;
 import java.nio.file.Path;
 import lombok.Data;
 import org.gradle.api.Project;
+import org.gradle.api.plugins.ExtensionContainer;
 
+/**
+ * 可以通过 {@link ExtensionContainer} 来创建和管理 Extension，{@link ExtensionContainer} 对象可以
+ * 通过 {@link Project} 对象的 {@link Project#getExtensions} 方法获取：
+ * <pre>
+ *     project.getExtensions().create("haloPluginExt", HaloPluginExtension)
+ * </pre>
+ *
+ * @author guqing
+ * @since 0.0.1
+ */
 @Data
-public class HaloPluginEnv {
+public class HaloPluginExtension {
     public static final String[] MANIFEST = {"plugin.yaml", "plugin.yml"};
     public static final String EXTENSION_NAME = "haloPlugin";
     private static final String DEFAULT_REPOSITORY = "https://dl.halo.run/release";
     private final Project project;
 
-    public HaloPluginEnv(Project project) {
+    public HaloPluginExtension(Project project) {
         this.project = project;
     }
 

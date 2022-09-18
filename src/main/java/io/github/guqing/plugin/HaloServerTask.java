@@ -23,8 +23,8 @@ public class HaloServerTask extends JavaExec {
     final Property<File> manifest = getProject().getObjects().property(File.class);
 
     @Input
-    final Property<HaloPluginEnv> pluginEnvProperty =
-        getProject().getObjects().property(HaloPluginEnv.class);
+    final Property<HaloPluginExtension> pluginEnvProperty =
+        getProject().getObjects().property(HaloPluginExtension.class);
 
     public Property<Path> getHaloHome() {
         return haloHome;
@@ -41,13 +41,13 @@ public class HaloServerTask extends JavaExec {
             .filter((file) -> !file.equals(resourcesDir)));
     }
 
-    public Property<HaloPluginEnv> getPluginEnvProperty() {
+    public Property<HaloPluginExtension> getPluginEnvProperty() {
         return pluginEnvProperty;
     }
 
     @Override
     public void exec() {
-        HaloPluginEnv haloPluginEnv = pluginEnvProperty.get();
+        HaloPluginExtension haloPluginEnv = pluginEnvProperty.get();
         classpath(Paths.get(haloHome.get().resolve("halo.jar").toString()));
         args(haloHome.get().resolve("halo.jar").toFile(),
             "--halo.work-dir=" + haloHome.get(),
