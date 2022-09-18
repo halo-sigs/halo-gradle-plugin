@@ -2,6 +2,7 @@ package io.github.guqing.plugin;
 
 import java.io.File;
 import java.util.Set;
+import lombok.extern.slf4j.Slf4j;
 import org.gradle.api.Plugin;
 import org.gradle.api.Project;
 import org.gradle.api.artifacts.Configuration;
@@ -15,6 +16,7 @@ import org.gradle.api.tasks.SourceSetContainer;
  * @author guqing
  * @since 2.0.0
  */
+@Slf4j
 public class PluginDevelopment implements Plugin<Project> {
     public static final String HALO_SERVER_DEPENDENCY_CONFIGURATION_NAME = "haloServer";
     public static final String GROUP = "halo server";
@@ -22,7 +24,7 @@ public class PluginDevelopment implements Plugin<Project> {
     @Override
     public void apply(Project project) {
         project.getPluginManager().apply(JavaPlugin.class);
-        System.out.println("Halo plugin development gradle plugin run...");
+        log.info("Halo plugin development gradle plugin run...");
 
         HaloPluginExtension haloPluginExt = project.getExtensions()
             .create(HaloPluginExtension.EXTENSION_NAME, HaloPluginExtension.class, project);
