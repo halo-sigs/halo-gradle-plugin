@@ -47,6 +47,11 @@ public class PluginDevelopment implements Plugin<Project> {
         project.getTasks().getByName("build")
             .finalizedBy(PluginComponentsIndexTask.TASK_NAME);
 
+        project.getTasks().register(InstallDefaultThemeTask.TASK_NAME, InstallDefaultThemeTask.class, it -> {
+            it.setDescription("Install default theme for halo server locally.");
+            it.setGroup(GROUP);
+        });
+
         project.getTasks().register(InstallHaloTask.TASK_NAME, InstallHaloTask.class, it -> {
             it.setDescription("Install Halo server executable jar locally.");
             it.setGroup(GROUP);
@@ -63,6 +68,7 @@ public class PluginDevelopment implements Plugin<Project> {
             it.haloHome.set(haloPluginExt.getWorkDir());
             it.manifest.set(haloPluginExt.getManifestFile());
             it.dependsOn(InstallHaloTask.TASK_NAME);
+            it.dependsOn(InstallDefaultThemeTask.TASK_NAME);
         });
     }
 
