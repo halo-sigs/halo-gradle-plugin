@@ -1,6 +1,7 @@
 package io.github.guqing.plugin;
 
 import java.io.File;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Set;
@@ -52,20 +53,50 @@ public class HaloServerTask extends JavaExec {
         HaloPluginExtension haloPluginEnv = pluginEnvProperty.get();
         classpath(Paths.get(haloHome.get().resolve("halo.jar").toString()));
         HaloPluginExtension.HaloSecurity security = haloPluginEnv.getSecurity();
+        Path themeManifest =
+            haloPluginEnv.getWorkDir().resolve(InstallDefaultThemeTask.DEFAULT_THEME_DIR);
 
         System.out.printf("Halo server will starting with username [%s] and password [%s]...\n",
             security.getSuperAdminUsername(), security.getSuperAdminPassword());
+
+        File additionProperties = haloPluginEnv.getWorkDir()
+            .resolve("application-addition.properties").toFile();
         args(haloHome.get().resolve("halo.jar").toFile(),
             "--halo.work-dir=" + haloHome.get(),
-            "--halo.security.initializer.super-admin-username=" + security.getSuperAdminUsername(),
-            "--halo.security.initializer.super-admin-password=" + security.getSuperAdminPassword(),
+            "--spring.config.additional-location=" + additionProperties,
             "--halo.plugin.fixed-plugin-path=" + getProject().getProjectDir(),
             "--halo.plugin.runtime-mode=development",
             "--halo.plugin.plugins-root=" + haloHome.get().resolve("plugins"),
-            "--initial-extension-locations=" + manifest.get(),
-            "--logging.level.'run.halo.app'=DEBUG",
-            "--springdoc.api-docs.enabled=true",
-            "--springdoc.swagger-ui.enabled=true");
+            "--halo.initial-extension-locations=" + toFileProtocol(manifest.get().toPath()),
+            "--halo.initial-extension-locations=" + themeManifest(haloPluginEnv));
         super.exec();
     }
+
+    private String toFileProtocol(Path path) {
+        return "file://" + path.toString();
+    }
+
+    private String themeManifest(HaloPluginExtension haloPluginEnv) {
+        Path themeManifest =
+            haloPluginEnv.getWorkDir().resolve(InstallDefaultThemeTask.DEFAULT_THEME_DIR);
+        String[] themeManifestFiles = {"theme.yaml", "theme.yml"};
+        for (String themeManifestFile : themeManifestFiles) {
+            Path path = themeManifest.resolve(themeManifestFile);
+            if (Files.exists(path)) {
+                return toFileProtocol(path);
+            }
+        }
+        return null;
+    }
+
+//    "--halo.work-dir=" + haloHome.get(),
+//        "--halo.security.initializer.super-admin-username=" + security.getSuperAdminUsername(),
+//        "--halo.security.initializer.super-admin-password=" + security.getSuperAdminPassword(),
+//        "--halo.plugin.fixed-plugin-path=" + getProject().getProjectDir(),
+//            "--halo.plugin.runtime-mode=development",
+//                "--halo.plugin.plugins-root=" + haloHome.get().resolve("plugins"),
+//            "--initial-extension-locations=" + manifest.get() + "," + themeManifest,
+//        "--logging.level.'run.halo.app'=DEBUG",
+//        "--springdoc.api-docs.enabled=true",
+//        "--springdoc.swagger-ui.enabled=true"
 }
