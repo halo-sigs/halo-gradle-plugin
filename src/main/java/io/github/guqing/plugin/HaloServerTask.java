@@ -79,14 +79,7 @@ public class HaloServerTask extends JavaExec {
     private String themeManifest(HaloPluginExtension haloPluginEnv) {
         Path themeManifest =
             haloPluginEnv.getWorkDir().resolve(InstallDefaultThemeTask.DEFAULT_THEME_DIR);
-        String[] themeManifestFiles = {"theme.yaml", "theme.yml"};
-        for (String themeManifestFile : themeManifestFiles) {
-            Path path = themeManifest.resolve(themeManifestFile);
-            if (Files.exists(path)) {
-                return toFileProtocol(path);
-            }
-        }
-        return null;
+        return toFileProtocol(themeManifest) + "/*.yaml";
     }
 
 //    "--halo.work-dir=" + haloHome.get(),
