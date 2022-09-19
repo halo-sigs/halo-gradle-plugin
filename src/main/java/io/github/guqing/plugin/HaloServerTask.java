@@ -68,7 +68,9 @@ public class HaloServerTask extends JavaExec {
             "--halo.plugin.runtime-mode=development",
             "--halo.plugin.plugins-root=" + haloHome.get().resolve("plugins"),
             "--halo.initial-extension-locations=" + toFileProtocol(manifest.get().toPath()),
-            "--halo.initial-extension-locations=" + themeManifest(haloPluginEnv));
+            "--halo.initial-extension-locations=" + themeManifest(haloPluginEnv),
+            "--halo.security.initializer.super-admin-username=" + security.getSuperAdminUsername(),
+            "--halo.security.initializer.super-admin-password=" + security.getSuperAdminPassword());
         super.exec();
     }
 
