@@ -1,6 +1,7 @@
 package io.github.guqing.plugin;
 
 import java.io.File;
+import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -61,6 +62,13 @@ public class HaloServerTask extends JavaExec {
 
         File additionProperties = haloPluginEnv.getWorkDir()
             .resolve("application-addition.properties").toFile();
+        if (!additionProperties.exists()) {
+            try {
+                Files.createFile(additionProperties.toPath());
+            } catch (IOException e) {
+                throw new RuntimeException(e);
+            }
+        }
         args(haloHome.get().resolve("halo.jar").toFile(),
             "--halo.work-dir=" + haloHome.get(),
             "--spring.config.additional-location=" + additionProperties,
