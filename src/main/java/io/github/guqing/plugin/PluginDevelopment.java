@@ -44,8 +44,7 @@ public class PluginDevelopment implements Plugin<Project> {
                         .getOutput().getClassesDirs();
                 it.classesDirs.from(files);
             });
-        project.getTasks().getByName("build")
-            .finalizedBy(PluginComponentsIndexTask.TASK_NAME);
+        project.getTasks().getByName("assemble").dependsOn(PluginComponentsIndexTask.TASK_NAME);
 
         project.getTasks().register(InstallDefaultThemeTask.TASK_NAME, InstallDefaultThemeTask.class, it -> {
             it.setDescription("Install default theme for halo server locally.");
