@@ -6,6 +6,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import lombok.Data;
 import org.gradle.api.Project;
+import org.gradle.api.artifacts.Dependency;
 import org.gradle.api.plugins.ExtensionContainer;
 
 /**
@@ -23,6 +24,7 @@ public class HaloPluginExtension {
     public static final String[] MANIFEST = {"plugin.yaml", "plugin.yml"};
     public static final String EXTENSION_NAME = "haloPlugin";
     private static final String DEFAULT_REPOSITORY = "https://dl.halo.run/release";
+    public static final String DEFAULT_BOOT_JAR = "io.github.guqing:halo:%s:boot";
     private final Project project;
 
     public HaloPluginExtension(Project project) {
@@ -38,6 +40,8 @@ public class HaloPluginExtension {
     private String require;
 
     private String version;
+
+    private Dependency haloBootJar;
 
     private HaloSecurity security = new HaloSecurity();
 
@@ -56,7 +60,7 @@ public class HaloPluginExtension {
 
     public String getRequire() {
         if (this.require == null || "*".equals(require)) {
-            return "1.5.3";
+            return "2.0.0-SNAPSHOT";
         }
         return require;
     }

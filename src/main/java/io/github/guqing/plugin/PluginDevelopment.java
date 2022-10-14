@@ -1,5 +1,7 @@
 package io.github.guqing.plugin;
 
+import static io.github.guqing.plugin.HaloPluginExtension.DEFAULT_BOOT_JAR;
+
 import java.io.File;
 import java.util.Set;
 import lombok.extern.slf4j.Slf4j;
@@ -35,6 +37,8 @@ public class PluginDevelopment implements Plugin<Project> {
         PluginManifest pluginManifest = YamlUtils.read(manifestFile, PluginManifest.class);
         haloPluginExt.setRequire(pluginManifest.getSpec().getRequire());
         haloPluginExt.setVersion(pluginManifest.getSpec().getVersion());
+        haloPluginExt.setHaloBootJar(project.getDependencies()
+            .create(String.format(DEFAULT_BOOT_JAR, haloPluginExt.getRequire())));
 
         project.getTasks()
             .register(PluginComponentsIndexTask.TASK_NAME, PluginComponentsIndexTask.class, it -> {
@@ -57,6 +61,7 @@ public class PluginDevelopment implements Plugin<Project> {
             Configuration configuration =
                 project.getConfigurations().create(HALO_SERVER_DEPENDENCY_CONFIGURATION_NAME);
             it.configurationProperty.set(configuration);
+            it.serverBootJar.set(haloPluginExt.getHaloBootJar());
             it.serverRepository.set(haloPluginExt.getServerRepository());
         });
 

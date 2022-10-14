@@ -1,16 +1,14 @@
 package io.github.guqing.plugin;
 
-import java.io.BufferedInputStream;
-import java.io.FileOutputStream;
+import java.io.File;
+import java.io.FileInputStream;
 import java.io.IOException;
-import java.io.InputStream;
-import java.net.MalformedURLException;
-import java.net.URL;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.StandardCopyOption;
 import org.gradle.api.DefaultTask;
 import org.gradle.api.artifacts.Configuration;
+import org.gradle.api.artifacts.Dependency;
+import org.gradle.api.artifacts.DependencySet;
 import org.gradle.api.provider.Property;
 import org.gradle.api.tasks.Input;
 import org.gradle.api.tasks.TaskAction;
@@ -26,6 +24,9 @@ public class InstallHaloTask extends DefaultTask {
     final Property<String> serverRepository = getProject().getObjects().property(String.class);
 
     @Input
+    final Property<Dependency> serverBootJar = getProject().getObjects().property(Dependency.class);
+
+    @Input
     final Property<Configuration> configurationProperty = getProject().getObjects()
         .property(Configuration.class);
 
@@ -38,32 +39,31 @@ public class InstallHaloTask extends DefaultTask {
         if (Files.exists(targetJarPath)) {
             return;
         }
-        URL website = new URL(downloadUrl(pluginEnv.getRequire()));
-        try (BufferedInputStream in = new BufferedInputStream(website.openStream());
-             FileOutputStream fileOutputStream = new FileOutputStream(targetJarPath.toFile())) {
-            byte[] dataBuffer = new byte[1024];
-            int bytesRead;
-            while ((bytesRead = in.read(dataBuffer, 0, 1024)) != -1) {
-                fileOutputStream.write(dataBuffer, 0, bytesRead);
-            }
-        } catch (IOException e) {
-            // handle exception
-            try {
-                Files.deleteIfExists(targetJarPath);
-            } catch (IOException ex) {
-                // ignore
-            }
-            throw new IllegalStateException("Failed to download halo.jar from " + website, e);
-        }
+
+        getProject().getRepositories().maven(repo -> {
+            repo.setName("HaloPackages");
+            repo.setUrl(serverRepository.get());
+        });
+
+        Configuration compileOnly = getProject().getConfigurations().getByName("compileOnly");
+        compileOnly.setCanBeResolved(true);
+        DependencySet compileDeps = compileOnly.getDependencies();
+
+        Dependency dependency = serverBootJar.get();
+        compileDeps.add(dependency);
+
+        File boorJar = compileOnly.files(file -> file.equals(dependency))
+            .stream()
+            .filter(file -> file.getName().endsWith(getBootJarName(dependency)))
+            .findAny()
+            .orElseThrow(() -> new RuntimeException(
+                String.format("Halo boot jar [%s] not found", getBootJarName(dependency))));
+
+        Files.copy(new FileInputStream(boorJar), targetJarPath);
     }
 
-    private String downloadUrl(String version) {
-        // https://docs.gradle.org/7.4/userguide/build_environment.html#gradle_system_properties
-        return "http://image-guqing.test.upcdn.net/halo-2.0.0-SNAPSHOT.jar";
-//        String repository = StringUtils.appendIfMissing(serverRepository.get(), "/");
-//        String v = StringUtils.removeStart(version, "v");
-//        Semver semver = new Semver(v);
-//        return repository + "halo-" + semver.getValue() + ".jar";
+    private static String getBootJarName(Dependency dependency) {
+        return dependency.getName() + "-" + dependency.getVersion() + "-boot.jar";
     }
 
     public Property<String> getServerRepository() {
@@ -72,5 +72,9 @@ public class InstallHaloTask extends DefaultTask {
 
     public Property<Configuration> getConfigurationProperty() {
         return configurationProperty;
+    }
+
+    public Property<Dependency> getServerBootJar() {
+        return serverBootJar;
     }
 }
