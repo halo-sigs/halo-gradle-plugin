@@ -50,10 +50,12 @@ public class PluginDevelopment implements Plugin<Project> {
             });
         project.getTasks().getByName("assemble").dependsOn(PluginComponentsIndexTask.TASK_NAME);
 
-        project.getTasks().register(InstallDefaultThemeTask.TASK_NAME, InstallDefaultThemeTask.class, it -> {
-            it.setDescription("Install default theme for halo server locally.");
-            it.setGroup(GROUP);
-        });
+        project.getTasks()
+            .register(InstallDefaultThemeTask.TASK_NAME, InstallDefaultThemeTask.class, it -> {
+                it.setDescription("Install default theme for halo server locally.");
+                it.themeUrl.set(haloPluginExt.getThemeUrl());
+                it.setGroup(GROUP);
+            });
 
         project.getTasks().register(InstallHaloTask.TASK_NAME, InstallHaloTask.class, it -> {
             it.setDescription("Install Halo server executable jar locally.");

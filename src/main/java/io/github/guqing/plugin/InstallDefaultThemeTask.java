@@ -11,14 +11,16 @@ import java.nio.file.Path;
 import java.util.stream.Stream;
 import java.util.zip.ZipInputStream;
 import org.gradle.api.DefaultTask;
+import org.gradle.api.provider.Property;
+import org.gradle.api.tasks.Input;
 import org.gradle.api.tasks.TaskAction;
 
 public class InstallDefaultThemeTask extends DefaultTask {
     public static final String TASK_NAME = "defaultThemeInstall";
     private static final String THEME_TMP_PREFIX = "halo-theme-";
-    public static final String DEFAULT_THEME_DIR = "themes/theme-anatole";
-    private static final String THEME_URL =
-        "http://image-guqing.test.upcdn.net/theme-anatole.zip";
+    public static final String DEFAULT_THEME_DIR = "themes/theme-default";
+    @Input
+    final Property<String> themeUrl = getProject().getObjects().property(String.class);
 
     @TaskAction
     public void installTheme() throws IOException {
@@ -34,8 +36,8 @@ public class InstallDefaultThemeTask extends DefaultTask {
             return;
         }
         Path tempDirectory = Files.createTempDirectory(THEME_TMP_PREFIX);
-        Path defaultThemeZipPath = tempDirectory.resolve("theme-anatole.zip");
-        URL website = new URL(THEME_URL);
+        Path defaultThemeZipPath = tempDirectory.resolve("theme-default.zip");
+        URL website = new URL(themeUrl.get());
         try (BufferedInputStream in = new BufferedInputStream(website.openStream());
              FileOutputStream fileOutputStream = new FileOutputStream(defaultThemeZipPath.toFile())) {
             byte[] dataBuffer = new byte[1024];
@@ -47,7 +49,7 @@ public class InstallDefaultThemeTask extends DefaultTask {
         } catch (IOException e) {
             FileUtils.deleteRecursively(tempDirectory);
             throw new IllegalStateException(
-                "Failed to download default theme [theme-anatole] from " + website, e);
+                "Failed to download default theme [theme-default] from " + website, e);
         }
     }
 
@@ -72,5 +74,9 @@ public class InstallDefaultThemeTask extends DefaultTask {
         } finally {
             FileUtils.deleteRecursively(tempDirectory);
         }
+    }
+
+    public Property<String> getThemeUrl() {
+        return themeUrl;
     }
 }
