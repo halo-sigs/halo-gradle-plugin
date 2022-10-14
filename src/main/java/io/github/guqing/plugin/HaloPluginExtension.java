@@ -25,6 +25,9 @@ public class HaloPluginExtension {
     public static final String EXTENSION_NAME = "haloPlugin";
     private static final String DEFAULT_REPOSITORY = "https://dl.halo.run/release";
     public static final String DEFAULT_BOOT_JAR = "io.github.guqing:halo:%s:boot";
+
+    public static final String DEFAULT_THEME_URL = "https://github.com/halo-sigs/theme-default/archive/refs/heads/main.zip";
+
     private final Project project;
 
     public HaloPluginExtension(Project project) {
@@ -42,6 +45,8 @@ public class HaloPluginExtension {
     private String version;
 
     private Dependency haloBootJar;
+
+    private String themeUrl = DEFAULT_THEME_URL;
 
     private HaloSecurity security = new HaloSecurity();
 
