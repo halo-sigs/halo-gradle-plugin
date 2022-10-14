@@ -11,7 +11,6 @@ import java.nio.file.Paths;
 import java.util.LinkedHashSet;
 import java.util.Set;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.commons.lang3.StringUtils;
 import org.gradle.api.DefaultTask;
 import org.gradle.api.file.ConfigurableFileCollection;
 import org.gradle.api.tasks.InputFiles;
@@ -20,10 +19,23 @@ import org.objectweb.asm.ClassReader;
 
 @Slf4j
 public class PluginComponentsIndexTask extends DefaultTask {
+
+    /**
+     * The package separator character: {@code '.'}.
+     */
+    private static final char PACKAGE_SEPARATOR = '.';
+
+    /**
+     * The path separator character: {@code '/'}.
+     */
+    private static final char PATH_SEPARATOR = '/';
+
     private static final String CLASS_SUFFIX = ".class";
     private static final String FILEPATH = "META-INF/plugin-components.idx";
 
     public static final String TASK_NAME = "generatePluginComponentsIdx";
+
+    private static final int ASM_VERSION = Opcodes.ASM9;
 
     @InputFiles
     ConfigurableFileCollection classesDirs = getProject().getObjects().fileCollection();
@@ -39,15 +51,16 @@ public class PluginComponentsIndexTask extends DefaultTask {
             if (!file.getName().endsWith(CLASS_SUFFIX)) {
                 continue;
             }
-            String path = file.getPath();
-            String codeReferenceName = toCodeReferenceName(buildPath, path);
 
             ClassReader classReader = new ClassReader(new FileInputStream(file));
             FilterComponentClassVisitor filterComponentClassVisitor =
-                new FilterComponentClassVisitor(Opcodes.ASM9);
-            classReader.accept(filterComponentClassVisitor, Opcodes.ASM9);
+                new FilterComponentClassVisitor(ASM_VERSION);
+            classReader.accept(filterComponentClassVisitor, ClassReader.SKIP_DEBUG);
+
             if (filterComponentClassVisitor.isComponentClass()) {
-                componentsIdxFileLines.add(codeReferenceName);
+                String className =
+                    convertResourcePathToClassName(filterComponentClassVisitor.getName());
+                componentsIdxFileLines.add(className);
             }
         }
         // write to file
@@ -61,30 +74,19 @@ public class PluginComponentsIndexTask extends DefaultTask {
         Files.write(componentsIdxPath, componentsIdxFileLines, StandardCharsets.UTF_8);
     }
 
-    private String toCodeReferenceName(String buildOutputDir, String classFileName) {
-        Assert.notNull(buildOutputDir, "The buildOutputDir must not be null");
-        Assert.notNull(classFileName, "The classFileName must not be null");
-        String relativePath = StringUtils.removeStart(classFileName, buildOutputDir);
-
-        String referencePath = relativePath.replace(File.separator, ".");
-        StringBuilder sb = new StringBuilder(referencePath);
-        for (int i = 0; i < sb.length(); i++) {
-            if (i == 0 && sb.charAt(i) == '.') {
-                sb.deleteCharAt(i);
-                continue;
-            }
-            if (sb.charAt(i) == '$') {
-                sb.setCharAt(i, '.');
-            }
-        }
-        int suffixIndex = sb.lastIndexOf(CLASS_SUFFIX);
-        if (suffixIndex != -1) {
-            sb.delete(suffixIndex, suffixIndex + CLASS_SUFFIX.length());
-        }
-        return sb.toString();
-    }
-
     public ConfigurableFileCollection getClassesDirs() {
         return classesDirs;
+    }
+
+
+    /**
+     * Convert a "/"-based resource path to a "."-based fully qualified class name.
+     *
+     * @param resourcePath the resource path pointing to a class
+     * @return the corresponding fully qualified class name
+     */
+    public static String convertResourcePathToClassName(String resourcePath) {
+        Assert.notNull(resourcePath, "Resource path must not be null");
+        return resourcePath.replace(PATH_SEPARATOR, PACKAGE_SEPARATOR);
     }
 }

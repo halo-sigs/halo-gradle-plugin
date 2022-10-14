@@ -9,12 +9,14 @@ import org.gradle.api.plugins.JavaPlugin;
 import org.gradle.api.tasks.SourceSetContainer;
 import org.gradle.testfixtures.ProjectBuilder;
 import org.gradle.testkit.runner.GradleRunner;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
 /**
  * @author guqing
  * @since 2.0.0
  */
+@Disabled
 public class PluginDevelopmentTest {
 
     @Test

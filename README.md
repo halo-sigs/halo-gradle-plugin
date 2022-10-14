@@ -16,7 +16,7 @@ pluginManagement {
 plugins {
     // ...
     // 添加此 gradle 插件依赖
-    id "io.github.guqing.plugin-development" version "0.0.3-SNAPSHOT"
+    id "io.github.guqing.plugin-development" version "0.0.4-SNAPSHOT"
 }
 ```
 ## what this plugin does
