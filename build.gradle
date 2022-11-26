@@ -5,7 +5,7 @@ plugins {
 }
 
 group 'io.github.guqing.plugin'
-version '0.0.5-SNAPSHOT'
+version '0.0.4-SNAPSHOT'
 
 repositories {
     mavenCentral()
@@ -64,8 +64,8 @@ dependencies {
     compileOnly "org.projectlombok:lombok:$lombok"
     annotationProcessor "org.projectlombok:lombok:$lombok"
 
-    testImplementation 'org.junit.jupiter:junit-jupiter-api:5.8.1'
-    testRuntimeOnly 'org.junit.jupiter:junit-jupiter-engine:5.8.1'
+    testImplementation 'org.junit.jupiter:junit-jupiter-api:5.9.0'
+    testRuntimeOnly 'org.junit.jupiter:junit-jupiter-engine:5.9.0'
 }
 
 test {
