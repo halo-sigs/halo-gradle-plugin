@@ -26,7 +26,7 @@ public class HaloPluginExtension {
     private static final String DEFAULT_REPOSITORY = "https://dl.halo.run/release";
     public static final String DEFAULT_BOOT_JAR = "io.github.guqing:halo:%s:boot";
 
-    public static final String DEFAULT_THEME_URL = "https://github.com/halo-sigs/theme-default/archive/refs/heads/main.zip";
+    public static final String DEFAULT_THEME_URL = "https://github.com/halo-dev/theme-earth/archive/refs/tags/v1.0.0-beta.1.zip";
 
     private final Project project;
 

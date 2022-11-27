@@ -18,7 +18,7 @@ import org.gradle.api.tasks.TaskAction;
 public class InstallDefaultThemeTask extends DefaultTask {
     public static final String TASK_NAME = "defaultThemeInstall";
     private static final String THEME_TMP_PREFIX = "halo-theme-";
-    public static final String DEFAULT_THEME_DIR = "themes/theme-default";
+    public static final String DEFAULT_THEME_DIR = "themes/theme-earth";
     @Input
     final Property<String> themeUrl = getProject().getObjects().property(String.class);
 
@@ -36,7 +36,7 @@ public class InstallDefaultThemeTask extends DefaultTask {
             return;
         }
         Path tempDirectory = Files.createTempDirectory(THEME_TMP_PREFIX);
-        Path defaultThemeZipPath = tempDirectory.resolve("theme-default.zip");
+        Path defaultThemeZipPath = tempDirectory.resolve("theme-earth.zip");
         URL website = new URL(themeUrl.get());
         try (BufferedInputStream in = new BufferedInputStream(website.openStream());
              FileOutputStream fileOutputStream = new FileOutputStream(defaultThemeZipPath.toFile())) {
@@ -49,7 +49,7 @@ public class InstallDefaultThemeTask extends DefaultTask {
         } catch (IOException e) {
             FileUtils.deleteRecursively(tempDirectory);
             throw new IllegalStateException(
-                "Failed to download default theme [theme-default] from " + website, e);
+                "Failed to download default theme [theme-earth] from " + website, e);
         }
     }
 
