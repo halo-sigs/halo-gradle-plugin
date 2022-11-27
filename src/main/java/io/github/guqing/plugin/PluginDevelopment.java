@@ -36,9 +36,10 @@ public class PluginDevelopment implements Plugin<Project> {
 
         PluginManifest pluginManifest = YamlUtils.read(manifestFile, PluginManifest.class);
         haloPluginExt.setRequire(pluginManifest.getSpec().getRequire());
-        haloPluginExt.setVersion(pluginManifest.getSpec().getVersion());
         haloPluginExt.setHaloBootJar(project.getDependencies()
             .create(String.format(DEFAULT_BOOT_JAR, haloPluginExt.getRequire())));
+
+        haloPluginExt.setVersion((String) project.getVersion());
 
         project.getTasks()
             .register(PluginComponentsIndexTask.TASK_NAME, PluginComponentsIndexTask.class, it -> {
@@ -54,16 +55,15 @@ public class PluginDevelopment implements Plugin<Project> {
             .register(PluginAutoVersionTask.TASK_NAME, PluginAutoVersionTask.class, it -> {
                 it.setDescription("Auto populate plugin version to manifest file.");
                 it.setGroup(GROUP);
-                it.dependsOn("build");
                 it.manifest.set(manifestFile);
             });
+        project.getTasks().getByName("assemble").dependsOn(PluginAutoVersionTask.TASK_NAME);
 
         project.getTasks()
             .register(InstallDefaultThemeTask.TASK_NAME, InstallDefaultThemeTask.class, it -> {
                 it.setDescription("Install default theme for halo server locally.");
                 it.themeUrl.set(haloPluginExt.getThemeUrl());
                 it.setGroup(GROUP);
-                it.dependsOn(PluginAutoVersionTask.TASK_NAME);
             });
 
         project.getTasks().register(InstallHaloTask.TASK_NAME, InstallHaloTask.class, it -> {

@@ -1,7 +1,6 @@
 package io.github.guqing.plugin;
 
 import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.Module;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
@@ -29,11 +28,11 @@ public class YamlUtils {
         }
     }
 
-    public static void write(File yamlSource, Function<JsonNode, JsonNode> transform) {
+    public static void write(File yamlSource, Function<JsonNode, JsonNode> transform, File target) {
         try {
             JsonNode jsonNode = mapper.readTree(yamlSource);
             JsonNode root = transform.apply(jsonNode);
-            mapper.writer().writeValue(yamlSource, root);
+            mapper.writer().writeValue(target, root);
         } catch (IOException e) {
             throw new RuntimeException(e);
         }

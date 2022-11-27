@@ -36,7 +36,8 @@ public class PluginDevelopmentTest {
     }
 
     private BuildResult runGradle(String... args) {
-        return GradleRunner.create().withDebug(true).withProjectDir(this.projectDir)
+        return GradleRunner.create().withDebug(true)
+            .withProjectDir(this.projectDir)
             .withArguments(args)
             .withPluginClasspath().build();
     }
@@ -47,19 +48,16 @@ public class PluginDevelopmentTest {
         try (PrintWriter out = new PrintWriter(new FileWriter(this.buildFile))) {
             out.println("plugins {");
             out.println("    id 'io.github.guqing.plugin-development'");
-            out.println("    id 'com.coditory.manifest' version '0.2.1'");
             out.println("}");
             out.println("group 'io.github.guqing'");
             out.println("version '1.0.0'");
-            out.println("manifest {");
-            out.println("    buildAttributes = false");
-            out.println("    implementationAttributes = true");
-            out.println("    scmAttributes = false");
-            out.println("}");
         }
         BuildResult buildResult = runGradle(PluginAutoVersionTask.TASK_NAME, "-s");
         System.out.println(buildResult.getOutput());
-        String pluginYaml = String.join("\n", Files.readAllLines(this.pluginManifestFile.toPath()));
+
+        File outputPluginYaml = new File(projectDir, "build/resources/main/plugin.yaml");
+        String pluginYaml =
+            String.join("\n", Files.readAllLines(outputPluginYaml.toPath()));
         assertEquals("""
             ---
             apiVersion: "plugin.halo.run/v1alpha1"
@@ -80,24 +78,19 @@ public class PluginDevelopmentTest {
         try (PrintWriter out = new PrintWriter(new FileWriter(this.buildFile))) {
             out.println("plugins {");
             out.println("    id 'io.github.guqing.plugin-development'");
-            out.println("    id 'com.coditory.manifest' version '0.2.1'");
             out.println("}");
             out.println("group 'io.github.guqing'");
             out.println("version '1.0.0'");
-            out.println("manifest {");
-            out.println("    buildAttributes = false");
-            out.println("    implementationAttributes = true");
-            out.println("    scmAttributes = false");
-            out.println("}");
         }
         BuildResult buildResult = runGradle(InstallDefaultThemeTask.TASK_NAME, "-s");
         System.out.println(buildResult.getOutput());
-        try(Stream<Path> paths = Files.list(Path.of(this.projectDir.getAbsolutePath(), "workplace/themes"))) {
+        try (Stream<Path> paths = Files.list(
+            Path.of(this.projectDir.getAbsolutePath(), "workplace/themes"))) {
             Path themePath = paths.filter(path -> path.endsWith("theme-earth"))
                 .findFirst()
                 .orElseThrow();
             // not empty
-           assertFalse(FileUtils.isEmpty(themePath));
+            assertFalse(FileUtils.isEmpty(themePath));
         }
     }
 

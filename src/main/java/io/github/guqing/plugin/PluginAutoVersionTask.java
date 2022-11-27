@@ -1,15 +1,13 @@
 package io.github.guqing.plugin;
 
-import static java.util.jar.Attributes.Name.IMPLEMENTATION_VERSION;
+import static org.gradle.api.Project.DEFAULT_VERSION;
 import static org.gradle.api.tasks.SourceSet.MAIN_SOURCE_SET_NAME;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import java.io.File;
-import java.io.FileInputStream;
 import java.io.IOException;
-import java.io.InputStream;
-import java.util.jar.Manifest;
+import java.nio.file.Files;
 import org.apache.commons.lang3.StringUtils;
 import org.gradle.api.DefaultTask;
 import org.gradle.api.provider.Property;
@@ -31,7 +29,12 @@ public class PluginAutoVersionTask extends DefaultTask {
     final Property<File> manifest = getProject().getObjects().property(File.class);
 
     @TaskAction
-    public void autoPopulateVersion() {
+    public void autoPopulateVersion() throws IOException {
+        File outputResourceDir = getOutputResourceDir();
+        if (!Files.exists(getOutputResourceDir().toPath())) {
+            Files.createDirectories(outputResourceDir.toPath());
+        }
+        File outputPluginYaml = new File(outputResourceDir, manifest.get().getName());
         String projectVersion = getProjectVersion();
         YamlUtils.write(manifest.get(), pluginYaml -> {
             JsonNode spec = pluginYaml.get("spec");
@@ -41,41 +44,23 @@ public class PluginAutoVersionTask extends DefaultTask {
             }
             ((ObjectNode) spec).put("version", projectVersion);
             return pluginYaml;
-        });
+        }, outputPluginYaml);
+    }
+
+    private File getOutputResourceDir() {
+        SourceSetContainer sourceSetContainer =
+            (SourceSetContainer) getProject().getProperties().get("sourceSets");
+        return sourceSetContainer.getByName(MAIN_SOURCE_SET_NAME)
+            .getOutput()
+            .getResourcesDir();
     }
 
     private String getProjectVersion() {
-        File projectManifestMfFile = getProjectManifestMfFile();
-        Manifest manifestMf = toManifest(projectManifestMfFile);
-        String projectVersion =
-            manifestMf.getMainAttributes().getValue(IMPLEMENTATION_VERSION.toString());
-        if (StringUtils.isBlank(projectVersion)
-            || StringUtils.equalsIgnoreCase(projectVersion, "unspecified")) {
-            throw new IllegalStateException(
-                "Project version can not be blank, please set the value for attribute ["
-                    + IMPLEMENTATION_VERSION + "] in MANIFEST.MF file.");
+        String version = (String) getProject().getVersion();
+        if (StringUtils.equals(DEFAULT_VERSION, version)) {
+            throw new IllegalStateException("Project version must be set.");
         }
-        return projectVersion;
-    }
-
-    private Manifest toManifest(File file) {
-        try (InputStream inputStream = new FileInputStream(file)) {
-            return new Manifest(inputStream);
-        } catch (IOException e) {
-            throw new RuntimeException("Unable to open manifest file: " + file, e);
-        }
-    }
-
-    private File getProjectManifestMfFile() {
-        SourceSetContainer sourceSetContainer =
-            (SourceSetContainer) getProject().getProperties().get("sourceSets");
-        File resourcesDir = sourceSetContainer.getByName(MAIN_SOURCE_SET_NAME)
-            .getOutput()
-            .getResourcesDir();
-        if (resourcesDir == null) {
-            throw new IllegalStateException("Cannot find resources directory.");
-        }
-        return new File(resourcesDir, "META-INF/MANIFEST.MF");
+        return version;
     }
 
     public Property<File> getManifest() {
