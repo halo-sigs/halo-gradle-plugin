@@ -26,7 +26,6 @@ import org.gradle.api.tasks.TaskAction;
  */
 public class PluginAutoVersionTask extends DefaultTask {
     public static final String TASK_NAME = "populateVersion";
-    public static final String MANIFEST_VERSION_KEY = "Plugin-Version";
 
     @Input
     final Property<File> manifest = getProject().getObjects().property(File.class);

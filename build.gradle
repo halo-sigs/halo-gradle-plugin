@@ -57,6 +57,7 @@ ext {
 dependencies {
     implementation "com.fasterxml.jackson.dataformat:jackson-dataformat-yaml:$jacksonYaml"
     implementation "com.fasterxml.jackson.core:jackson-databind:$jackjson"
+    implementation "com.fasterxml.jackson.datatype:jackson-datatype-jsr310:$jackjson"
     implementation "org.apache.commons:commons-lang3:$lang3"
     implementation "com.vdurmont:semver4j:$semver4j"
     implementation 'org.ow2.asm:asm:9.1'

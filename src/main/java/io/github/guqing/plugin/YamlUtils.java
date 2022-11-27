@@ -1,8 +1,10 @@
 package io.github.guqing.plugin;
 
 import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.Module;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
+import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import java.io.File;
 import java.io.IOException;
 import java.util.function.Function;
@@ -16,6 +18,7 @@ public class YamlUtils {
 
     static {
         mapper = new ObjectMapper(new YAMLFactory());
+        mapper.registerModule(new JavaTimeModule());
     }
 
     public static <T> T read(File yamlSource, Class<T> clazz) {
