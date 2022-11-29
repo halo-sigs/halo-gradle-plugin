@@ -14,6 +14,8 @@ public class PluginManifest {
 
     private String apiVersion;
 
+    private Metadata metadata;
+
     private PluginSpec spec;
 
     @Data
@@ -21,5 +23,11 @@ public class PluginManifest {
     public static class PluginSpec {
         private String version;
         private String require;
+    }
+
+    @Data
+    @JsonIgnoreProperties(ignoreUnknown = true)
+    public static class Metadata {
+        private String name;
     }
 }

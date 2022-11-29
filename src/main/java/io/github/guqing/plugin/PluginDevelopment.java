@@ -5,6 +5,7 @@ import static io.github.guqing.plugin.HaloPluginExtension.DEFAULT_BOOT_JAR;
 import java.io.File;
 import java.util.Set;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.lang3.StringUtils;
 import org.gradle.api.Plugin;
 import org.gradle.api.Project;
 import org.gradle.api.artifacts.Configuration;
@@ -39,7 +40,12 @@ public class PluginDevelopment implements Plugin<Project> {
         haloPluginExt.setHaloBootJar(project.getDependencies()
             .create(String.format(DEFAULT_BOOT_JAR, haloPluginExt.getRequire())));
 
+        if (StringUtils.isBlank(pluginManifest.getMetadata().getName())) {
+            throw new IllegalStateException("Plugin name must not be blank.");
+        }
+
         haloPluginExt.setVersion((String) project.getVersion());
+        System.setProperty("halo.plugin.name", pluginManifest.getMetadata().getName());
 
         project.getTasks()
             .register(PluginComponentsIndexTask.TASK_NAME, PluginComponentsIndexTask.class, it -> {
