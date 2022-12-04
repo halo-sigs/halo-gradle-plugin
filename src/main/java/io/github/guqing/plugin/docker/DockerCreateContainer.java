@@ -2,6 +2,7 @@ package io.github.guqing.plugin.docker;
 
 import com.github.dockerjava.api.command.CreateContainerCmd;
 import com.github.dockerjava.api.command.CreateContainerResponse;
+import com.github.dockerjava.api.command.RemoveContainerCmd;
 import com.github.dockerjava.api.model.ExposedPort;
 import com.github.dockerjava.api.model.HostConfig;
 import com.github.dockerjava.api.model.PortBinding;
@@ -26,10 +27,6 @@ public class DockerCreateContainer extends DockerExistingImage {
     @Input
     @Optional
     final Property<String> containerName = getProject().getObjects().property(String.class);
-
-    @Input
-    @Optional
-    final Property<String> image = getProject().getObjects().property(String.class);
 
     @Input
     @Optional
@@ -58,7 +55,7 @@ public class DockerCreateContainer extends DockerExistingImage {
     @Optional
     final Property<String> platform = getProject().getObjects().property(String.class);
 
-    DockerCreateContainer() {
+    public DockerCreateContainer() {
         containerId.convention(containerIdFile.map(it -> {
             File file = it.getAsFile();
             if (file.exists()) {
@@ -84,8 +81,20 @@ public class DockerCreateContainer extends DockerExistingImage {
         setContainerCommandConfig(containerCommand);
         CreateContainerResponse container = containerCommand.exec();
         final String localContainerName =
-            containerName.getOrNull() == null ? null : container.getId();
+            containerName.getOrNull() == null ? container.getId() : containerName.get();
         log.info("Created container with ID [{}]", localContainerName);
+
+        Runtime.getRuntime().addShutdownHook(new Thread(() -> {
+            System.out.println("Removing container with ID [" + localContainerName + "]");
+            try (RemoveContainerCmd removeContainerCmd = getDockerClient()
+                .removeContainerCmd(containerId.get())
+                .withForce(true)) {
+                removeContainerCmd.exec();
+            } catch (Exception e) {
+                log.error("Failed to remove container with ID [{}]", localContainerName, e);
+            }
+        }));
+
         Files.writeString(containerIdFile.get().getAsFile().toPath(), container.getId());
         Action<? super Object> nextHandler = getNextHandler();
         if (nextHandler != null) {
@@ -110,7 +119,7 @@ public class DockerCreateContainer extends DockerExistingImage {
             "HALO_SECURITY_INITIALIZER_SUPERADMINPASSWORD=123456",
             "HALO_SECURITY_INITIALIZER_SUPERADMINUSERNAME=guqing");
 
-        containerCommand.withImage(image.get());
+        containerCommand.withImage(getImageId().get());
 
         containerCommand.withExposedPorts(ExposedPort.parse("8090"));
         containerCommand.withHostConfig(new HostConfig()

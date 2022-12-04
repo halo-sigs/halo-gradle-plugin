@@ -3,14 +3,16 @@ package io.github.guqing.plugin.docker;
 import com.github.dockerjava.api.DockerClient;
 import com.github.dockerjava.api.command.StopContainerCmd;
 import groovy.transform.CompileStatic;
+import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import org.gradle.api.provider.Property;
 import org.gradle.api.tasks.Input;
 import org.gradle.api.tasks.Optional;
 
+@Getter
 @Slf4j
 @CompileStatic
-class DockerStopContainer extends DockerExistingContainer {
+public class DockerStopContainer extends DockerExistingContainer {
 
     /**
      * Stop timeout in seconds.

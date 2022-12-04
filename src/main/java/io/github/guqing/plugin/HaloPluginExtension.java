@@ -65,7 +65,7 @@ public class HaloPluginExtension {
 
     public String getRequire() {
         if (this.require == null || "*".equals(require)) {
-            return "2.0.0-SNAPSHOT";
+            return "2.0.0";
         }
         return require;
     }

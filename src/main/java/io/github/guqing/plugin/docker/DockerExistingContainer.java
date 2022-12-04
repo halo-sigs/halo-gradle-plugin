@@ -2,10 +2,12 @@ package io.github.guqing.plugin.docker;
 
 import groovy.transform.CompileStatic;
 import java.util.concurrent.Callable;
+import lombok.Getter;
 import org.gradle.api.provider.Property;
 import org.gradle.api.provider.Provider;
 import org.gradle.api.tasks.Input;
 
+@Getter
 @CompileStatic
 public abstract class DockerExistingContainer extends AbstractDockerRemoteApiTask {
     /**

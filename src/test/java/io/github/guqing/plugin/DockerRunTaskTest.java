@@ -22,12 +22,15 @@ public class DockerRunTaskTest {
 
     private File buildFile;
 
+    private File gradleProperties;
+
     private File pluginManifestFile;
 
     @BeforeEach
     void setup(@TempDir File projectDir) {
         this.projectDir = projectDir;
         this.buildFile = new File(this.projectDir, "build.gradle");
+        this.gradleProperties = new File(this.projectDir, "gradle.properties");
         this.pluginManifestFile = new File(this.projectDir, "src/main/resources/plugin.yaml");
     }
 
@@ -49,7 +52,10 @@ public class DockerRunTaskTest {
             out.println("group 'io.github.guqing'");
             out.println("version '1.0.0'");
         }
-        BuildResult buildResult = runGradle("runHalo", "-s");
+        try (PrintWriter out = new PrintWriter(new FileWriter(this.gradleProperties))) {
+            out.println("org.gradle.daemon=false");
+        }
+        BuildResult buildResult = runGradle("runHalo");
         System.out.println(buildResult.getOutput());
     }
 

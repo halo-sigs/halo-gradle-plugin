@@ -4,6 +4,7 @@ import com.github.dockerjava.api.command.PullImageCmd;
 import com.github.dockerjava.api.command.PullImageResultCallback;
 import com.github.dockerjava.api.model.PullResponseItem;
 import groovy.transform.CompileStatic;
+import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import org.gradle.api.Action;
 import org.gradle.api.provider.Property;
@@ -11,6 +12,7 @@ import org.gradle.api.tasks.Input;
 import org.gradle.api.tasks.Optional;
 
 @Slf4j
+@Getter
 @CompileStatic
 public class DockerPullImage extends AbstractDockerRemoteApiTask {
 
@@ -20,7 +22,7 @@ public class DockerPullImage extends AbstractDockerRemoteApiTask {
      * @since 6.0.0
      */
     @Input
-    final Property<String> image = getProject().getObjects().property(String.class);
+    protected final Property<String> image = getProject().getObjects().property(String.class);
 
     /**
      * The target platform in the format {@code os[/arch[/variant]]}, for example {@code linux/s390x} or {@code darwin}.
