@@ -33,9 +33,10 @@ public class DockerRunTaskTest {
 
     private BuildResult runGradle(String... args) {
         return GradleRunner.create().withDebug(true)
-                .withProjectDir(this.projectDir)
-                .withArguments(args)
-                .withPluginClasspath().build();
+            .withProjectDir(this.projectDir)
+            .withArguments(args)
+            .forwardOutput()
+            .withPluginClasspath().build();
     }
 
     @Test

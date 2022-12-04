@@ -1,8 +1,12 @@
 package io.github.guqing.plugin;
 
+import static io.github.guqing.plugin.HaloPluginExtension.DEFAULT_BOOT_JAR;
+
 import io.github.guqing.plugin.docker.AbstractDockerRemoteApiTask;
 import io.github.guqing.plugin.docker.DockerClientConfiguration;
 import io.github.guqing.plugin.docker.DockerClientService;
+import java.io.File;
+import java.util.Set;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 import org.gradle.api.Plugin;
@@ -14,11 +18,6 @@ import org.gradle.api.plugins.JavaPlugin;
 import org.gradle.api.provider.Provider;
 import org.gradle.api.tasks.SourceSet;
 import org.gradle.api.tasks.SourceSetContainer;
-
-import java.io.File;
-import java.util.Set;
-
-import static io.github.guqing.plugin.HaloPluginExtension.DEFAULT_BOOT_JAR;
 
 /**
  * @author guqing
@@ -115,7 +114,7 @@ public class PluginDevelopment implements Plugin<Project> {
         project.getTasks().create("runHalo", DockerRunTask.class, it -> {
             it.setGroup(GROUP);
             it.setDescription("Run Halo server in docker container.");
-            it.platform.set("linux/amd64");
+//            it.platform.set("linux/amd64");
             it.image.set("halohub/halo:2.0.0");
         });
     }
