@@ -5,7 +5,8 @@ plugins {
 }
 
 group 'io.github.guqing.plugin'
-version '0.0.6-SNAPSHOT'
+version '0.0.2-SNAPSHOT'
+sourceCompatibility = JavaVersion.VERSION_17
 
 repositories {
     mavenCentral()
@@ -57,8 +58,8 @@ ext {
 dependencies {
     // https://mvnrepository.com/artifact/com.github.docker-java/docker-java-transport-httpclient5
     implementation 'com.github.docker-java:docker-java-transport-httpclient5:3.2.14'
-
     implementation 'com.github.docker-java:docker-java-core:3.2.14'
+
     implementation "com.fasterxml.jackson.dataformat:jackson-dataformat-yaml:$jackjson"
     implementation "com.fasterxml.jackson.core:jackson-databind:$jackjson"
     implementation "com.fasterxml.jackson.datatype:jackson-datatype-jsr310:$jackjson"
@@ -66,6 +67,7 @@ dependencies {
     implementation "com.vdurmont:semver4j:$semver4j"
     implementation "org.ow2.asm:asm:$asm"
     implementation "org.ow2.asm:asm-commons:$asm"
+    implementation 'commons-io:commons-io:2.11.0'
     compileOnly "org.projectlombok:lombok:$lombok"
     annotationProcessor "org.projectlombok:lombok:$lombok"
 

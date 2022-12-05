@@ -1,5 +1,8 @@
 package io.github.guqing.plugin;
 
+import javax.annotation.Nullable;
+import java.util.function.Supplier;
+
 /**
  * @author guqing
  * @since 2.0.0
@@ -18,5 +21,34 @@ public class Assert {
         if (object == null) {
             throw new IllegalArgumentException(message);
         }
+    }
+
+    public static void state(boolean expression, Supplier<String> messageSupplier) {
+        if (!expression) {
+            throw new IllegalStateException(nullSafeGet(messageSupplier));
+        }
+    }
+
+    public static void state(boolean expression, String message) {
+        if (!expression) {
+            throw new IllegalStateException(message);
+        }
+    }
+
+    public static void isTrue(boolean expression, String message) {
+        if (!expression) {
+            throw new IllegalArgumentException(message);
+        }
+    }
+
+    public static void isTrue(boolean expression, Supplier<String> messageSupplier) {
+        if (!expression) {
+            throw new IllegalArgumentException(nullSafeGet(messageSupplier));
+        }
+    }
+
+    @Nullable
+    private static String nullSafeGet(@Nullable Supplier<String> messageSupplier) {
+        return (messageSupplier != null ? messageSupplier.get() : null);
     }
 }

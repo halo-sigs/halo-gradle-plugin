@@ -30,6 +30,7 @@ public class DockerRunTaskTest {
     void setup(@TempDir File projectDir) {
         this.projectDir = projectDir;
         this.buildFile = new File(this.projectDir, "build.gradle");
+        System.out.println(buildFile);
         this.gradleProperties = new File(this.projectDir, "gradle.properties");
         this.pluginManifestFile = new File(this.projectDir, "src/main/resources/plugin.yaml");
     }
@@ -51,11 +52,15 @@ public class DockerRunTaskTest {
             out.println("}");
             out.println("group 'io.github.guqing'");
             out.println("version '1.0.0'");
+            out.println("watch {");
+            out.println("    main {");
+            out.println("        files fileTree(dir: 'src/main/resources', include: '**.yaml')");
+            out.println("        tasks 'build'");
+            out.println("    }");
+            out.println("}");
         }
-        try (PrintWriter out = new PrintWriter(new FileWriter(this.gradleProperties))) {
-            out.println("org.gradle.daemon=false");
-        }
-        BuildResult buildResult = runGradle("runHalo");
+
+        BuildResult buildResult = runGradle("watch");
         System.out.println(buildResult.getOutput());
     }
 
