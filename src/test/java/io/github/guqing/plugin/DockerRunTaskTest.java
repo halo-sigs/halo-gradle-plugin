@@ -52,12 +52,6 @@ public class DockerRunTaskTest {
             out.println("}");
             out.println("group 'io.github.guqing'");
             out.println("version '1.0.0'");
-            out.println("watch {");
-            out.println("    main {");
-            out.println("        files fileTree(dir: 'src/main/resources', include: '**.yaml')");
-            out.println("        tasks 'build'");
-            out.println("    }");
-            out.println("}");
         }
 
         BuildResult buildResult = runGradle("watch");

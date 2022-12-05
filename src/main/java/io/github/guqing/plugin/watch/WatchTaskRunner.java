@@ -2,6 +2,10 @@ package io.github.guqing.plugin.watch;
 
 import io.github.guqing.plugin.Assert;
 import io.github.guqing.plugin.WatchExecutionParameters;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
+import java.util.Map;
 import org.gradle.StartParameter;
 import org.gradle.api.Project;
 import org.gradle.api.logging.Logging;
@@ -11,11 +15,9 @@ import org.gradle.tooling.GradleConnector;
 import org.gradle.tooling.ProgressListener;
 import org.gradle.tooling.ProjectConnection;
 import org.gradle.tooling.internal.consumer.DefaultBuildLauncher;
+import org.gradle.tooling.internal.consumer.DefaultGradleConnector;
+import org.gradle.wrapper.GradleUserHomeLookup;
 import org.slf4j.Logger;
-
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
 
 /**
  * @author guqing
@@ -27,20 +29,24 @@ public class WatchTaskRunner implements AutoCloseable {
     private final ProjectConnection connection;
 
     public WatchTaskRunner(Project project) {
+        StartParameter parameter = project.getGradle().getStartParameter();
+        String[] arguments = getArguments(parameter);
+        System.out.println("arguments = " + Arrays.toString(arguments));
 
-//        StartParameter parameter = project.getGradle().getStartParameter();
-        connection = GradleConnector.newConnector()
-                .useInstallation(project.getGradle().getGradleHomeDir())
-                .forProjectDirectory(project.getProjectDir())
-                .connect();
+        DefaultGradleConnector gradleConnector =
+            (DefaultGradleConnector) GradleConnector.newConnector();
+        gradleConnector.useGradleUserHomeDir(project.getGradle().getGradleUserHomeDir());
+        gradleConnector.useDistributionBaseDir(GradleUserHomeLookup.gradleUserHome());
+        connection = gradleConnector.forProjectDirectory(project.getProjectDir())
+            .connect();
     }
 
     public void run(WatchExecutionParameters parameters) {
         Assert.notNull(parameters, "WatchExecutionParameters must not be null");
         DefaultBuildLauncher launcher = (DefaultBuildLauncher) connection
-                .newBuild()
-                .setStandardOutput(new NoCloseOutputStream(parameters.getStandardError()))
-                .setStandardError(new NoCloseOutputStream(parameters.getStandardError()));
+            .newBuild()
+            .setStandardOutput(new NoCloseOutputStream(parameters.getStandardError()))
+            .setStandardError(new NoCloseOutputStream(parameters.getStandardError()));
 
         if (parameters.getStandardInput() != null) {
             launcher.setStandardInput(parameters.getStandardInput());
@@ -64,7 +70,7 @@ public class WatchTaskRunner implements AutoCloseable {
                 taskNum[0]++;
             }
         });
-        System.out.println("Executed " + taskNum[0] + "tasks.");
+        System.out.println("Executed " + taskNum[0] + " tasks.");
 
         try {
 

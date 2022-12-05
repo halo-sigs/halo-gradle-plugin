@@ -1,23 +1,20 @@
 package io.github.guqing.plugin.watch;
 
-import lombok.Data;
-import lombok.NonNull;
-import org.gradle.api.Named;
-import org.gradle.api.file.DirectoryTree;
-import org.gradle.api.file.FileCollection;
+import static java.util.Collections.addAll;
 
 import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
-
-import static java.util.Collections.addAll;
+import lombok.NonNull;
+import org.gradle.api.Named;
+import org.gradle.api.file.DirectoryTree;
+import org.gradle.api.file.FileCollection;
 
 /**
  * @author guqing
  * @since 2.0.0
  */
-@Data
 public class WatchTarget implements Named {
 
     private final String name;
@@ -52,6 +49,10 @@ public class WatchTarget implements Named {
                 }
             }
         }
+    }
+
+    public List<FileCollection> getFiles() {
+        return files;
     }
 
     @Override

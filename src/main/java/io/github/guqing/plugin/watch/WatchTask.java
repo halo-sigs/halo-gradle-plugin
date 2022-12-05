@@ -1,20 +1,20 @@
 package io.github.guqing.plugin.watch;
 
 import io.github.guqing.plugin.WatchExecutionParameters;
-import org.gradle.StartParameter;
-import org.gradle.api.DefaultTask;
-import org.gradle.api.provider.ListProperty;
-import org.gradle.api.tasks.Input;
-import org.gradle.api.tasks.TaskAction;
-
 import java.io.IOException;
 import java.nio.file.Files;
+import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CountDownLatch;
+import org.gradle.StartParameter;
+import org.gradle.api.DefaultTask;
+import org.gradle.api.provider.ListProperty;
+import org.gradle.api.tasks.Input;
+import org.gradle.api.tasks.TaskAction;
 
 /**
  * @author guqing
@@ -25,7 +25,8 @@ public class WatchTask extends DefaultTask {
     private final FileSystemWatcher watcher;
 
     @Input
-    private final ListProperty<WatchTarget> targets = getProject().getObjects().listProperty(WatchTarget.class);
+    private final ListProperty<WatchTarget> targets =
+        getProject().getObjects().listProperty(WatchTarget.class);
 
     private final WatchExecutionParameters parameters;
     private final CountDownLatch countDownLatch = new CountDownLatch(1);
@@ -56,17 +57,33 @@ public class WatchTask extends DefaultTask {
         //Amount of quiet time required without any classpath changes before a restart is triggered.
         Duration quietPeriod = Duration.ofMillis(400);
         watcher = new FileSystemWatcher(false, pollInterval,
-                quietPeriod, SnapshotStateRepository.STATIC);
+            quietPeriod, SnapshotStateRepository.STATIC);
+
+        Path projectDir = getProject().getProjectDir().toPath();
+        Path sourcePath = projectDir.resolve("src/main");
+        Path resourcePath = projectDir.resolve("src/main/resources");
+        if (Files.exists(sourcePath)) {
+            watcher.addSourceDirectory(sourcePath.toFile());
+        }
+        if (Files.exists(resourcePath)) {
+            watcher.addSourceDirectory(resourcePath.toFile());
+        }
+
+//        FileFilter fileFilter = pathname -> {
+//            if (pathname.toPath().startsWith(sourcePath)) {
+//                return pathname.getName().endsWith(".java");
+//            }
+//            return true;
+//        };
 
         parameters = WatchExecutionParameters.builder()
-                .projectDir(getProject().getProjectDir())
-                .buildArgs(List.of("demoTask"))
-                .build();
+            .projectDir(getProject().getProjectDir())
+            .buildArgs(List.of("build"))
+            .build();
     }
 
     @TaskAction
     public void watch() throws IOException, InterruptedException {
-        System.out.println(targets.get());
         System.out.println("运行........");
         WatchTaskRunner runner = new WatchTaskRunner(getProject());
         watcher.addListener(changeSet -> {
