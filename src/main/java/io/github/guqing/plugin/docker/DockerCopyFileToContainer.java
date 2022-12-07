@@ -143,4 +143,20 @@ public class DockerCopyFileToContainer extends DockerExistingContainer {
         @Internal
         private boolean isTar = false;
     }
+
+    public Property<String> getRemotePath() {
+        return remotePath;
+    }
+
+    public Property<String> getHostPath() {
+        return hostPath;
+    }
+
+    public List<CopyFileToContainer> getCopyFiles() {
+        return copyFiles;
+    }
+
+    public RegularFileProperty getTarFile() {
+        return tarFile;
+    }
 }
