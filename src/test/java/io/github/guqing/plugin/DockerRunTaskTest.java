@@ -1,7 +1,10 @@
 package io.github.guqing.plugin;
 
+import org.gradle.internal.classpath.ClassPath;
+import org.gradle.internal.classpath.DefaultClassPath;
 import org.gradle.testkit.runner.BuildResult;
 import org.gradle.testkit.runner.GradleRunner;
+import org.gradle.testkit.runner.internal.PluginUnderTestMetadataReading;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
@@ -10,8 +13,10 @@ import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.io.PrintWriter;
+import java.net.URL;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.stream.Collectors;
 
 /**
  * @author guqing
@@ -53,8 +58,9 @@ public class DockerRunTaskTest {
             out.println("group 'io.github.guqing'");
             out.println("version '1.0.0'");
         }
-
-        BuildResult buildResult = runGradle("watch");
+        ClassPath classPath = DefaultClassPath.of(PluginUnderTestMetadataReading.readImplementationClasspath());
+        String asURLs = classPath.getAsURLs().stream().map(URL::toString).collect(Collectors.joining(", "));
+        BuildResult buildResult = runGradle("watch", "-Pclasspath="+asURLs);
         System.out.println(buildResult.getOutput());
     }
 

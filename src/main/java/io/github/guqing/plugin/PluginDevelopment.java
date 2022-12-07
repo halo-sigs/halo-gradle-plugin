@@ -136,14 +136,14 @@ public class PluginDevelopment implements Plugin<Project> {
         project.getTasks().create("stopHalo", DockerStopContainer.class, it -> {
             it.setGroup(GROUP);
             it.getContainerId().set(createContainer.getContainerId());
-            it.dependsOn("runHalo");
+            it.shouldRunAfter("runHalo");
             it.setDescription("Stop halo server container.");
         });
 
         project.getTasks().create("removeHalo", DockerRemoveContainer.class, it -> {
             it.setGroup(GROUP);
             it.getContainerId().set(createContainer.getContainerId());
-            it.dependsOn("stopHalo");
+            it.shouldRunAfter("stopHalo");
             it.setDescription("Remove halo server container.");
         });
 
@@ -161,6 +161,8 @@ public class PluginDevelopment implements Plugin<Project> {
         project.getExtensions().add("watch", container);
 
         project.getTasks().create("watch", WatchTask.class, it -> {
+            it.getContainerId().set(createContainer.getContainerId());
+            it.dependsOn("createHaloContainer");
             List<WatchTarget> watchTargets = container.stream().toList();
             it.getTargets().addAll(watchTargets);
         });
