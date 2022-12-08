@@ -2,14 +2,9 @@ package io.github.guqing.plugin.docker;
 
 import com.github.dockerjava.api.command.CreateContainerCmd;
 import com.github.dockerjava.api.command.CreateContainerResponse;
-import com.github.dockerjava.api.command.RemoveContainerCmd;
 import com.github.dockerjava.api.model.ExposedPort;
 import com.github.dockerjava.api.model.HostConfig;
 import com.github.dockerjava.api.model.PortBinding;
-import java.io.File;
-import java.io.IOException;
-import java.nio.charset.StandardCharsets;
-import java.nio.file.Files;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
@@ -20,6 +15,11 @@ import org.gradle.api.tasks.Input;
 import org.gradle.api.tasks.Internal;
 import org.gradle.api.tasks.Optional;
 import org.gradle.api.tasks.OutputFile;
+
+import java.io.File;
+import java.io.IOException;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
 
 @Getter
 @Slf4j
@@ -83,18 +83,6 @@ public class DockerCreateContainer extends DockerExistingImage {
         final String localContainerName =
             containerName.getOrNull() == null ? container.getId() : containerName.get();
         log.info("Created container with ID [{}]", localContainerName);
-
-        Runtime.getRuntime().addShutdownHook(new Thread(() -> {
-            System.out.println("Removing container with ID [" + localContainerName + "]");
-            try (RemoveContainerCmd removeContainerCmd = getDockerClient()
-                .removeContainerCmd(containerId.get())
-                .withForce(true)) {
-                removeContainerCmd.exec();
-            } catch (Exception e) {
-                log.error("Failed to remove container with ID [{}]", localContainerName, e);
-            }
-        }));
-
         Files.writeString(containerIdFile.get().getAsFile().toPath(), container.getId());
         Action<? super Object> nextHandler = getNextHandler();
         if (nextHandler != null) {
