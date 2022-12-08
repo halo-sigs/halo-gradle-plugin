@@ -24,13 +24,9 @@ import java.util.Map;
  */
 public class WatchTask extends DockerStartContainer {
 
-    private final FileSystemWatcher watcher;
-
     @Input
     private final ListProperty<WatchTarget> targets =
             getProject().getObjects().listProperty(WatchTarget.class);
-
-    private final WatchExecutionParameters parameters;
 
     Thread shutdownHook;
 
@@ -45,28 +41,6 @@ public class WatchTask extends DockerStartContainer {
             });
             Runtime.getRuntime().addShutdownHook(this.shutdownHook);
         }
-    }
-
-    public WatchTask() {
-        registerShutdownHook();
-        //Amount of time to wait between polling for classpath changes.
-        Duration pollInterval = Duration.ofSeconds(1);
-        //Amount of quiet time required without any classpath changes before a restart is triggered.
-        Duration quietPeriod = Duration.ofMillis(400);
-        watcher = new FileSystemWatcher(false, pollInterval,
-                quietPeriod, SnapshotStateRepository.STATIC);
-
-        Path projectDir = getProject().getProjectDir().toPath();
-        Path sourcePath = projectDir.resolve("src/main");
-        Path resourcePath = projectDir.resolve("src/main/resources");
-        if (Files.exists(sourcePath)) {
-            watcher.addSourceDirectory(sourcePath.toFile());
-        }
-        if (Files.exists(resourcePath)) {
-            watcher.addSourceDirectory(resourcePath.toFile());
-        }
-
-        parameters = getParameters(List.of("build"));
     }
 
     WatchExecutionParameters getParameters(List<String> buildArgs) {
@@ -108,6 +82,26 @@ public class WatchTask extends DockerStartContainer {
 
     @Override
     public void runRemoteCommand() {
+        registerShutdownHook();
+        //Amount of time to wait between polling for classpath changes.
+        Duration pollInterval = Duration.ofSeconds(1);
+        //Amount of quiet time required without any classpath changes before a restart is triggered.
+        Duration quietPeriod = Duration.ofMillis(400);
+        FileSystemWatcher watcher = new FileSystemWatcher(false, pollInterval,
+                quietPeriod, SnapshotStateRepository.STATIC);
+
+        Path projectDir = getProject().getProjectDir().toPath();
+        Path sourcePath = projectDir.resolve("src/main");
+        Path resourcePath = projectDir.resolve("src/main/resources");
+        if (Files.exists(sourcePath)) {
+            watcher.addSourceDirectory(sourcePath.toFile());
+        }
+
+        if (Files.exists(resourcePath)) {
+            watcher.addSourceDirectory(resourcePath.toFile());
+        }
+
+        WatchExecutionParameters parameters = getParameters(List.of("build"));
         System.out.println("运行........");
         try (WatchTaskRunner runner = new WatchTaskRunner(getProject());) {
             watcher.addListener(changeSet -> {
