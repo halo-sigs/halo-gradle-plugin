@@ -1,6 +1,6 @@
 package io.github.guqing.plugin.watch;
 
-import com.github.dockerjava.api.command.RemoveContainerCmd;
+import com.github.dockerjava.api.command.KillContainerCmd;
 import io.github.guqing.plugin.WatchExecutionParameters;
 import io.github.guqing.plugin.docker.DockerStartContainer;
 import org.gradle.StartParameter;
@@ -10,10 +10,8 @@ import org.gradle.internal.classpath.ClassPath;
 import org.gradle.internal.classpath.DefaultClassPath;
 
 import java.io.File;
-import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -40,13 +38,9 @@ public class WatchTask extends DockerStartContainer {
         if (this.shutdownHook == null) {
             // No shutdown hook registered yet.
             this.shutdownHook = new Thread(() -> {
-                try (RemoveContainerCmd removeContainerCmd = getDockerClient()
-                        .removeContainerCmd(getContainerId().get())) {
-                    removeContainerCmd.withForce(true)
-                            .exec();
-                    Files.createFile(Paths.get("/Users/guqing/watch.txt"));
-                } catch (IOException e) {
-                    throw new RuntimeException(e);
+                try (KillContainerCmd killContainerCmd = getDockerClient()
+                        .killContainerCmd(getContainerId().get())) {
+                    killContainerCmd.exec();
                 }
             });
             Runtime.getRuntime().addShutdownHook(this.shutdownHook);
@@ -72,12 +66,6 @@ public class WatchTask extends DockerStartContainer {
             watcher.addSourceDirectory(resourcePath.toFile());
         }
 
-//        FileFilter fileFilter = pathname -> {
-//            if (pathname.toPath().startsWith(sourcePath)) {
-//                return pathname.getName().endsWith(".java");
-//            }
-//            return true;
-//        };
         parameters = getParameters(List.of("build"));
     }
 

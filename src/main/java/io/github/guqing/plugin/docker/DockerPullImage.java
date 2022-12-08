@@ -1,7 +1,10 @@
 package io.github.guqing.plugin.docker;
 
+import com.github.dockerjava.api.command.InspectImageCmd;
+import com.github.dockerjava.api.command.InspectImageResponse;
 import com.github.dockerjava.api.command.PullImageCmd;
 import com.github.dockerjava.api.command.PullImageResultCallback;
+import com.github.dockerjava.api.exception.NotFoundException;
 import com.github.dockerjava.api.model.PullResponseItem;
 import groovy.transform.CompileStatic;
 import lombok.Getter;
@@ -36,7 +39,10 @@ public class DockerPullImage extends AbstractDockerRemoteApiTask {
     @Override
     public void runRemoteCommand() {
         log.info("Pulling image '{}'.", image.get());
-
+        if (checkImageExits()) {
+            log.info("Image [{}] already exists, skipping pull.", image.get());
+            return;
+        }
         try (PullImageCmd pullImageCmd = getDockerClient().pullImageCmd(image.get())) {
             if (platform.getOrNull() != null) {
                 pullImageCmd.withPlatform(platform.get());
@@ -47,6 +53,18 @@ public class DockerPullImage extends AbstractDockerRemoteApiTask {
         } catch (InterruptedException e) {
             throw new RuntimeException(e);
         }
+    }
+
+    private boolean checkImageExits() {
+        try (InspectImageCmd inspectImageCmd = getDockerClient().inspectImageCmd(image.get())) {
+            InspectImageResponse response = inspectImageCmd.exec();
+            if (response != null) {
+                return true;
+            }
+        } catch (NotFoundException e) {
+            // ignore this
+        }
+        return false;
     }
 
     private PullImageResultCallback createCallback(Action<? super Object> nextHandler) {
