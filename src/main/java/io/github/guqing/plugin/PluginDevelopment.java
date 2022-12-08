@@ -1,8 +1,20 @@
 package io.github.guqing.plugin;
 
-import io.github.guqing.plugin.docker.*;
+import static io.github.guqing.plugin.HaloPluginExtension.DEFAULT_BOOT_JAR;
+
+import io.github.guqing.plugin.docker.AbstractDockerRemoteApiTask;
+import io.github.guqing.plugin.docker.DockerClientConfiguration;
+import io.github.guqing.plugin.docker.DockerClientService;
+import io.github.guqing.plugin.docker.DockerCreateContainer;
+import io.github.guqing.plugin.docker.DockerPullImage;
+import io.github.guqing.plugin.docker.DockerRemoveContainer;
+import io.github.guqing.plugin.docker.DockerStartContainer;
+import io.github.guqing.plugin.docker.DockerStopContainer;
 import io.github.guqing.plugin.watch.WatchTarget;
 import io.github.guqing.plugin.watch.WatchTask;
+import java.io.File;
+import java.util.List;
+import java.util.Set;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 import org.gradle.api.NamedDomainObjectContainer;
@@ -15,12 +27,6 @@ import org.gradle.api.plugins.JavaPlugin;
 import org.gradle.api.provider.Provider;
 import org.gradle.api.tasks.SourceSet;
 import org.gradle.api.tasks.SourceSetContainer;
-
-import java.io.File;
-import java.util.List;
-import java.util.Set;
-
-import static io.github.guqing.plugin.HaloPluginExtension.DEFAULT_BOOT_JAR;
 
 /**
  * @author guqing
@@ -44,6 +50,7 @@ public class PluginDevelopment implements Plugin<Project> {
 
         PluginManifest pluginManifest = YamlUtils.read(manifestFile, PluginManifest.class);
         haloPluginExt.setRequire(pluginManifest.getSpec().getRequire());
+        haloPluginExt.setPluginName(pluginManifest.getMetadata().getName());
         haloPluginExt.setHaloBootJar(project.getDependencies()
                 .create(String.format(DEFAULT_BOOT_JAR, haloPluginExt.getRequire())));
 

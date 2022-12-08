@@ -40,6 +40,7 @@ public class HaloPluginExtension {
 
     private File manifestFile;
 
+    private String pluginName;
     private String require;
 
     private String version;

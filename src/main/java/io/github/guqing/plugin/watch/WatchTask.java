@@ -3,12 +3,6 @@ package io.github.guqing.plugin.watch;
 import com.github.dockerjava.api.command.KillContainerCmd;
 import io.github.guqing.plugin.WatchExecutionParameters;
 import io.github.guqing.plugin.docker.DockerStartContainer;
-import org.gradle.StartParameter;
-import org.gradle.api.provider.ListProperty;
-import org.gradle.api.tasks.Input;
-import org.gradle.internal.classpath.ClassPath;
-import org.gradle.internal.classpath.DefaultClassPath;
-
 import java.io.File;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -17,6 +11,11 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
+import org.gradle.StartParameter;
+import org.gradle.api.provider.ListProperty;
+import org.gradle.api.tasks.Input;
+import org.gradle.internal.classpath.ClassPath;
+import org.gradle.internal.classpath.DefaultClassPath;
 
 /**
  * @author guqing
@@ -26,7 +25,7 @@ public class WatchTask extends DockerStartContainer {
 
     @Input
     private final ListProperty<WatchTarget> targets =
-            getProject().getObjects().listProperty(WatchTarget.class);
+        getProject().getObjects().listProperty(WatchTarget.class);
 
     Thread shutdownHook;
 
@@ -35,7 +34,7 @@ public class WatchTask extends DockerStartContainer {
             // No shutdown hook registered yet.
             this.shutdownHook = new Thread(() -> {
                 try (KillContainerCmd killContainerCmd = getDockerClient()
-                        .killContainerCmd(getContainerId().get())) {
+                    .killContainerCmd(getContainerId().get())) {
                     killContainerCmd.exec();
                 }
             });
@@ -45,10 +44,10 @@ public class WatchTask extends DockerStartContainer {
 
     WatchExecutionParameters getParameters(List<String> buildArgs) {
         return WatchExecutionParameters.builder()
-                .projectDir(getProject().getProjectDir())
-                .injectedClassPath(getInjectedClassPath())
-                .buildArgs(buildArgs)
-                .build();
+            .projectDir(getProject().getProjectDir())
+            .injectedClassPath(getInjectedClassPath())
+            .buildArgs(buildArgs)
+            .build();
     }
 
     private ClassPath getInjectedClassPath() {
@@ -56,8 +55,8 @@ public class WatchTask extends DockerStartContainer {
         String classpath = parameter.getProjectProperties().get("classpath");
         if (classpath != null) {
             List<File> files = Arrays.stream(classpath.split(", "))
-                    .map(File::new)
-                    .toList();
+                .map(File::new)
+                .toList();
             return DefaultClassPath.of(files);
         }
         return null;
@@ -88,7 +87,7 @@ public class WatchTask extends DockerStartContainer {
         //Amount of quiet time required without any classpath changes before a restart is triggered.
         Duration quietPeriod = Duration.ofMillis(400);
         FileSystemWatcher watcher = new FileSystemWatcher(false, pollInterval,
-                quietPeriod, SnapshotStateRepository.STATIC);
+            quietPeriod, SnapshotStateRepository.STATIC);
 
         Path projectDir = getProject().getProjectDir().toPath();
         Path sourcePath = projectDir.resolve("src/main");
