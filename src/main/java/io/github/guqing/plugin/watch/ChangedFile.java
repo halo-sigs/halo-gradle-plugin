@@ -1,10 +1,9 @@
 package io.github.guqing.plugin.watch;
 
 import io.github.guqing.plugin.Assert;
-import org.apache.commons.io.file.PathUtils;
+import org.apache.commons.io.FilenameUtils;
 
 import java.io.File;
-import java.io.IOException;
 
 /**
  * @author guqing
@@ -59,15 +58,11 @@ public class ChangedFile {
     public String getRelativeName() {
         File directory = this.sourceDirectory.getAbsoluteFile();
         File file = this.file.getAbsoluteFile();
-        try {
-            String directoryName = PathUtils.cleanDirectory(directory.toPath()).toString();
-            String fileName = PathUtils.cleanDirectory(file.toPath()).toString();
-            Assert.state(fileName.startsWith(directoryName),
-                    () -> "The file " + fileName + " is not contained in the source directory " + directoryName);
-            return fileName.substring(directoryName.length() + 1);
-        } catch (IOException e) {
-            throw new RuntimeException(e);
-        }
+        String directoryName = FilenameUtils.normalize(directory.getPath());
+        String fileName = FilenameUtils.normalize(file.getPath());
+        Assert.state(fileName.startsWith(directoryName),
+                () -> "The file " + fileName + " is not contained in the source directory " + directoryName);
+        return fileName.substring(directoryName.length() + 1);
     }
 
     @Override
