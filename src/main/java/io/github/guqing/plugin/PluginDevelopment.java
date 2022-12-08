@@ -143,9 +143,9 @@ public class PluginDevelopment implements Plugin<Project> {
         project.getTasks().create("removeHalo", DockerRemoveContainer.class, it -> {
             it.setGroup(GROUP);
             it.getContainerId().set(createContainer.getContainerId());
-            it.shouldRunAfter("stopHalo");
             it.setDescription("Remove halo server container.");
         });
+        project.getTasks().getByName("clean").dependsOn("removeHalo");
 
         project.getTasks().create("runHalo", DockerStartContainer.class, it -> {
             it.setGroup(GROUP);

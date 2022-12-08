@@ -2,11 +2,10 @@ package io.github.guqing.plugin.docker;
 
 import com.github.dockerjava.api.command.CreateContainerCmd;
 import com.github.dockerjava.api.command.CreateContainerResponse;
-import com.github.dockerjava.api.command.InspectContainerCmd;
-import com.github.dockerjava.api.command.InspectContainerResponse;
 import com.github.dockerjava.api.model.ExposedPort;
 import com.github.dockerjava.api.model.HostConfig;
 import com.github.dockerjava.api.model.PortBinding;
+import io.github.guqing.plugin.Constant;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.io.FileUtils;
@@ -97,16 +96,12 @@ public class DockerCreateContainer extends DockerExistingImage {
         }
         try {
             String containerId = Files.readString(file.toPath(), StandardCharsets.UTF_8);
-            try (InspectContainerCmd inspectContainerCmd = getDockerClient().inspectContainerCmd(containerId)) {
-                InspectContainerResponse containerResponse = inspectContainerCmd.exec();
-                if (containerResponse != null) {
-                    return containerResponse.getId();
-                }
-                FileUtils.delete(file);
-                return null;
-            } catch (Exception e) {
-                log.debug("Failed to inspect container with ID: " + containerId);
+            boolean exists = new CheckContainerExistsStep(getDockerClient(), containerId).execute();
+            if (exists) {
+                return containerId;
             }
+
+            FileUtils.delete(file);
         } catch (IOException e) {
             throw new RuntimeException(e);
         }
@@ -131,7 +126,7 @@ public class DockerCreateContainer extends DockerExistingImage {
                 "HALO_SECURITY_INITIALIZER_SUPERADMINUSERNAME=guqing");
 
         containerCommand.withImage(getImageId().get());
-        containerCommand.withLabels(Map.of("container-created-by", "halo-gradle-plugin"));
+        containerCommand.withLabels(Map.of(Constant.DEFAULT_CONTAINER_LABEL, "halo-gradle-plugin"));
         containerCommand.withExposedPorts(ExposedPort.parse("8090"));
         containerCommand.withHostConfig(new HostConfig()
                 .withPortBindings(PortBinding.parse("8090:8090")));
