@@ -125,14 +125,17 @@ public class DockerCreateContainer extends DockerExistingImage {
             containerCommand.withPlatform(platform.get());
         }
         HaloPluginExtension.HaloSecurity security = pluginExtension.getSecurity();
-        containerCommand.withEnv("HALO_EXTERNAL_URL=http://localhost:8090/",
+        containerCommand.withEnv("HALO_EXTERNAL_URL=" + pluginExtension.getHost(),
                 "HALO_SECURITY_INITIALIZER_SUPERADMINPASSWORD=" + security.getSuperAdminPassword(),
-                "HALO_SECURITY_INITIALIZER_SUPERADMINUSERNAME=" + security.getSuperAdminUsername());
+                "HALO_SECURITY_INITIALIZER_SUPERADMINUSERNAME=" + security.getSuperAdminUsername(),
+                "JAVA_TOOL_OPTIONS=-agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=*:5005");
 
         containerCommand.withImage(getImageId().get());
         containerCommand.withLabels(Map.of(Constant.DEFAULT_CONTAINER_LABEL, "halo-gradle-plugin"));
-        containerCommand.withExposedPorts(ExposedPort.parse("8090"));
+        containerCommand.withExposedPorts(ExposedPort.parse("8090"), ExposedPort.parse("5005"));
         containerCommand.withHostConfig(new HostConfig()
                 .withPortBindings(PortBinding.parse("8090:8090")));
+        containerCommand.withHostConfig(new HostConfig()
+                .withPortBindings(PortBinding.parse("5005:5005")));
     }
 }
