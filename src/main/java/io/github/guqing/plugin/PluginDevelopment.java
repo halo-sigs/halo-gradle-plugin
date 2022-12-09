@@ -163,7 +163,6 @@ public class PluginDevelopment implements Plugin<Project> {
 
         project.getTasks().create("watch", WatchTask.class, it -> {
             it.getContainerId().set(createContainer.getContainerId());
-            it.getPluginExtension().set(haloPluginExt);
             it.dependsOn("createHaloContainer");
             List<WatchTarget> watchTargets = container.stream().toList();
             it.getTargets().addAll(watchTargets);

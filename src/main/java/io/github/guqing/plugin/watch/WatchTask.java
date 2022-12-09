@@ -8,9 +8,7 @@ import io.github.guqing.plugin.steps.CreateHttpClientStep;
 import io.github.guqing.plugin.steps.ReloadPluginStep;
 import org.gradle.StartParameter;
 import org.gradle.api.provider.ListProperty;
-import org.gradle.api.provider.Property;
 import org.gradle.api.tasks.Input;
-import org.gradle.api.tasks.Internal;
 import org.gradle.internal.classpath.ClassPath;
 import org.gradle.internal.classpath.DefaultClassPath;
 
@@ -35,12 +33,10 @@ public class WatchTask extends DockerStartContainer {
     @Input
     private final ListProperty<WatchTarget> targets =
             getProject().getObjects().listProperty(WatchTarget.class);
-    @Input
-    final Property<HaloPluginExtension> pluginExtension = getProject().getObjects().property(HaloPluginExtension.class);
+
+    private final HaloPluginExtension pluginExtension = getProject().getExtensions().getByType(HaloPluginExtension.class);
 
     final HttpClient httpClient = createHttpClient();
-
-    final String host = pluginExtension.get().getHost();
 
     Thread shutdownHook;
 
@@ -114,6 +110,7 @@ public class WatchTask extends DockerStartContainer {
         if (Files.exists(resourcePath)) {
             watcher.addSourceDirectory(resourcePath.toFile());
         }
+        String host = pluginExtension.getHost();
         ReloadPluginStep reloadPluginStep = new ReloadPluginStep(host, httpClient);
         WatchExecutionParameters parameters = getParameters(List.of("build"));
 
@@ -146,18 +143,12 @@ public class WatchTask extends DockerStartContainer {
     }
 
     private HttpClient createHttpClient() {
-        HaloPluginExtension extension = pluginExtension.get();
-        String username = extension.getSecurity().getSuperAdminUsername();
-        String password = extension.getSecurity().getSuperAdminPassword();
+        String username = pluginExtension.getSecurity().getSuperAdminUsername();
+        String password = pluginExtension.getSecurity().getSuperAdminPassword();
         return new CreateHttpClientStep(username, password).create();
     }
 
     private String getPluginName() {
-        HaloPluginExtension pluginExtension = getProject().getExtensions().getByType(HaloPluginExtension.class);
         return pluginExtension.getPluginName();
-    }
-
-    public Property<HaloPluginExtension> getPluginExtension() {
-        return pluginExtension;
     }
 }
