@@ -53,7 +53,7 @@ public class InitializeHaloStep {
         long sleepFactor = 1;
         while (maxAttempts-- > 0) {
             try {
-                Thread.sleep(100 * sleepFactor++);
+                Thread.sleep(400 * sleepFactor++);
                 HttpResponse<String> response = client.send(request, HttpResponse.BodyHandlers.ofString());
                 if (isSuccessful(response)) {
                     break;

@@ -36,11 +36,10 @@ public class ReloadPluginStep {
     public void execute(String pluginName, File file) {
         try {
             boolean exists = checkPluginExists(client, pluginName);
-            if (!exists) {
-                installPlugin(client, file);
-            } else {
+            if (exists) {
                 uninstallPlugin(client, pluginName);
             }
+            installPlugin(client, file);
         } catch (IOException | InterruptedException e) {
             throw new RuntimeException(e);
         }
@@ -84,7 +83,6 @@ public class ReloadPluginStep {
             log.info("Install plugin successfully.");
         } else {
             log.error("Install plugin failed, [{}].", response.body());
-            System.out.println();
         }
     }
 

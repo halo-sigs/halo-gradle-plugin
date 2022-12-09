@@ -27,8 +27,6 @@ public class DockerRunTaskTest {
 
     private File buildFile;
 
-    private File gradleProperties;
-
     private File pluginManifestFile;
 
     @BeforeEach
@@ -36,7 +34,6 @@ public class DockerRunTaskTest {
         this.projectDir = projectDir;
         this.buildFile = new File(this.projectDir, "build.gradle");
         System.out.println(buildFile);
-        this.gradleProperties = new File(this.projectDir, "gradle.properties");
         this.pluginManifestFile = new File(this.projectDir, "src/main/resources/plugin.yaml");
     }
 

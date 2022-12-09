@@ -134,8 +134,6 @@ public class DockerCreateContainer extends DockerExistingImage {
         containerCommand.withLabels(Map.of(Constant.DEFAULT_CONTAINER_LABEL, "halo-gradle-plugin"));
         containerCommand.withExposedPorts(ExposedPort.parse("8090"), ExposedPort.parse("5005"));
         containerCommand.withHostConfig(new HostConfig()
-                .withPortBindings(PortBinding.parse("8090:8090")));
-        containerCommand.withHostConfig(new HostConfig()
-                .withPortBindings(PortBinding.parse("5005:5005")));
+                .withPortBindings(PortBinding.parse("8090:8090"), PortBinding.parse("5005:5005")));
     }
 }

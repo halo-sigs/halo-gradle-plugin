@@ -96,9 +96,9 @@ public class WatchTask extends DockerStartContainer {
     public void runRemoteCommand() {
         registerShutdownHook();
         //Amount of time to wait between polling for classpath changes.
-        Duration pollInterval = Duration.ofSeconds(5);
+        Duration pollInterval = Duration.ofSeconds(2);
         //Amount of quiet time required without any classpath changes before a restart is triggered.
-        Duration quietPeriod = Duration.ofMillis(800);
+        Duration quietPeriod = Duration.ofMillis(500);
         FileSystemWatcher watcher = new FileSystemWatcher(false, pollInterval,
                 quietPeriod, SnapshotStateRepository.STATIC);
 
@@ -143,9 +143,8 @@ public class WatchTask extends DockerStartContainer {
         Path buildLibPath = getProject().getBuildDir().toPath().resolve("libs");
         try (Stream<Path> pathStream = Files.find(buildLibPath, 1, (path, basicFileAttributes) -> {
             String fileName = path.getFileName().toString();
-            return fileName.startsWith(getPluginName()) && fileName.endsWith(".jar");
+            return fileName.endsWith(".jar");
         })) {
-
             return pathStream.findFirst()
                     .orElseThrow(() -> new IllegalStateException("未找到插件jar包"))
                     .toFile();
