@@ -6,6 +6,7 @@ import com.github.dockerjava.api.model.ExposedPort;
 import com.github.dockerjava.api.model.HostConfig;
 import com.github.dockerjava.api.model.PortBinding;
 import io.github.guqing.plugin.Constant;
+import io.github.guqing.plugin.HaloPluginExtension;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.io.FileUtils;
@@ -27,6 +28,9 @@ import java.util.Map;
 @Getter
 @Slf4j
 public class DockerCreateContainer extends DockerExistingImage {
+    @Internal
+    private final HaloPluginExtension pluginExtension = getProject().getExtensions().getByType(HaloPluginExtension.class);
+
     @Input
     @Optional
     final Property<String> containerName = getProject().getObjects().property(String.class);
@@ -120,10 +124,10 @@ public class DockerCreateContainer extends DockerExistingImage {
         if (platform.getOrNull() != null) {
             containerCommand.withPlatform(platform.get());
         }
-
+        HaloPluginExtension.HaloSecurity security = pluginExtension.getSecurity();
         containerCommand.withEnv("HALO_EXTERNAL_URL=http://localhost:8090/",
-                "HALO_SECURITY_INITIALIZER_SUPERADMINPASSWORD=123456",
-                "HALO_SECURITY_INITIALIZER_SUPERADMINUSERNAME=guqing");
+                "HALO_SECURITY_INITIALIZER_SUPERADMINPASSWORD=" + security.getSuperAdminPassword(),
+                "HALO_SECURITY_INITIALIZER_SUPERADMINUSERNAME=" + security.getSuperAdminUsername());
 
         containerCommand.withImage(getImageId().get());
         containerCommand.withLabels(Map.of(Constant.DEFAULT_CONTAINER_LABEL, "halo-gradle-plugin"));

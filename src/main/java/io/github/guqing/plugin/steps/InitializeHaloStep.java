@@ -9,8 +9,6 @@ import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 
 import java.io.IOException;
-import java.net.Authenticator;
-import java.net.PasswordAuthentication;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.net.http.HttpClient;
@@ -28,30 +26,43 @@ public class InitializeHaloStep {
     private final HttpClient client;
     private final String host;
 
-    public InitializeHaloStep(String host, String username, String password) {
-        Assert.notNull(username, "username must not be null");
-        Assert.notNull(password, "password must not be null");
+    public InitializeHaloStep(String host, HttpClient client) {
+        Assert.notNull(host, "host must not be null");
+        Assert.notNull(client, "httpClient must not be null");
         this.host = StringUtils.defaultString(host, "http://localhost:8090");
-        this.client = HttpClient.newBuilder()
-                .authenticator(new Authenticator() {
-
-                    @Override
-                    protected PasswordAuthentication getPasswordAuthentication() {
-                        return new PasswordAuthentication(
-                                username,
-                                password.toCharArray());
-                    }
-                })
-                .build();
+        this.client = client;
     }
 
     public void execute() {
+        waitForReadiness(client);
         try {
             initializeHalo(client);
             initializeTheme(client);
             createMenu(client);
-        } catch (IOException | URISyntaxException | InterruptedException e) {
+        } catch (Exception e) {
             throw new RuntimeException(e);
+        }
+    }
+
+    private void waitForReadiness(HttpClient client) {
+        HttpRequest request = HttpRequest.newBuilder()
+                .uri(buildUri("/actuator/health"))
+                .GET()
+                .build();
+        int maxAttempts = 20;
+        long sleepFactor = 1;
+        while (maxAttempts-- > 0) {
+            try {
+                Thread.sleep(100 * sleepFactor++);
+                HttpResponse<String> response = client.send(request, HttpResponse.BodyHandlers.ofString());
+                if (isSuccessful(response)) {
+                    break;
+                }
+            } catch (IOException | InterruptedException e) {
+                // ignore
+            } catch (Exception e) {
+                throw new RuntimeException(e);
+            }
         }
     }
 

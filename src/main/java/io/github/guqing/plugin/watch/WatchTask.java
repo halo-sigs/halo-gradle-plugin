@@ -5,6 +5,7 @@ import io.github.guqing.plugin.HaloPluginExtension;
 import io.github.guqing.plugin.WatchExecutionParameters;
 import io.github.guqing.plugin.docker.DockerStartContainer;
 import io.github.guqing.plugin.steps.CreateHttpClientStep;
+import io.github.guqing.plugin.steps.InitializeHaloStep;
 import io.github.guqing.plugin.steps.ReloadPluginStep;
 import org.gradle.StartParameter;
 import org.gradle.api.provider.ListProperty;
@@ -22,6 +23,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.CompletableFuture;
 import java.util.stream.Stream;
 
 /**
@@ -110,11 +112,20 @@ public class WatchTask extends DockerStartContainer {
         if (Files.exists(resourcePath)) {
             watcher.addSourceDirectory(resourcePath.toFile());
         }
+
         String host = pluginExtension.getHost();
         ReloadPluginStep reloadPluginStep = new ReloadPluginStep(host, httpClient);
-        WatchExecutionParameters parameters = getParameters(List.of("build"));
-
         System.out.println("运行........");
+        CompletableFuture<Void> initializeFuture = CompletableFuture.runAsync(() -> {
+            new InitializeHaloStep(host, httpClient).execute();
+            reloadPluginStep.execute(getPluginName(), getPluginBuildFile());
+        });
+        initializeFuture.exceptionally(e -> {
+            e.printStackTrace();
+            return null;
+        });
+
+        WatchExecutionParameters parameters = getParameters(List.of("build"));
         try (WatchTaskRunner runner = new WatchTaskRunner(getProject());) {
             watcher.addListener(changeSet -> {
                 System.out.println("File changed......" + changeSet);
@@ -127,8 +138,9 @@ public class WatchTask extends DockerStartContainer {
         }
     }
 
+
     private File getPluginBuildFile() {
-        Path buildLibPath = getProject().getBuildDir().toPath().resolve("lib");
+        Path buildLibPath = getProject().getBuildDir().toPath().resolve("libs");
         try (Stream<Path> pathStream = Files.find(buildLibPath, 1, (path, basicFileAttributes) -> {
             String fileName = path.getFileName().toString();
             return fileName.startsWith(getPluginName()) && fileName.endsWith(".jar");
