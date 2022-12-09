@@ -1,13 +1,14 @@
 package io.github.guqing.plugin;
 
-import java.io.File;
-import java.io.IOException;
-import java.nio.file.Files;
-import java.nio.file.Path;
 import lombok.Data;
 import org.gradle.api.Project;
 import org.gradle.api.artifacts.Dependency;
 import org.gradle.api.plugins.ExtensionContainer;
+
+import java.io.File;
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
 
 /**
  * 可以通过 {@link ExtensionContainer} 来创建和管理 Extension，{@link ExtensionContainer} 对象可以
@@ -44,6 +45,8 @@ public class HaloPluginExtension {
     private String require;
 
     private String version;
+
+    private String host = "http://localhost:8090";
 
     private Dependency haloBootJar;
 
