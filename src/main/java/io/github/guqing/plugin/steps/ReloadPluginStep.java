@@ -1,0 +1,117 @@
+package io.github.guqing.plugin.steps;
+
+import io.github.guqing.plugin.Assert;
+import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.lang3.StringUtils;
+import org.apache.hc.client5.http.entity.mime.FileBody;
+import org.apache.hc.client5.http.entity.mime.MultipartEntityBuilder;
+import org.apache.hc.core5.http.ContentType;
+import org.apache.hc.core5.http.HttpEntity;
+
+import java.io.File;
+import java.io.IOException;
+import java.net.URI;
+import java.net.URISyntaxException;
+import java.net.http.HttpClient;
+import java.net.http.HttpRequest;
+import java.net.http.HttpResponse;
+import java.nio.charset.StandardCharsets;
+
+/**
+ * @author guqing
+ * @since 2.0.0
+ */
+@Slf4j
+public class ReloadPluginStep {
+    private final HttpClient client;
+    private final String host;
+
+    public ReloadPluginStep(String host, HttpClient client) {
+        Assert.notNull(host, "The host must not be null.");
+        Assert.notNull(client, "The httpClient must not be null.");
+        this.client = client;
+        this.host = host;
+    }
+
+    public void execute(String pluginName, File file) {
+        try {
+            boolean exists = checkPluginExists(client, pluginName);
+            if (!exists) {
+                installPlugin(client, file);
+            } else {
+                uninstallPlugin(client, pluginName);
+            }
+        } catch (IOException | InterruptedException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    private URI buildUri(String endpoint) {
+        String path = StringUtils.prependIfMissing(endpoint, "/");
+        String hostPrepared = StringUtils.removeEnd(host, "/");
+        try {
+            return new URI(hostPrepared + path);
+        } catch (URISyntaxException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    private boolean isSuccessful(HttpResponse<String> response) {
+        return response.statusCode() >= 200 && response.statusCode() < 300;
+    }
+
+    private void installPlugin(HttpClient client, File pluginFile)
+            throws IOException, InterruptedException {
+        String multipartFormDataBoundary = "Java11HttpClientFormBoundary";
+        HttpRequest installRequest = HttpRequest.newBuilder()
+                .uri(buildUri("/apis/api.console.halo.run/v1alpha1/plugins/install"))
+                .header("Content-Type", "multipart/form-data; boundary=Java11HttpClientFormBoundary")
+                .POST(HttpRequest.BodyPublishers.ofInputStream(() -> {
+                    try (HttpEntity file = MultipartEntityBuilder.create()
+                            .addPart("file", new FileBody(pluginFile, ContentType.DEFAULT_BINARY))
+                            //要设置，否则阻塞
+                            .setBoundary(multipartFormDataBoundary)
+                            .build()) {
+                        return file.getContent();
+                    } catch (IOException e) {
+                        throw new RuntimeException(e);
+                    }
+                }))
+                .build();
+        HttpResponse<String> response =
+                client.send(installRequest, HttpResponse.BodyHandlers.ofString(StandardCharsets.UTF_8));
+        if (isSuccessful(response)) {
+            log.info("Install plugin successfully.");
+        } else {
+            log.error("Install plugin failed, [{}].", response.body());
+            System.out.println();
+        }
+    }
+
+    private void uninstallPlugin(HttpClient client, String pluginName)
+            throws IOException, InterruptedException {
+        HttpRequest uninstallRequest = HttpRequest.newBuilder()
+                .uri(buildUri("/apis/plugin.halo.run/v1alpha1/plugins/" + pluginName))
+                .DELETE()
+                .build();
+        HttpResponse<String> response =
+                client.send(uninstallRequest,
+                        HttpResponse.BodyHandlers.ofString(StandardCharsets.UTF_8));
+        if (isSuccessful(response)) {
+            log.info("Uninstall plugin successfully.");
+        } else {
+            log.error("Uninstall plugin failed, [{}].", response.body());
+        }
+    }
+
+    private boolean checkPluginExists(HttpClient client, String pluginName)
+            throws IOException, InterruptedException {
+        HttpRequest getPluginRequest = HttpRequest.newBuilder()
+                .uri(buildUri("/apis/plugin.halo.run/v1alpha1/plugins/" + pluginName))
+                .GET()
+                .build();
+        HttpResponse<String> response = client.send(getPluginRequest,
+                HttpResponse.BodyHandlers.ofString(StandardCharsets.UTF_8));
+        return isSuccessful(response);
+    }
+}

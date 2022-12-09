@@ -13,7 +13,7 @@ import java.util.function.Function;
  * @since 2.0.0
  */
 public class YamlUtils {
-    private static final ObjectMapper mapper;
+    public static final ObjectMapper mapper;
 
     static {
         mapper = new ObjectMapper(new YAMLFactory());
