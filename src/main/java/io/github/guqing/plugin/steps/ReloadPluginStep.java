@@ -1,6 +1,7 @@
 package io.github.guqing.plugin.steps;
 
 import io.github.guqing.plugin.Assert;
+import io.github.guqing.plugin.RetryUtils;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.hc.client5.http.entity.mime.FileBody;
@@ -112,22 +113,11 @@ public class ReloadPluginStep {
             .uri(buildUri("/apis/plugin.halo.run/v1alpha1/plugins/" + pluginName))
             .GET()
             .build();
-        int maxAttempts = 20;
-        long sleepFactor = 1;
-        while (maxAttempts-- > 0) {
-            try {
-                Thread.sleep(400 * sleepFactor++);
-                HttpResponse<String> response =
-                    client.send(request, HttpResponse.BodyHandlers.ofString());
-                if (is404(response)) {
-                    break;
-                }
-            } catch (IOException | InterruptedException e) {
-                // ignore
-            } catch (Exception e) {
-                throw new RuntimeException(e);
-            }
-        }
+        RetryUtils.withRetry(20, 400, () -> {
+            HttpResponse<String> response =
+                client.send(request, HttpResponse.BodyHandlers.ofString());
+            return is404(response);
+        });
     }
 
     private boolean checkPluginExists(HttpClient client, String pluginName)
