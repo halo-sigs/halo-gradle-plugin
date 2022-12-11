@@ -7,12 +7,6 @@ import io.github.guqing.plugin.docker.DockerStartContainer;
 import io.github.guqing.plugin.steps.CreateHttpClientStep;
 import io.github.guqing.plugin.steps.InitializeHaloStep;
 import io.github.guqing.plugin.steps.ReloadPluginStep;
-import org.gradle.StartParameter;
-import org.gradle.api.provider.ListProperty;
-import org.gradle.api.tasks.Input;
-import org.gradle.internal.classpath.ClassPath;
-import org.gradle.internal.classpath.DefaultClassPath;
-
 import java.io.File;
 import java.io.IOException;
 import java.net.http.HttpClient;
@@ -25,16 +19,15 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 import java.util.stream.Stream;
+import org.gradle.StartParameter;
+import org.gradle.internal.classpath.ClassPath;
+import org.gradle.internal.classpath.DefaultClassPath;
 
 /**
  * @author guqing
  * @since 2.0.0
  */
 public class WatchTask extends DockerStartContainer {
-
-    @Input
-    private final ListProperty<WatchTarget> targets =
-            getProject().getObjects().listProperty(WatchTarget.class);
 
     private final HaloPluginExtension pluginExtension = getProject().getExtensions().getByType(HaloPluginExtension.class);
 
@@ -86,10 +79,6 @@ public class WatchTask extends DockerStartContainer {
             args.add("-P" + e.getKey() + "=" + e.getValue());
         }
         return args;
-    }
-
-    public ListProperty<WatchTarget> getTargets() {
-        return targets;
     }
 
     @Override

@@ -1,14 +1,10 @@
 package io.github.guqing.plugin;
 
+import java.io.File;
+import java.nio.file.Path;
 import lombok.Data;
 import org.gradle.api.Project;
-import org.gradle.api.artifacts.Dependency;
 import org.gradle.api.plugins.ExtensionContainer;
-
-import java.io.File;
-import java.io.IOException;
-import java.nio.file.Files;
-import java.nio.file.Path;
 
 /**
  * 可以通过 {@link ExtensionContainer} 来创建和管理 Extension，{@link ExtensionContainer} 对象可以
@@ -24,10 +20,6 @@ import java.nio.file.Path;
 public class HaloPluginExtension {
     public static final String[] MANIFEST = {"plugin.yaml", "plugin.yml"};
     public static final String EXTENSION_NAME = "haloPlugin";
-    private static final String DEFAULT_REPOSITORY = "https://dl.halo.run/release";
-    public static final String DEFAULT_BOOT_JAR = "io.github.guqing:halo:%s:boot";
-
-    public static final String DEFAULT_THEME_URL = "https://github.com/halo-dev/theme-earth/archive/refs/tags/v1.0.0-beta.1.zip";
 
     private final Project project;
 
@@ -36,8 +28,6 @@ public class HaloPluginExtension {
     }
 
     private Path workDir;
-
-    private String serverRepository = DEFAULT_REPOSITORY;
 
     private File manifestFile;
 
@@ -48,24 +38,7 @@ public class HaloPluginExtension {
 
     private String host = "http://localhost:8090";
 
-    private Dependency haloBootJar;
-
-    private String themeUrl = DEFAULT_THEME_URL;
-
     private HaloSecurity security = new HaloSecurity();
-
-    public Path getWorkDir() {
-        Path path = workDir == null ? project.getProjectDir()
-            .toPath().resolve("workplace") : workDir;
-        if (!Files.exists(path)) {
-            try {
-                Files.createDirectories(path);
-            } catch (IOException e) {
-                throw new RuntimeException(e);
-            }
-        }
-        return path;
-    }
 
     public String getRequire() {
         if (this.require == null || "*".equals(require)) {
