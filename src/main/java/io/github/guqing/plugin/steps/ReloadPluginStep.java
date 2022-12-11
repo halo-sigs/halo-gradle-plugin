@@ -59,26 +59,30 @@ public class ReloadPluginStep {
         return response.statusCode() >= 200 && response.statusCode() < 300;
     }
 
+    private boolean is404(HttpResponse<String> response) {
+        return response.statusCode() == 404;
+    }
+
     private void installPlugin(HttpClient client, File pluginFile)
-            throws IOException, InterruptedException {
+        throws IOException, InterruptedException {
         String multipartFormDataBoundary = "Java11HttpClientFormBoundary";
         HttpRequest installRequest = HttpRequest.newBuilder()
-                .uri(buildUri("/apis/api.console.halo.run/v1alpha1/plugins/install"))
-                .header("Content-Type", "multipart/form-data; boundary=Java11HttpClientFormBoundary")
-                .POST(HttpRequest.BodyPublishers.ofInputStream(() -> {
-                    try (HttpEntity file = MultipartEntityBuilder.create()
-                            .addPart("file", new FileBody(pluginFile, ContentType.DEFAULT_BINARY))
-                            //要设置，否则阻塞
-                            .setBoundary(multipartFormDataBoundary)
-                            .build()) {
-                        return file.getContent();
-                    } catch (IOException e) {
-                        throw new RuntimeException(e);
-                    }
-                }))
-                .build();
+            .uri(buildUri("/apis/api.console.halo.run/v1alpha1/plugins/install"))
+            .header("Content-Type", "multipart/form-data; boundary=Java11HttpClientFormBoundary")
+            .POST(HttpRequest.BodyPublishers.ofInputStream(() -> {
+                try (HttpEntity file = MultipartEntityBuilder.create()
+                    .addPart("file", new FileBody(pluginFile, ContentType.DEFAULT_BINARY))
+                    //要设置，否则阻塞
+                    .setBoundary(multipartFormDataBoundary)
+                    .build()) {
+                    return file.getContent();
+                } catch (IOException e) {
+                    throw new RuntimeException(e);
+                }
+            }))
+            .build();
         HttpResponse<String> response =
-                client.send(installRequest, HttpResponse.BodyHandlers.ofString(StandardCharsets.UTF_8));
+            client.send(installRequest, HttpResponse.BodyHandlers.ofString(StandardCharsets.UTF_8));
         if (isSuccessful(response)) {
             log.info("Install plugin successfully.");
         } else {
@@ -87,29 +91,53 @@ public class ReloadPluginStep {
     }
 
     private void uninstallPlugin(HttpClient client, String pluginName)
-            throws IOException, InterruptedException {
+        throws IOException, InterruptedException {
         HttpRequest uninstallRequest = HttpRequest.newBuilder()
-                .uri(buildUri("/apis/plugin.halo.run/v1alpha1/plugins/" + pluginName))
-                .DELETE()
-                .build();
+            .uri(buildUri("/apis/plugin.halo.run/v1alpha1/plugins/" + pluginName))
+            .DELETE()
+            .build();
         HttpResponse<String> response =
-                client.send(uninstallRequest,
-                        HttpResponse.BodyHandlers.ofString(StandardCharsets.UTF_8));
+            client.send(uninstallRequest,
+                HttpResponse.BodyHandlers.ofString(StandardCharsets.UTF_8));
         if (isSuccessful(response)) {
+            waitForUninstall(client, pluginName);
             log.info("Uninstall plugin successfully.");
         } else {
-            log.error("Uninstall plugin failed, [{}].", response.body());
+            throw new IllegalStateException("Uninstall plugin failed," + response.body());
+        }
+    }
+
+    private void waitForUninstall(HttpClient client, String pluginName) {
+        HttpRequest request = HttpRequest.newBuilder()
+            .uri(buildUri("/apis/plugin.halo.run/v1alpha1/plugins/" + pluginName))
+            .GET()
+            .build();
+        int maxAttempts = 20;
+        long sleepFactor = 1;
+        while (maxAttempts-- > 0) {
+            try {
+                Thread.sleep(400 * sleepFactor++);
+                HttpResponse<String> response =
+                    client.send(request, HttpResponse.BodyHandlers.ofString());
+                if (is404(response)) {
+                    break;
+                }
+            } catch (IOException | InterruptedException e) {
+                // ignore
+            } catch (Exception e) {
+                throw new RuntimeException(e);
+            }
         }
     }
 
     private boolean checkPluginExists(HttpClient client, String pluginName)
-            throws IOException, InterruptedException {
+        throws IOException, InterruptedException {
         HttpRequest getPluginRequest = HttpRequest.newBuilder()
-                .uri(buildUri("/apis/plugin.halo.run/v1alpha1/plugins/" + pluginName))
-                .GET()
-                .build();
+            .uri(buildUri("/apis/plugin.halo.run/v1alpha1/plugins/" + pluginName))
+            .GET()
+            .build();
         HttpResponse<String> response = client.send(getPluginRequest,
-                HttpResponse.BodyHandlers.ofString(StandardCharsets.UTF_8));
+            HttpResponse.BodyHandlers.ofString(StandardCharsets.UTF_8));
         return isSuccessful(response);
     }
 }
