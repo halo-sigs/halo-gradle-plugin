@@ -1,5 +1,7 @@
 package io.github.guqing.plugin;
 
+import static org.gradle.api.tasks.SourceSet.MAIN_SOURCE_SET_NAME;
+
 import io.github.guqing.plugin.docker.AbstractDockerRemoteApiTask;
 import io.github.guqing.plugin.docker.DockerClientConfiguration;
 import io.github.guqing.plugin.docker.DockerClientService;
@@ -66,6 +68,13 @@ public class PluginDevelopment implements Plugin<Project> {
                 it.setDescription("Auto populate plugin version to manifest file.");
                 it.setGroup(GROUP);
                 it.manifest.set(manifestFile);
+                File file =
+                    project.getExtensions().getByType(SourceSetContainer.class)
+                        .getByName(MAIN_SOURCE_SET_NAME)
+                        .getOutput().getResourcesDir();
+                System.out.println("Resource file dir:" + file);
+                it.resourcesDir.set(file);
+                it.dependsOn("processResources");
             });
         project.getTasks().getByName("assemble").dependsOn(PluginAutoVersionTask.TASK_NAME);
 
