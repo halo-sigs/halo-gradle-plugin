@@ -35,6 +35,8 @@ public class FileSystemWatcher {
 
     private FileFilter triggerFilter;
 
+    private FileFilter excludeFileFilter;
+
     private final Object monitor = new Object();
 
     /**
@@ -108,6 +110,10 @@ public class FileSystemWatcher {
         }
     }
 
+    public void setExcludeFileFilter(FileFilter excludeFileFilter) {
+        this.excludeFileFilter = excludeFileFilter;
+    }
+
     /**
      * Add a source directory to monitor. Cannot be called after the watcher has been
      * {@link #start() started}.
@@ -149,7 +155,7 @@ public class FileSystemWatcher {
             if (this.watchThread == null) {
                 Map<File, DirectorySnapshot> localDirectories = new HashMap<>(this.directories);
                 Watcher watcher = new Watcher(this.remainingScans, new ArrayList<>(this.listeners), this.triggerFilter,
-                        this.pollInterval, this.quietPeriod, localDirectories, this.snapshotStateRepository);
+                        this.excludeFileFilter, this.pollInterval, this.quietPeriod, localDirectories, this.snapshotStateRepository);
                 this.watchThread = new Thread(watcher);
                 this.watchThread.setName("File Watcher");
                 this.watchThread.setDaemon(this.daemon);
@@ -163,7 +169,7 @@ public class FileSystemWatcher {
         Map<File, DirectorySnapshot> restored = (Map<File, DirectorySnapshot>) this.snapshotStateRepository.restore();
         this.directories.replaceAll((f, v) -> {
             DirectorySnapshot restoredSnapshot = (restored != null) ? restored.get(f) : null;
-            return (restoredSnapshot != null) ? restoredSnapshot : new DirectorySnapshot(f);
+            return (restoredSnapshot != null) ? restoredSnapshot : new DirectorySnapshot(f, excludeFileFilter);
         });
     }
 
@@ -208,6 +214,8 @@ public class FileSystemWatcher {
 
         private final FileFilter triggerFilter;
 
+        private final FileFilter excludeFileFilter;
+
         private final long pollInterval;
 
         private final long quietPeriod;
@@ -217,11 +225,12 @@ public class FileSystemWatcher {
         private final SnapshotStateRepository snapshotStateRepository;
 
         private Watcher(AtomicInteger remainingScans, List<FileChangeListener> listeners, FileFilter triggerFilter,
-                        long pollInterval, long quietPeriod, Map<File, DirectorySnapshot> directories,
+                        FileFilter excludeFileFilter, long pollInterval, long quietPeriod, Map<File, DirectorySnapshot> directories,
                         SnapshotStateRepository snapshotStateRepository) {
             this.remainingScans = remainingScans;
             this.listeners = listeners;
             this.triggerFilter = triggerFilter;
+            this.excludeFileFilter = excludeFileFilter;
             this.pollInterval = pollInterval;
             this.quietPeriod = quietPeriod;
             this.directories = directories;
@@ -277,7 +286,8 @@ public class FileSystemWatcher {
         private Map<File, DirectorySnapshot> getCurrentSnapshots() {
             Map<File, DirectorySnapshot> snapshots = new LinkedHashMap<>();
             for (File directory : this.directories.keySet()) {
-                snapshots.put(directory, new DirectorySnapshot(directory));
+                DirectorySnapshot directorySnapshot = new DirectorySnapshot(directory, this.excludeFileFilter);
+                snapshots.put(directory, directorySnapshot);
             }
             return snapshots;
         }

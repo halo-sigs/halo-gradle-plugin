@@ -19,16 +19,20 @@ public class DirectorySnapshot {
 
     private final Set<FileSnapshot> files;
 
+    private final FileFilter excludeFilter;
+
     /**
      * Create a new {@link DirectorySnapshot} for the given directory.
      *
-     * @param directory the source directory
+     * @param directory     the source directory
+     * @param excludeFilter exclude file filter, can be null
      */
-    DirectorySnapshot(File directory) {
+    DirectorySnapshot(File directory, FileFilter excludeFilter) {
         Assert.notNull(directory, "Directory must not be null");
         Assert.isTrue(!directory.isFile(), () -> "Directory '" + directory + "' must not be a file");
         this.directory = directory;
         this.time = new Date();
+        this.excludeFilter = excludeFilter;
         Set<FileSnapshot> files = new LinkedHashSet<>();
         collectFiles(directory, files);
         this.files = Collections.unmodifiableSet(files);
@@ -38,6 +42,11 @@ public class DirectorySnapshot {
         File[] children = source.listFiles();
         if (children != null) {
             for (File child : children) {
+                if (excludeFilter != null) {
+                    if (excludeFilter.accept(child)) {
+                        continue;
+                    }
+                }
                 if (child.isDirectory() && !DOTS.contains(child.getName())) {
                     collectFiles(child, result);
                 } else if (child.isFile()) {
