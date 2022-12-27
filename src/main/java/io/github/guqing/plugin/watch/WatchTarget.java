@@ -1,58 +1,48 @@
 package io.github.guqing.plugin.watch;
 
-import static java.util.Collections.addAll;
-
-import java.io.File;
-import java.io.IOException;
-import java.util.ArrayList;
-import java.util.List;
 import lombok.NonNull;
+import lombok.ToString;
 import org.gradle.api.Named;
-import org.gradle.api.file.DirectoryTree;
 import org.gradle.api.file.FileCollection;
+
+import java.util.*;
 
 /**
  * @author guqing
  * @since 2.0.0
  */
+@ToString
 public class WatchTarget implements Named {
 
     private final String name;
+    List<FileCollection> files = new ArrayList<>();
+    Set<String> excludes = new HashSet<>();
 
     public WatchTarget(String name) {
         this.name = name;
     }
 
-    private final List<FileCollection> files = new ArrayList<>();
-    private final List<String> tasks = new ArrayList<>();
-
-
-    public List<String> getTasks() {
-        return tasks;
-    }
-
-    public void files(FileCollection files) {
-        this.files.add(files);
-    }
-
-    public void tasks(String... tasks) {
-        addAll(this.tasks, tasks);
-    }
-
-    void register(Watcher watcher) throws IOException {
-        for (FileCollection files : this.files) {
-            if (files instanceof DirectoryTree dirTree) {
-                watcher.register(dirTree.getDir().toPath());
-            } else {
-                for (File file : files) {
-                    watcher.register(file.toPath());
-                }
-            }
-        }
-    }
-
     public List<FileCollection> getFiles() {
         return files;
+    }
+
+    public WatchTarget files(FileCollection files) {
+        this.files.add(files);
+        return this;
+    }
+
+    public WatchTarget excludes(String... excludes) {
+        this.excludes.addAll(Arrays.asList(excludes));
+        return this;
+    }
+
+    public WatchTarget exclude(String exclude) {
+        this.excludes.add(exclude);
+        return this;
+    }
+
+    public Set<String> getExcludes() {
+        return excludes;
     }
 
     @Override

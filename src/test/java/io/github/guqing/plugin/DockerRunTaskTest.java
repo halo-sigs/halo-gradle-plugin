@@ -6,6 +6,7 @@ import org.gradle.testkit.runner.BuildResult;
 import org.gradle.testkit.runner.GradleRunner;
 import org.gradle.testkit.runner.internal.PluginUnderTestMetadataReading;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
@@ -46,6 +47,7 @@ public class DockerRunTaskTest {
     }
 
     @Test
+    @Disabled
     void autoVersionTaskTest() throws IOException {
         createPluginManifestFile();
         try (PrintWriter out = new PrintWriter(new FileWriter(this.buildFile))) {
@@ -54,6 +56,15 @@ public class DockerRunTaskTest {
             out.println("}");
             out.println("group 'io.github.guqing'");
             out.println("version '1.0.0'");
+
+            out.println("halo {");
+            out.println("   watchDomain {");
+            out.println("       testDomain {");
+            out.println("         files files('src/')");
+            out.println("         exclude '**/plugin.yaml'");
+            out.println("       }");
+            out.println("   }");
+            out.println("}");
         }
         ClassPath classPath = DefaultClassPath.of(PluginUnderTestMetadataReading.readImplementationClasspath());
         String asURLs = classPath.getAsURLs().stream().map(URL::toString).collect(Collectors.joining(", "));

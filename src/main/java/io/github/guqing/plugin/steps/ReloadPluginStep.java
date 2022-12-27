@@ -8,6 +8,8 @@ import org.apache.hc.client5.http.entity.mime.MultipartEntityBuilder;
 import org.apache.hc.core5.http.ContentType;
 import org.apache.hc.core5.http.HttpEntity;
 
+import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.IOException;
 import java.net.URI;
@@ -71,7 +73,9 @@ public class ReloadPluginStep {
                             //要设置，否则阻塞
                             .setBoundary(multipartFormDataBoundary)
                             .build()) {
-                        return file.getContent();
+                        ByteArrayOutputStream byteArrayOutputStream = new ByteArrayOutputStream();
+                        file.writeTo(byteArrayOutputStream);
+                        return new ByteArrayInputStream(byteArrayOutputStream.toByteArray());
                     } catch (IOException e) {
                         throw new RuntimeException(e);
                     }

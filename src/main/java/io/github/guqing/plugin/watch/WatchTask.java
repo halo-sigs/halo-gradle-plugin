@@ -7,9 +7,11 @@ import io.github.guqing.plugin.docker.DockerStartContainer;
 import io.github.guqing.plugin.steps.CreateHttpClientStep;
 import io.github.guqing.plugin.steps.InitializeHaloStep;
 import io.github.guqing.plugin.steps.ReloadPluginStep;
+import lombok.extern.slf4j.Slf4j;
 import org.gradle.StartParameter;
-import org.gradle.api.provider.ListProperty;
-import org.gradle.api.tasks.Input;
+import org.gradle.api.file.FileCollection;
+import org.gradle.api.internal.file.pattern.PatternMatcher;
+import org.gradle.api.internal.file.pattern.PatternMatcherFactory;
 import org.gradle.internal.classpath.ClassPath;
 import org.gradle.internal.classpath.DefaultClassPath;
 
@@ -19,22 +21,17 @@ import java.net.http.HttpClient;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.Duration;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.concurrent.CompletableFuture;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 /**
  * @author guqing
  * @since 2.0.0
  */
+@Slf4j
 public class WatchTask extends DockerStartContainer {
-
-    @Input
-    private final ListProperty<WatchTarget> targets =
-            getProject().getObjects().listProperty(WatchTarget.class);
 
     private final HaloPluginExtension pluginExtension = getProject().getExtensions().getByType(HaloPluginExtension.class);
 
@@ -58,7 +55,6 @@ public class WatchTask extends DockerStartContainer {
     WatchExecutionParameters getParameters(List<String> buildArgs) {
         return WatchExecutionParameters.builder()
                 .projectDir(getProject().getProjectDir())
-                .injectedClassPath(getInjectedClassPath())
                 .buildArgs(buildArgs)
                 .build();
     }
@@ -88,10 +84,6 @@ public class WatchTask extends DockerStartContainer {
         return args;
     }
 
-    public ListProperty<WatchTarget> getTargets() {
-        return targets;
-    }
-
     @Override
     public void runRemoteCommand() {
         registerShutdownHook();
@@ -99,23 +91,15 @@ public class WatchTask extends DockerStartContainer {
         Duration pollInterval = Duration.ofSeconds(2);
         //Amount of quiet time required without any classpath changes before a restart is triggered.
         Duration quietPeriod = Duration.ofMillis(500);
+
         FileSystemWatcher watcher = new FileSystemWatcher(false, pollInterval,
                 quietPeriod, SnapshotStateRepository.STATIC);
-
-        Path projectDir = getProject().getProjectDir().toPath();
-        Path sourcePath = projectDir.resolve("src/main");
-        Path resourcePath = projectDir.resolve("src/main/resources");
-        if (Files.exists(sourcePath)) {
-            watcher.addSourceDirectory(sourcePath.toFile());
-        }
-
-        if (Files.exists(resourcePath)) {
-            watcher.addSourceDirectory(resourcePath.toFile());
-        }
+        configWatchFiles(watcher);
 
         String host = pluginExtension.getHost();
         ReloadPluginStep reloadPluginStep = new ReloadPluginStep(host, httpClient);
         System.out.println("运行........");
+
         CompletableFuture<Void> initializeFuture = CompletableFuture.runAsync(() -> {
             new InitializeHaloStep(host, httpClient).execute();
             reloadPluginStep.execute(getPluginName(), getPluginBuildFile());
@@ -138,6 +122,44 @@ public class WatchTask extends DockerStartContainer {
         }
     }
 
+    private void configWatchFiles(FileSystemWatcher watcher) {
+        HaloPluginExtension haloPluginExtension = getProject().getExtensions().getByType(HaloPluginExtension.class);
+        List<WatchTarget> watchTargets = haloPluginExtension.getWatchDomains().stream().toList();
+        Set<File> watchFiles = new HashSet<>();
+        Set<String> excludes = new HashSet<>();
+        for (WatchTarget watchTarget : watchTargets) {
+            Set<File> files = watchTarget.getFiles().stream()
+                    .map(FileCollection::getFiles)
+                    .flatMap(Collection::stream)
+                    .collect(Collectors.toSet());
+            watchFiles.addAll(files);
+            excludes.addAll(watchTarget.getExcludes());
+        }
+        populateDefaultExcludeRules(excludes);
+        log.info("Excludes files to watching: {}", excludes);
+
+        // set exclude file filter with pattern matcher
+        PatternMatcher patternsMatcher = PatternMatcherFactory.getPatternsMatcher(false, true, excludes);
+        watcher.setExcludeFileFilter(new FileMatchingFilter(patternsMatcher));
+
+        log.info("Watching files: {}", watchFiles);
+        watcher.addSourceDirectories(watchFiles);
+    }
+
+    private static void populateDefaultExcludeRules(Set<String> excludes) {
+        if (excludes == null) {
+            return;
+        }
+        excludes.add("**/build/**");
+        excludes.add("**/.gradle/**");
+        excludes.add("**/gradle/**");
+        excludes.add("**/.idea/**");
+        excludes.add("**/.git/**");
+        excludes.add("**/dist/**");
+        excludes.add("**/node_modules/**");
+        excludes.add("**/test/java/**");
+        excludes.add("**/test/resources/**");
+    }
 
     private File getPluginBuildFile() {
         Path buildLibPath = getProject().getBuildDir().toPath().resolve("libs");

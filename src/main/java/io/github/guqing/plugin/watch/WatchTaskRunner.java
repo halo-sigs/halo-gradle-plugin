@@ -2,10 +2,6 @@ package io.github.guqing.plugin.watch;
 
 import io.github.guqing.plugin.Assert;
 import io.github.guqing.plugin.WatchExecutionParameters;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
-import java.util.Map;
 import org.gradle.StartParameter;
 import org.gradle.api.Project;
 import org.gradle.api.logging.Logging;
@@ -19,6 +15,10 @@ import org.gradle.tooling.internal.consumer.DefaultGradleConnector;
 import org.gradle.wrapper.GradleUserHomeLookup;
 import org.slf4j.Logger;
 
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
+
 /**
  * @author guqing
  * @since 2.0.0
@@ -29,10 +29,7 @@ public class WatchTaskRunner implements AutoCloseable {
     private final ProjectConnection connection;
 
     public WatchTaskRunner(Project project) {
-        StartParameter parameter = project.getGradle().getStartParameter();
-        String[] arguments = getArguments(parameter);
-        System.out.println("arguments = " + Arrays.toString(arguments));
-
+        // StartParameter parameter = project.getGradle().getStartParameter();
         DefaultGradleConnector gradleConnector =
             (DefaultGradleConnector) GradleConnector.newConnector();
         gradleConnector.useGradleUserHomeDir(project.getGradle().getGradleUserHomeDir());
