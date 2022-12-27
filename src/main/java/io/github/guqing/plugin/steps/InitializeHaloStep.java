@@ -3,6 +3,7 @@ package io.github.guqing.plugin.steps;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import io.github.guqing.plugin.Assert;
+import io.github.guqing.plugin.RetryUtils;
 import io.github.guqing.plugin.YamlUtils;
 import io.github.guqing.plugin.model.ObjectNodeListResult;
 import lombok.extern.slf4j.Slf4j;
@@ -46,24 +47,14 @@ public class InitializeHaloStep {
 
     private void waitForReadiness(HttpClient client) {
         HttpRequest request = HttpRequest.newBuilder()
-                .uri(buildUri("/actuator/health"))
-                .GET()
-                .build();
-        int maxAttempts = 20;
-        long sleepFactor = 1;
-        while (maxAttempts-- > 0) {
-            try {
-                Thread.sleep(400 * sleepFactor++);
-                HttpResponse<String> response = client.send(request, HttpResponse.BodyHandlers.ofString());
-                if (isSuccessful(response)) {
-                    break;
-                }
-            } catch (IOException | InterruptedException e) {
-                // ignore
-            } catch (Exception e) {
-                throw new RuntimeException(e);
-            }
-        }
+            .uri(buildUri("/actuator/health"))
+            .GET()
+            .build();
+        RetryUtils.withRetry(20, 400, () -> {
+            HttpResponse<String> response =
+                client.send(request, HttpResponse.BodyHandlers.ofString());
+            return isSuccessful(response);
+        });
     }
 
     private URI buildUri(String endpoint) {
@@ -82,49 +73,51 @@ public class InitializeHaloStep {
 
     private void initializeHalo(HttpClient client) throws IOException, InterruptedException {
         HttpRequest checkSystemStates = HttpRequest.newBuilder()
-                .uri(buildUri("/api/v1alpha1/configmaps/system-states"))
-                .GET()
-                .build();
+            .uri(buildUri("/api/v1alpha1/configmaps/system-states"))
+            .GET()
+            .build();
         HttpResponse<String> checkResponse = client.send(checkSystemStates,
-                HttpResponse.BodyHandlers.ofString(StandardCharsets.UTF_8));
+            HttpResponse.BodyHandlers.ofString(StandardCharsets.UTF_8));
         if (isSuccessful(checkResponse)) {
             return;
         }
         HttpRequest createSystemStateConfig = HttpRequest.newBuilder()
-                .uri(buildUri("/api/v1alpha1/configmaps"))
-                .header("Content-Type", "application/json")
-                .POST(HttpRequest.BodyPublishers.ofString("""
-                        {
-                            "data": {
-                                "states": "{\\"isSetup\\":true}"
-                            },
-                            "apiVersion": "v1alpha1",
-                            "kind": "ConfigMap",
-                            "metadata": {
-                                "name": "system-states"
-                            }
-                        }
-                        """))
-                .build();
+            .uri(buildUri("/api/v1alpha1/configmaps"))
+            .header("Content-Type", "application/json")
+            .POST(HttpRequest.BodyPublishers.ofString("""
+                {
+                    "data": {
+                        "states": "{\\"isSetup\\":true}"
+                    },
+                    "apiVersion": "v1alpha1",
+                    "kind": "ConfigMap",
+                    "metadata": {
+                        "name": "system-states"
+                    }
+                }
+                """))
+            .build();
         HttpResponse<String> createResponse = client.send(createSystemStateConfig,
-                HttpResponse.BodyHandlers.ofString(StandardCharsets.UTF_8));
+            HttpResponse.BodyHandlers.ofString(StandardCharsets.UTF_8));
         if (!isSuccessful(createResponse)) {
             throw new RuntimeException(createResponse.body());
         }
     }
 
-    private void initializeTheme(HttpClient client) throws URISyntaxException, IOException, InterruptedException {
+    private void initializeTheme(HttpClient client)
+        throws URISyntaxException, IOException, InterruptedException {
         HttpRequest listUninstalledTheme = HttpRequest.newBuilder()
-                .uri(buildUri("/apis/api.console.halo.run/v1alpha1/themes?uninstalled=true"))
-                .GET()
-                .build();
+            .uri(buildUri("/apis/api.console.halo.run/v1alpha1/themes?uninstalled=true"))
+            .GET()
+            .build();
         HttpResponse<String> listUninstalledThemResp = client.send(listUninstalledTheme,
-                HttpResponse.BodyHandlers.ofString(StandardCharsets.UTF_8));
+            HttpResponse.BodyHandlers.ofString(StandardCharsets.UTF_8));
         if (!isSuccessful(listUninstalledThemResp)) {
             throw new RuntimeException(listUninstalledThemResp.body());
         }
         String body = listUninstalledThemResp.body();
-        ObjectNodeListResult listResult = YamlUtils.mapper.readValue(body, ObjectNodeListResult.class);
+        ObjectNodeListResult listResult =
+            YamlUtils.mapper.readValue(body, ObjectNodeListResult.class);
         if (listResult == null || listResult.getItems().isEmpty()) {
             return;
         }
@@ -132,15 +125,16 @@ public class InitializeHaloStep {
         createTheme(client, item.toString());
     }
 
-    private void createTheme(HttpClient client, String payload) throws URISyntaxException, IOException, InterruptedException {
+    private void createTheme(HttpClient client, String payload)
+        throws URISyntaxException, IOException, InterruptedException {
         HttpRequest installRequest = HttpRequest.newBuilder()
-                .uri(new URI(
-                        "http://localhost:8090/apis/theme.halo.run/v1alpha1/themes"))
-                .header("Content-Type", "application/json")
-                .POST(HttpRequest.BodyPublishers.ofString(payload))
-                .build();
+            .uri(new URI(
+                "http://localhost:8090/apis/theme.halo.run/v1alpha1/themes"))
+            .header("Content-Type", "application/json")
+            .POST(HttpRequest.BodyPublishers.ofString(payload))
+            .build();
         HttpResponse<String> response = client.send(installRequest,
-                HttpResponse.BodyHandlers.ofString(StandardCharsets.UTF_8));
+            HttpResponse.BodyHandlers.ofString(StandardCharsets.UTF_8));
         if (!isSuccessful(response)) {
             throw new RuntimeException(response.body());
         }
@@ -151,61 +145,64 @@ public class InitializeHaloStep {
             throw new IllegalStateException("Unexpected theme name from [" + theme + "]");
         }
         HttpRequest reloadSettingReq = HttpRequest.newBuilder()
-                .uri(buildUri("/apis/api.console.halo.run/v1alpha1/themes/" + nameNode.asText() + "/reload"))
-                .PUT(HttpRequest.BodyPublishers.noBody())
-                .build();
-        HttpResponse<String> reloadResponse = client.send(reloadSettingReq, HttpResponse.BodyHandlers.ofString(StandardCharsets.UTF_8));
+            .uri(buildUri(
+                "/apis/api.console.halo.run/v1alpha1/themes/" + nameNode.asText() + "/reload"))
+            .PUT(HttpRequest.BodyPublishers.noBody())
+            .build();
+        HttpResponse<String> reloadResponse = client.send(reloadSettingReq,
+            HttpResponse.BodyHandlers.ofString(StandardCharsets.UTF_8));
         if (!isSuccessful(reloadResponse)) {
-            throw new IllegalStateException("Reload theme setting failed: " + reloadResponse.body());
+            throw new IllegalStateException(
+                "Reload theme setting failed: " + reloadResponse.body());
         }
     }
 
     private void createMenu(HttpClient client) throws IOException, InterruptedException {
         UUID menuItemUid = UUID.randomUUID();
         HttpRequest installRequest = HttpRequest.newBuilder()
-                .uri(buildUri("/api/v1alpha1/menus"))
-                .header("Content-Type", "application/json")
-                .POST(HttpRequest.BodyPublishers.ofString("""
-                        {
-                            "spec": {
-                                "displayName": "默认",
-                                "menuItems": ["%s"]
-                            },
-                            "apiVersion": "v1alpha1",
-                            "kind": "Menu",
-                            "metadata": {
-                                "name": "",
-                                "generateName": "menu-"
-                            }
-                        }
-                        """.formatted(menuItemUid)))
-                .build();
+            .uri(buildUri("/api/v1alpha1/menus"))
+            .header("Content-Type", "application/json")
+            .POST(HttpRequest.BodyPublishers.ofString("""
+                {
+                    "spec": {
+                        "displayName": "默认",
+                        "menuItems": ["%s"]
+                    },
+                    "apiVersion": "v1alpha1",
+                    "kind": "Menu",
+                    "metadata": {
+                        "name": "",
+                        "generateName": "menu-"
+                    }
+                }
+                """.formatted(menuItemUid)))
+            .build();
         HttpResponse<String> response = client.send(installRequest,
-                HttpResponse.BodyHandlers.ofString(StandardCharsets.UTF_8));
+            HttpResponse.BodyHandlers.ofString(StandardCharsets.UTF_8));
         if (!isSuccessful(response)) {
             throw new RuntimeException(response.body());
         }
         HttpRequest createMenuItem = HttpRequest.newBuilder()
-                .uri(buildUri("/api/v1alpha1/menuitems"))
-                .header("Content-Type", "application/json")
-                .POST(HttpRequest.BodyPublishers.ofString("""
-                        {
-                            "spec": {
-                                "displayName": "首页",
-                                "href": "/index",
-                                "children": [],
-                                "priority": 0
-                            },
-                            "apiVersion": "v1alpha1",
-                            "kind": "MenuItem",
-                            "metadata": {
-                                "name": "%s"
-                            }
-                        }
-                        """.formatted(menuItemUid)))
-                .build();
+            .uri(buildUri("/api/v1alpha1/menuitems"))
+            .header("Content-Type", "application/json")
+            .POST(HttpRequest.BodyPublishers.ofString("""
+                {
+                    "spec": {
+                        "displayName": "首页",
+                        "href": "/index",
+                        "children": [],
+                        "priority": 0
+                    },
+                    "apiVersion": "v1alpha1",
+                    "kind": "MenuItem",
+                    "metadata": {
+                        "name": "%s"
+                    }
+                }
+                """.formatted(menuItemUid)))
+            .build();
         HttpResponse<String> menuItemResponse = client.send(createMenuItem,
-                HttpResponse.BodyHandlers.ofString(StandardCharsets.UTF_8));
+            HttpResponse.BodyHandlers.ofString(StandardCharsets.UTF_8));
         if (!isSuccessful(menuItemResponse)) {
             throw new RuntimeException(menuItemResponse.body());
         }

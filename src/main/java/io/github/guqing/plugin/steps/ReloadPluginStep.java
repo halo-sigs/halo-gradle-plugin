@@ -61,28 +61,32 @@ public class ReloadPluginStep {
         return response.statusCode() >= 200 && response.statusCode() < 300;
     }
 
+    private boolean is404(HttpResponse<String> response) {
+        return response.statusCode() == 404;
+    }
+
     private void installPlugin(HttpClient client, File pluginFile)
-            throws IOException, InterruptedException {
+        throws IOException, InterruptedException {
         String multipartFormDataBoundary = "Java11HttpClientFormBoundary";
         HttpRequest installRequest = HttpRequest.newBuilder()
-                .uri(buildUri("/apis/api.console.halo.run/v1alpha1/plugins/install"))
-                .header("Content-Type", "multipart/form-data; boundary=Java11HttpClientFormBoundary")
-                .POST(HttpRequest.BodyPublishers.ofInputStream(() -> {
-                    try (HttpEntity file = MultipartEntityBuilder.create()
-                            .addPart("file", new FileBody(pluginFile, ContentType.DEFAULT_BINARY))
-                            //要设置，否则阻塞
-                            .setBoundary(multipartFormDataBoundary)
-                            .build()) {
-                        ByteArrayOutputStream byteArrayOutputStream = new ByteArrayOutputStream();
-                        file.writeTo(byteArrayOutputStream);
-                        return new ByteArrayInputStream(byteArrayOutputStream.toByteArray());
-                    } catch (IOException e) {
-                        throw new RuntimeException(e);
-                    }
-                }))
-                .build();
+            .uri(buildUri("/apis/api.console.halo.run/v1alpha1/plugins/install"))
+            .header("Content-Type", "multipart/form-data; boundary=Java11HttpClientFormBoundary")
+            .POST(HttpRequest.BodyPublishers.ofInputStream(() -> {
+                try (HttpEntity file = MultipartEntityBuilder.create()
+                    .addPart("file", new FileBody(pluginFile, ContentType.DEFAULT_BINARY))
+                    //要设置，否则阻塞
+                    .setBoundary(multipartFormDataBoundary)
+                    .build()) {
+                    ByteArrayOutputStream byteArrayOutputStream = new ByteArrayOutputStream();
+                    file.writeTo(byteArrayOutputStream);
+                    return new ByteArrayInputStream(byteArrayOutputStream.toByteArray());
+                } catch (IOException e) {
+                    throw new RuntimeException(e);
+                }
+            }))
+            .build();
         HttpResponse<String> response =
-                client.send(installRequest, HttpResponse.BodyHandlers.ofString(StandardCharsets.UTF_8));
+            client.send(installRequest, HttpResponse.BodyHandlers.ofString(StandardCharsets.UTF_8));
         if (isSuccessful(response)) {
             log.info("Install plugin successfully.");
         } else {
@@ -91,29 +95,42 @@ public class ReloadPluginStep {
     }
 
     private void uninstallPlugin(HttpClient client, String pluginName)
-            throws IOException, InterruptedException {
+        throws IOException, InterruptedException {
         HttpRequest uninstallRequest = HttpRequest.newBuilder()
-                .uri(buildUri("/apis/plugin.halo.run/v1alpha1/plugins/" + pluginName))
-                .DELETE()
-                .build();
+            .uri(buildUri("/apis/plugin.halo.run/v1alpha1/plugins/" + pluginName))
+            .DELETE()
+            .build();
         HttpResponse<String> response =
-                client.send(uninstallRequest,
-                        HttpResponse.BodyHandlers.ofString(StandardCharsets.UTF_8));
+            client.send(uninstallRequest,
+                HttpResponse.BodyHandlers.ofString(StandardCharsets.UTF_8));
         if (isSuccessful(response)) {
+            waitForUninstall(client, pluginName);
             log.info("Uninstall plugin successfully.");
         } else {
-            log.error("Uninstall plugin failed, [{}].", response.body());
+            throw new IllegalStateException("Uninstall plugin failed," + response.body());
         }
     }
 
+    private void waitForUninstall(HttpClient client, String pluginName) {
+        HttpRequest request = HttpRequest.newBuilder()
+            .uri(buildUri("/apis/plugin.halo.run/v1alpha1/plugins/" + pluginName))
+            .GET()
+            .build();
+        RetryUtils.withRetry(20, 400, () -> {
+            HttpResponse<String> response =
+                client.send(request, HttpResponse.BodyHandlers.ofString());
+            return is404(response);
+        });
+    }
+
     private boolean checkPluginExists(HttpClient client, String pluginName)
-            throws IOException, InterruptedException {
+        throws IOException, InterruptedException {
         HttpRequest getPluginRequest = HttpRequest.newBuilder()
-                .uri(buildUri("/apis/plugin.halo.run/v1alpha1/plugins/" + pluginName))
-                .GET()
-                .build();
+            .uri(buildUri("/apis/plugin.halo.run/v1alpha1/plugins/" + pluginName))
+            .GET()
+            .build();
         HttpResponse<String> response = client.send(getPluginRequest,
-                HttpResponse.BodyHandlers.ofString(StandardCharsets.UTF_8));
+            HttpResponse.BodyHandlers.ofString(StandardCharsets.UTF_8));
         return isSuccessful(response);
     }
 }

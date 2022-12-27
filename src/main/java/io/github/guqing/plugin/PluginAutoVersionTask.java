@@ -1,8 +1,8 @@
 package io.github.guqing.plugin;
 
 import static org.gradle.api.Project.DEFAULT_VERSION;
-import static org.gradle.api.tasks.SourceSet.MAIN_SOURCE_SET_NAME;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import java.io.File;
@@ -12,7 +12,7 @@ import org.apache.commons.lang3.StringUtils;
 import org.gradle.api.DefaultTask;
 import org.gradle.api.provider.Property;
 import org.gradle.api.tasks.Input;
-import org.gradle.api.tasks.SourceSetContainer;
+import org.gradle.api.tasks.InputFiles;
 import org.gradle.api.tasks.TaskAction;
 
 /**
@@ -28,15 +28,24 @@ public class PluginAutoVersionTask extends DefaultTask {
     @Input
     final Property<File> manifest = getProject().getObjects().property(File.class);
 
+    @InputFiles
+    Property<File> resourcesDir = getProject().getObjects().property(File.class);
+
     @TaskAction
     public void autoPopulateVersion() throws IOException {
-        File outputResourceDir = getOutputResourceDir();
-        if (!Files.exists(getOutputResourceDir().toPath())) {
+        File outputResourceDir = resourcesDir.get();
+        if (!Files.exists(outputResourceDir.toPath())) {
             Files.createDirectories(outputResourceDir.toPath());
         }
         File outputPluginYaml = new File(outputResourceDir, manifest.get().getName());
         String projectVersion = getProjectVersion();
+        System.out.println("-------->project version: " + projectVersion);
         YamlUtils.write(manifest.get(), pluginYaml -> {
+            try {
+                System.out.println(YamlUtils.mapper.writeValueAsString(pluginYaml));
+            } catch (JsonProcessingException e) {
+                throw new RuntimeException(e);
+            }
             JsonNode spec = pluginYaml.get("spec");
             if (spec == null) {
                 ObjectNode node = (ObjectNode) pluginYaml;
@@ -45,14 +54,8 @@ public class PluginAutoVersionTask extends DefaultTask {
             ((ObjectNode) spec).put("version", projectVersion);
             return pluginYaml;
         }, outputPluginYaml);
-    }
-
-    private File getOutputResourceDir() {
-        SourceSetContainer sourceSetContainer =
-            (SourceSetContainer) getProject().getProperties().get("sourceSets");
-        return sourceSetContainer.getByName(MAIN_SOURCE_SET_NAME)
-            .getOutput()
-            .getResourcesDir();
+        System.out.println(
+            "-------->output plugin yaml: " + Files.readString(outputPluginYaml.toPath()));
     }
 
     private String getProjectVersion() {
@@ -65,5 +68,9 @@ public class PluginAutoVersionTask extends DefaultTask {
 
     public Property<File> getManifest() {
         return manifest;
+    }
+
+    public Property<File> getResourcesDir() {
+        return resourcesDir;
     }
 }

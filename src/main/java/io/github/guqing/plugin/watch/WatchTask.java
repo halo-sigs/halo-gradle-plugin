@@ -9,9 +9,6 @@ import io.github.guqing.plugin.steps.InitializeHaloStep;
 import io.github.guqing.plugin.steps.ReloadPluginStep;
 import lombok.extern.slf4j.Slf4j;
 import org.gradle.StartParameter;
-import org.gradle.api.file.FileCollection;
-import org.gradle.api.internal.file.pattern.PatternMatcher;
-import org.gradle.api.internal.file.pattern.PatternMatcherFactory;
 import org.gradle.internal.classpath.ClassPath;
 import org.gradle.internal.classpath.DefaultClassPath;
 
@@ -21,9 +18,11 @@ import java.net.http.HttpClient;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.Duration;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
+import java.util.Map;
 import java.util.concurrent.CompletableFuture;
-import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 /**

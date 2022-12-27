@@ -1,7 +1,19 @@
 package io.github.guqing.plugin;
 
 import io.github.guqing.plugin.docker.*;
+import static org.gradle.api.tasks.SourceSet.MAIN_SOURCE_SET_NAME;
+
+import io.github.guqing.plugin.docker.AbstractDockerRemoteApiTask;
+import io.github.guqing.plugin.docker.DockerClientConfiguration;
+import io.github.guqing.plugin.docker.DockerClientService;
+import io.github.guqing.plugin.docker.DockerCreateContainer;
+import io.github.guqing.plugin.docker.DockerPullImage;
+import io.github.guqing.plugin.docker.DockerRemoveContainer;
+import io.github.guqing.plugin.docker.DockerStartContainer;
+import io.github.guqing.plugin.docker.DockerStopContainer;
 import io.github.guqing.plugin.watch.WatchTask;
+import java.io.File;
+import java.util.Set;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 import org.gradle.api.Plugin;
@@ -31,9 +43,8 @@ public class PluginDevelopment implements Plugin<Project> {
     public void apply(Project project) {
         project.getPluginManager().apply(JavaPlugin.class);
         log.info("Halo plugin development gradle plugin run...");
-
         HaloPluginExtension haloPluginExt = project.getExtensions()
-                .create(HaloPluginExtension.EXTENSION_NAME, HaloPluginExtension.class, project);
+            .create(HaloPluginExtension.EXTENSION_NAME, HaloPluginExtension.class, project);
         // populate plugin manifest info
         File manifestFile = getPluginManifest(project);
         haloPluginExt.setManifestFile(manifestFile);
@@ -41,8 +52,6 @@ public class PluginDevelopment implements Plugin<Project> {
         PluginManifest pluginManifest = YamlUtils.read(manifestFile, PluginManifest.class);
         haloPluginExt.setRequire(pluginManifest.getSpec().getRequire());
         haloPluginExt.setPluginName(pluginManifest.getMetadata().getName());
-        haloPluginExt.setHaloBootJar(project.getDependencies()
-                .create(String.format(DEFAULT_BOOT_JAR, haloPluginExt.getRequire())));
 
         if (StringUtils.isBlank(pluginManifest.getMetadata().getName())) {
             throw new IllegalStateException("Plugin name must not be blank.");
@@ -52,34 +61,41 @@ public class PluginDevelopment implements Plugin<Project> {
         System.setProperty("halo.plugin.name", pluginManifest.getMetadata().getName());
 
         project.getTasks()
-                .register(PluginComponentsIndexTask.TASK_NAME, PluginComponentsIndexTask.class, it -> {
-                    it.setGroup(GROUP);
-                    FileCollection files =
-                            project.getExtensions().getByType(SourceSetContainer.class).getByName("main")
-                                    .getOutput().getClassesDirs();
-                    it.classesDirs.from(files);
-                });
+            .register(PluginComponentsIndexTask.TASK_NAME, PluginComponentsIndexTask.class, it -> {
+                it.setGroup(GROUP);
+                FileCollection files =
+                    project.getExtensions().getByType(SourceSetContainer.class).getByName("main")
+                        .getOutput().getClassesDirs();
+                it.classesDirs.from(files);
+            });
         project.getTasks().getByName("assemble").dependsOn(PluginComponentsIndexTask.TASK_NAME);
 
         project.getTasks()
-                .register(PluginAutoVersionTask.TASK_NAME, PluginAutoVersionTask.class, it -> {
-                    it.setDescription("Auto populate plugin version to manifest file.");
-                    it.setGroup(GROUP);
-                    it.manifest.set(manifestFile);
-                });
+            .register(PluginAutoVersionTask.TASK_NAME, PluginAutoVersionTask.class, it -> {
+                it.setDescription("Auto populate plugin version to manifest file.");
+                it.setGroup(GROUP);
+                it.manifest.set(manifestFile);
+                File file =
+                    project.getExtensions().getByType(SourceSetContainer.class)
+                        .getByName(MAIN_SOURCE_SET_NAME)
+                        .getOutput().getResourcesDir();
+                System.out.println("Resource file dir:" + file);
+                it.resourcesDir.set(file);
+                it.dependsOn("processResources");
+            });
         project.getTasks().getByName("assemble").dependsOn(PluginAutoVersionTask.TASK_NAME);
 
         DockerClientConfiguration dockerExtension = project.getExtensions()
                 .create(DockerClientConfiguration.EXTENSION_NAME, DockerClientConfiguration.class);
 
         final Provider<DockerClientService> serviceProvider = project.getGradle()
-                .getSharedServices().registerIfAbsent("docker",
-                        DockerClientService.class,
-                        pBuildServiceSpec -> pBuildServiceSpec.parameters(parameters -> {
-                            parameters.getUrl().set(dockerExtension.getUrl());
-                            parameters.getCertPath().set(dockerExtension.getCertPath());
-                            parameters.getApiVersion().set(dockerExtension.getApiVersion());
-                        }));
+            .getSharedServices().registerIfAbsent("docker",
+                DockerClientService.class,
+                pBuildServiceSpec -> pBuildServiceSpec.parameters(parameters -> {
+                    parameters.getUrl().set(dockerExtension.getUrl());
+                    parameters.getCertPath().set(dockerExtension.getCertPath());
+                    parameters.getApiVersion().set(dockerExtension.getApiVersion());
+                }));
 
         project.getTasks().withType(AbstractDockerRemoteApiTask.class)
                 .configureEach(task -> task.getDockerClientService().set(serviceProvider));
@@ -94,13 +110,13 @@ public class PluginDevelopment implements Plugin<Project> {
         });
 
         DockerCreateContainer createContainer =
-                project.getTasks().create("createHaloContainer", DockerCreateContainer.class, it -> {
-                    it.getImageId().set(imageName);
-                    it.getContainerName().set(docker.getContainerName());
-                    it.setGroup(GROUP);
-                    it.setDescription("Create halo server container.");
-                    it.dependsOn("build", "pullHaloImage");
-                });
+            project.getTasks().create("createHaloContainer", DockerCreateContainer.class, it -> {
+                it.getImageId().set(imageName);
+                it.getContainerName().set(docker.getContainerName());
+                it.setGroup(GROUP);
+                it.setDescription("Create halo server container.");
+                it.dependsOn("build", "pullHaloImage");
+            });
 
         project.getTasks().create("stopHalo", DockerStopContainer.class, it -> {
             it.setGroup(GROUP);
@@ -125,6 +141,7 @@ public class PluginDevelopment implements Plugin<Project> {
         });
 
         project.getTasks().create("watch", WatchTask.class, it -> {
+            it.setGroup(GROUP);
             it.getContainerId().set(createContainer.getContainerId());
             it.dependsOn("createHaloContainer");
         });
@@ -132,14 +149,14 @@ public class PluginDevelopment implements Plugin<Project> {
 
     private File getPluginManifest(Project project) {
         SourceSetContainer sourceSetContainer =
-                (SourceSetContainer) project.getProperties().get("sourceSets");
+            (SourceSetContainer) project.getProperties().get("sourceSets");
         File mainResourceDir = sourceSetContainer.stream()
-                .filter(set -> "main".equals(set.getName()))
-                .map(SourceSet::getResources)
-                .map(SourceDirectorySet::getSrcDirs)
-                .flatMap(Set::stream)
-                .findFirst()
-                .orElseThrow();
+            .filter(set -> "main".equals(set.getName()))
+            .map(SourceSet::getResources)
+            .map(SourceDirectorySet::getSrcDirs)
+            .flatMap(Set::stream)
+            .findFirst()
+            .orElseThrow();
 
         for (String filename : HaloPluginExtension.MANIFEST) {
             File manifestFile = new File(mainResourceDir, filename);
@@ -148,6 +165,6 @@ public class PluginDevelopment implements Plugin<Project> {
             }
         }
         throw new IllegalStateException(
-                "The plugin manifest file [plugin.yaml] not found in " + mainResourceDir);
+            "The plugin manifest file [plugin.yaml] not found in " + mainResourceDir);
     }
 }

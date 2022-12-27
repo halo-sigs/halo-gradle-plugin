@@ -5,12 +5,9 @@ import lombok.Data;
 import org.gradle.api.Action;
 import org.gradle.api.NamedDomainObjectContainer;
 import org.gradle.api.Project;
-import org.gradle.api.artifacts.Dependency;
 import org.gradle.api.plugins.ExtensionContainer;
 
 import java.io.File;
-import java.io.IOException;
-import java.nio.file.Files;
 import java.nio.file.Path;
 
 /**
@@ -27,16 +24,10 @@ import java.nio.file.Path;
 public class HaloPluginExtension {
     public static final String[] MANIFEST = {"plugin.yaml", "plugin.yml"};
     public static final String EXTENSION_NAME = "halo";
-    private static final String DEFAULT_REPOSITORY = "https://dl.halo.run/release";
-    public static final String DEFAULT_BOOT_JAR = "io.github.guqing:halo:%s:boot";
-
-    public static final String DEFAULT_THEME_URL = "https://github.com/halo-dev/theme-earth/archive/refs/tags/v1.0.0-beta.1.zip";
 
     private final Project project;
 
     private Path workDir;
-
-    private String serverRepository = DEFAULT_REPOSITORY;
 
     private File manifestFile;
 
@@ -47,10 +38,6 @@ public class HaloPluginExtension {
 
     private String host = "http://localhost:8090";
 
-    private Dependency haloBootJar;
-
-    private String themeUrl = DEFAULT_THEME_URL;
-
     private NamedDomainObjectContainer<WatchTarget> watchDomains;
 
     private DockerExtension docker = new DockerExtension();
@@ -59,24 +46,10 @@ public class HaloPluginExtension {
 
     public HaloPluginExtension(Project project) {
         this.project = project;
-        this.watchDomains = project.container(WatchTarget.class);
     }
 
     public void watchDomain(Action<NamedDomainObjectContainer<WatchTarget>> action) {
         action.execute(watchDomains);
-    }
-
-    public Path getWorkDir() {
-        Path path = workDir == null ? project.getProjectDir()
-                .toPath().resolve("workplace") : workDir;
-        if (!Files.exists(path)) {
-            try {
-                Files.createDirectories(path);
-            } catch (IOException e) {
-                throw new RuntimeException(e);
-            }
-        }
-        return path;
     }
 
     public String getRequire() {
