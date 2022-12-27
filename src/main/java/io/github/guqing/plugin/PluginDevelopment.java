@@ -1,19 +1,7 @@
 package io.github.guqing.plugin;
 
 import io.github.guqing.plugin.docker.*;
-import static org.gradle.api.tasks.SourceSet.MAIN_SOURCE_SET_NAME;
-
-import io.github.guqing.plugin.docker.AbstractDockerRemoteApiTask;
-import io.github.guqing.plugin.docker.DockerClientConfiguration;
-import io.github.guqing.plugin.docker.DockerClientService;
-import io.github.guqing.plugin.docker.DockerCreateContainer;
-import io.github.guqing.plugin.docker.DockerPullImage;
-import io.github.guqing.plugin.docker.DockerRemoveContainer;
-import io.github.guqing.plugin.docker.DockerStartContainer;
-import io.github.guqing.plugin.docker.DockerStopContainer;
 import io.github.guqing.plugin.watch.WatchTask;
-import java.io.File;
-import java.util.Set;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 import org.gradle.api.Plugin;
@@ -28,7 +16,8 @@ import org.gradle.api.tasks.SourceSetContainer;
 import java.io.File;
 import java.util.Set;
 
-import static io.github.guqing.plugin.HaloPluginExtension.DEFAULT_BOOT_JAR;
+import static org.gradle.api.tasks.SourceSet.MAIN_SOURCE_SET_NAME;
+
 
 /**
  * @author guqing

@@ -1,6 +1,7 @@
 package io.github.guqing.plugin.steps;
 
 import io.github.guqing.plugin.Assert;
+import io.github.guqing.plugin.RetryUtils;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.hc.client5.http.entity.mime.FileBody;
@@ -116,7 +117,7 @@ public class ReloadPluginStep {
             .uri(buildUri("/apis/plugin.halo.run/v1alpha1/plugins/" + pluginName))
             .GET()
             .build();
-        RetryUtils.withRetry(20, 400, () -> {
+        RetryUtils.withRetry(20, 500, () -> {
             HttpResponse<String> response =
                 client.send(request, HttpResponse.BodyHandlers.ofString());
             return is404(response);

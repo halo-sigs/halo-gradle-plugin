@@ -1,27 +1,19 @@
 package io.github.guqing.plugin;
 
 import com.github.dockerjava.api.DockerClient;
-import com.github.dockerjava.api.command.CreateContainerCmd;
-import com.github.dockerjava.api.command.CreateContainerResponse;
-import com.github.dockerjava.api.command.LogContainerCmd;
-import com.github.dockerjava.api.command.RemoveContainerCmd;
-import com.github.dockerjava.api.command.StartContainerCmd;
-import com.github.dockerjava.api.command.StopContainerCmd;
+import com.github.dockerjava.api.command.*;
 import com.github.dockerjava.api.model.ExposedPort;
 import com.github.dockerjava.api.model.HostConfig;
 import com.github.dockerjava.api.model.PortBinding;
-import io.github.guqing.plugin.docker.AbstractDockerRemoteApiTask;
-import io.github.guqing.plugin.docker.FrameConsumerResultCallback;
-import io.github.guqing.plugin.docker.OutputFrame;
-import io.github.guqing.plugin.docker.ToStringConsumer;
-import io.github.guqing.plugin.docker.WaitingConsumer;
-import java.io.Closeable;
-import java.util.concurrent.TimeoutException;
-import java.util.function.Consumer;
+import io.github.guqing.plugin.docker.*;
 import lombok.extern.slf4j.Slf4j;
 import org.gradle.api.provider.Property;
 import org.gradle.api.tasks.Input;
 import org.gradle.api.tasks.Optional;
+
+import java.io.Closeable;
+import java.util.concurrent.TimeoutException;
+import java.util.function.Consumer;
 
 /**
  * @author guqing
@@ -67,7 +59,7 @@ public class DockerRunTask extends AbstractDockerRemoteApiTask {
         }
         containerCmd.withEnv("HALO_EXTERNAL_URL=http://localhost:8090/",
             "HALO_SECURITY_INITIALIZER_SUPERADMINPASSWORD=123456",
-            "HALO_SECURITY_INITIALIZER_SUPERADMINUSERNAME=guqing");
+            "HALO_SECURITY_INITIALIZER_SUPERADMINUSERNAME=admin");
         HostConfig hostConfig = containerCmd.getHostConfig();
         if (hostConfig == null) {
             containerCmd.withHostConfig(new HostConfig());

@@ -46,6 +46,7 @@ public class HaloPluginExtension {
 
     public HaloPluginExtension(Project project) {
         this.project = project;
+        this.watchDomains = project.container(WatchTarget.class);
     }
 
     public void watchDomain(Action<NamedDomainObjectContainer<WatchTarget>> action) {
