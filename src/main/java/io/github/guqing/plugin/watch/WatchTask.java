@@ -56,6 +56,7 @@ public class WatchTask extends DockerStartContainer {
         return WatchExecutionParameters.builder()
                 .projectDir(getProject().getProjectDir())
                 .buildArgs(buildArgs)
+                .environment(System.getenv())
                 .build();
     }
 
