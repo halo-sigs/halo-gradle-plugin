@@ -11,7 +11,7 @@ import org.gradle.api.file.Directory;
 @Data
 @EqualsAndHashCode
 public class DockerClientConfiguration {
-    public static final String EXTENSION_NAME = "dockerConfig";
+
 
     String url = "unix:///var/run/docker.sock";
     Directory certPath;

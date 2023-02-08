@@ -40,8 +40,6 @@ public class HaloPluginExtension {
 
     private NamedDomainObjectContainer<WatchTarget> watchDomains;
 
-    private DockerExtension docker = new DockerExtension();
-
     private HaloSecurity security = new HaloSecurity();
 
     public HaloPluginExtension(Project project) {

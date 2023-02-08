@@ -74,24 +74,19 @@ public class PluginDevelopment implements Plugin<Project> {
             });
         project.getTasks().getByName("assemble").dependsOn(PluginAutoVersionTask.TASK_NAME);
 
-        DockerClientConfiguration dockerExtension = project.getExtensions()
-                .create(DockerClientConfiguration.EXTENSION_NAME, DockerClientConfiguration.class);
+        DockerExtension dockerExtension = project.getExtensions()
+                .create(DockerExtension.EXTENSION_NAME, DockerExtension.class, project.getObjects());
 
         final Provider<DockerClientService> serviceProvider = project.getGradle()
             .getSharedServices().registerIfAbsent("docker",
                 DockerClientService.class,
                 pBuildServiceSpec -> pBuildServiceSpec.parameters(parameters -> {
                     parameters.getUrl().set(dockerExtension.getUrl());
-                    parameters.getCertPath().set(dockerExtension.getCertPath());
                     parameters.getApiVersion().set(dockerExtension.getApiVersion());
                 }));
 
-        project.getTasks().withType(AbstractDockerRemoteApiTask.class)
-                .configureEach(task -> task.getDockerClientService().set(serviceProvider));
-
-        DockerExtension docker = haloPluginExt.getDocker();
         String require = haloPluginExt.getRequire();
-        String imageName = docker.getImageName() + ":" + require;
+        String imageName = dockerExtension.getImageName() + ":" + require;
         project.getTasks().create("pullHaloImage", DockerPullImage.class, it -> {
             it.getImage().set(imageName);
             it.setGroup(GROUP);
@@ -101,7 +96,7 @@ public class PluginDevelopment implements Plugin<Project> {
         DockerCreateContainer createContainer =
             project.getTasks().create("createHaloContainer", DockerCreateContainer.class, it -> {
                 it.getImageId().set(imageName);
-                it.getContainerName().set(docker.getContainerName());
+                it.getContainerName().set(dockerExtension.getContainerName());
                 it.setGroup(GROUP);
                 it.setDescription("Create halo server container.");
                 it.dependsOn("build", "pullHaloImage");
@@ -134,6 +129,11 @@ public class PluginDevelopment implements Plugin<Project> {
             it.getContainerId().set(createContainer.getContainerId());
             it.dependsOn("createHaloContainer");
         });
+
+
+        project.getTasks().withType(AbstractDockerRemoteApiTask.class)
+                .configureEach(task -> task.getDockerClientService().set(serviceProvider));
+        System.out.println();
     }
 
     private File getPluginManifest(Project project) {
