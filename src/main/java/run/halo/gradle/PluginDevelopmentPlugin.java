@@ -1,9 +1,11 @@
 package run.halo.gradle;
 
 import static org.gradle.api.tasks.SourceSet.MAIN_SOURCE_SET_NAME;
+import static run.halo.gradle.ResolvePluginMainClassName.TASK_NAME;
 
 import java.io.File;
 import java.util.Set;
+import java.util.concurrent.Callable;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 import org.gradle.api.Plugin;
@@ -14,6 +16,7 @@ import org.gradle.api.plugins.JavaPlugin;
 import org.gradle.api.provider.Provider;
 import org.gradle.api.tasks.SourceSet;
 import org.gradle.api.tasks.SourceSetContainer;
+import org.gradle.api.tasks.TaskProvider;
 import run.halo.gradle.docker.AbstractDockerRemoteApiTask;
 import run.halo.gradle.docker.DockerClientService;
 import run.halo.gradle.docker.DockerCreateContainer;
@@ -55,6 +58,20 @@ public class PluginDevelopmentPlugin implements Plugin<Project> {
         System.setProperty("halo.plugin.name", pluginManifest.getMetadata().getName());
 
         project.getTasks()
+            .register(PluginAutoVersionTask.TASK_NAME, PluginAutoVersionTask.class, it -> {
+                it.setDescription("Auto populate plugin version to manifest file.");
+                it.setGroup(GROUP);
+                it.manifest.set(manifestFile);
+                File file =
+                    project.getExtensions().getByType(SourceSetContainer.class)
+                        .getByName(MAIN_SOURCE_SET_NAME)
+                        .getOutput().getResourcesDir();
+                it.resourcesDir.set(file);
+                it.dependsOn("processResources");
+            });
+        project.getTasks().getByName("processResources").dependsOn(PluginAutoVersionTask.TASK_NAME);
+
+        project.getTasks()
             .register(PluginComponentsIndexTask.TASK_NAME, PluginComponentsIndexTask.class, it -> {
                 it.setGroup(GROUP);
                 FileCollection files =
@@ -64,20 +81,8 @@ public class PluginDevelopmentPlugin implements Plugin<Project> {
             });
         project.getTasks().getByName("assemble").dependsOn(PluginComponentsIndexTask.TASK_NAME);
 
-        project.getTasks()
-            .register(PluginAutoVersionTask.TASK_NAME, PluginAutoVersionTask.class, it -> {
-                it.setDescription("Auto populate plugin version to manifest file.");
-                it.setGroup(GROUP);
-                it.manifest.set(manifestFile);
-                File file =
-                    project.getExtensions().getByType(SourceSetContainer.class)
-                        .getByName(MAIN_SOURCE_SET_NAME)
-                        .getOutput().getResourcesDir();
-                System.out.println("Resource file dir:" + file);
-                it.resourcesDir.set(file);
-                it.dependsOn("processResources");
-            });
-        project.getTasks().getByName("assemble").dependsOn(PluginAutoVersionTask.TASK_NAME);
+        TaskProvider<ResolvePluginMainClassName> resolvePluginMainClassName =
+            configureResolvePluginMainClassNameTask(project);
 
         DockerExtension dockerExtension = project.getExtensions()
             .create(DockerExtension.EXTENSION_NAME, DockerExtension.class, project.getObjects());
@@ -138,6 +143,30 @@ public class PluginDevelopmentPlugin implements Plugin<Project> {
 
         project.getTasks().withType(AbstractDockerRemoteApiTask.class)
             .configureEach(task -> task.getDockerClientService().set(serviceProvider));
+    }
+
+    private TaskProvider<ResolvePluginMainClassName> configureResolvePluginMainClassNameTask(
+        Project project) {
+        return project.getTasks()
+            .register(TASK_NAME, ResolvePluginMainClassName.class,
+                (resolveMainClassName) -> {
+                    resolveMainClassName.setDescription(
+                        "Resolves the name of the plugin's main class.");
+                    resolveMainClassName.setGroup(GROUP);
+                    Callable<FileCollection> classpath = () -> project.getExtensions()
+                        .getByType(SourceSetContainer.class)
+                        .getByName(SourceSet.MAIN_SOURCE_SET_NAME)
+                        .getOutput();
+                    resolveMainClassName.setClasspath(classpath);
+                    resolveMainClassName.getConfiguredMainClassName()
+                        .convention(project.provider(() -> {
+                            HaloPluginExtension haloPluginExtension = project.getExtensions()
+                                .getByType(HaloPluginExtension.class);
+                            return haloPluginExtension.getMainClass().getOrNull();
+                        }));
+                    resolveMainClassName.getOutputFile()
+                        .set(project.getLayout().getBuildDirectory().file("resolvedMainClassName"));
+                });
     }
 
     private File getPluginManifest(Project project) {

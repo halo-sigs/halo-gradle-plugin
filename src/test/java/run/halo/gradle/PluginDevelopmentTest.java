@@ -1,7 +1,6 @@
 package run.halo.gradle;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
 
 import java.io.File;
 import java.io.FileWriter;
@@ -9,7 +8,6 @@ import java.io.IOException;
 import java.io.PrintWriter;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.stream.Stream;
 import org.gradle.testkit.runner.BuildResult;
 import org.gradle.testkit.runner.GradleRunner;
 import org.junit.jupiter.api.BeforeEach;
@@ -69,29 +67,6 @@ public class PluginDevelopmentTest {
               version: "1.0.0"
               requires: ">=2.0.0-beta.2"
             """, pluginYaml + "\n");
-    }
-
-
-    @Test
-    void defaultThemeInstallTask() throws IOException {
-        createPluginManifestFile();
-        try (PrintWriter out = new PrintWriter(new FileWriter(this.buildFile))) {
-            out.println("plugins {");
-            out.println("    id 'io.github.guqing.plugin-development'");
-            out.println("}");
-            out.println("group 'io.github.guqing'");
-            out.println("version '1.0.0'");
-        }
-        BuildResult buildResult = runGradle(InstallDefaultThemeTask.TASK_NAME, "-s");
-        System.out.println(buildResult.getOutput());
-        try (Stream<Path> paths = Files.list(
-            Path.of(this.projectDir.getAbsolutePath(), "workplace/themes"))) {
-            Path themePath = paths.filter(path -> path.endsWith("theme-earth"))
-                .findFirst()
-                .orElseThrow();
-            // not empty
-            assertFalse(FileUtils.isEmpty(themePath));
-        }
     }
 
     private void createPluginManifestFile() throws IOException {

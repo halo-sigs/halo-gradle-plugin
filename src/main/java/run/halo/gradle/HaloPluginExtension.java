@@ -7,6 +7,7 @@ import org.gradle.api.Action;
 import org.gradle.api.NamedDomainObjectContainer;
 import org.gradle.api.Project;
 import org.gradle.api.plugins.ExtensionContainer;
+import org.gradle.api.provider.Property;
 import run.halo.gradle.watch.WatchTarget;
 
 /**
@@ -26,11 +27,14 @@ public class HaloPluginExtension {
 
     private final Project project;
 
+    private final Property<String> mainClass;
+
     private Path workDir;
 
     private File manifestFile;
 
     private String pluginName;
+
     private String require;
 
     private String version;
@@ -44,6 +48,16 @@ public class HaloPluginExtension {
     public HaloPluginExtension(Project project) {
         this.project = project;
         this.watchDomains = project.container(WatchTarget.class);
+        this.mainClass = this.project.getObjects().property(String.class);
+    }
+
+    /**
+     * Returns the fully-qualified name of the plugin's main class.
+     *
+     * @return the fully-qualified name of the plugin's main class
+     */
+    public Property<String> getMainClass() {
+        return this.mainClass;
     }
 
     public void watchDomain(Action<NamedDomainObjectContainer<WatchTarget>> action) {

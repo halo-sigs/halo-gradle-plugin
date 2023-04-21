@@ -1,6 +1,5 @@
 package run.halo.gradle;
 
-import groovyjarjarasm.asm.Opcodes;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
@@ -11,14 +10,29 @@ import java.nio.file.Paths;
 import java.util.LinkedHashSet;
 import java.util.Set;
 import lombok.extern.slf4j.Slf4j;
-import org.gradle.api.DefaultTask;
+import org.gradle.api.Project;
+import org.gradle.api.artifacts.ResolvableDependencies;
 import org.gradle.api.file.ConfigurableFileCollection;
+import org.gradle.api.file.FileCollection;
+import org.gradle.api.provider.Provider;
 import org.gradle.api.tasks.InputFiles;
 import org.gradle.api.tasks.TaskAction;
+import org.gradle.jvm.tasks.Jar;
 import org.objectweb.asm.ClassReader;
+import run.halo.gradle.utils.AsmConst;
 
 @Slf4j
-public class PluginComponentsIndexTask extends DefaultTask {
+public class PluginComponentsIndexTask extends Jar {
+
+    private final String mainClass = "run.halo.app.plugin.BasePlugin";
+
+    private final Provider<String> projectName;
+
+    private final Provider<Object> projectVersion;
+
+    private final PluginArchiveSupport support;
+
+    private FileCollection classpath;
 
     /**
      * The package separator character: {@code '.'}.
@@ -35,10 +49,37 @@ public class PluginComponentsIndexTask extends DefaultTask {
 
     public static final String TASK_NAME = "generatePluginComponentsIdx";
 
-    private static final int ASM_VERSION = Opcodes.ASM9;
+    /**
+     * Creates a new {@code BootJar} task.
+     */
+    public PluginComponentsIndexTask() {
+        this.support = new PluginArchiveSupport(mainClass);
+        Project project = getProject();
+        project.getConfigurations().all((configuration) -> {
+            ResolvableDependencies incoming = configuration.getIncoming();
+            incoming.afterResolve((resolvableDependencies) -> {
+                if (resolvableDependencies == incoming) {
+                    //this.resolvedDependencies.processConfiguration(project, configuration);
+                }
+            });
+        });
+        this.projectName = project.provider(project::getName);
+        this.projectVersion = project.provider(project::getVersion);
+    }
 
     @InputFiles
     ConfigurableFileCollection classesDirs = getProject().getObjects().fileCollection();
+
+
+    @Override
+    public void copy() {
+        // this.support.configureManifest(getManifest(), getMainClass().get(), CLASSES_DIRECTORY,
+        //     LIB_DIRECTORY,
+        //     CLASSPATH_INDEX, (isLayeredDisabled()) ? null : LAYERS_INDEX,
+        //     this.getTargetJavaVersion().get().getMajorVersion(), this.projectName.get(),
+        //     this.projectVersion.get());
+        // super.copy();
+    }
 
     @TaskAction
     public void generate() throws IOException {
@@ -54,7 +95,7 @@ public class PluginComponentsIndexTask extends DefaultTask {
 
             ClassReader classReader = new ClassReader(new FileInputStream(file));
             FilterComponentClassVisitor filterComponentClassVisitor =
-                new FilterComponentClassVisitor(ASM_VERSION);
+                new FilterComponentClassVisitor(AsmConst.ASM_VERSION);
             classReader.accept(filterComponentClassVisitor, ClassReader.SKIP_DEBUG);
 
             if (filterComponentClassVisitor.isComponentClass()) {
