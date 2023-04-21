@@ -1,12 +1,22 @@
 package run.halo.gradle.watch;
 
 import com.github.dockerjava.api.command.KillContainerCmd;
-import run.halo.gradle.HaloPluginExtension;
-import run.halo.gradle.WatchExecutionParameters;
-import run.halo.gradle.docker.DockerStartContainer;
-import run.halo.gradle.steps.CreateHttpClientStep;
-import run.halo.gradle.steps.InitializeHaloStep;
-import run.halo.gradle.steps.ReloadPluginStep;
+import java.io.File;
+import java.io.IOException;
+import java.net.http.HttpClient;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.time.Duration;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import java.util.concurrent.CompletableFuture;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 import lombok.extern.slf4j.Slf4j;
 import org.gradle.StartParameter;
 import org.gradle.api.file.FileCollection;
@@ -14,17 +24,12 @@ import org.gradle.api.internal.file.pattern.PatternMatcher;
 import org.gradle.api.internal.file.pattern.PatternMatcherFactory;
 import org.gradle.internal.classpath.ClassPath;
 import org.gradle.internal.classpath.DefaultClassPath;
-
-import java.io.File;
-import java.io.IOException;
-import java.net.http.HttpClient;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.time.Duration;
-import java.util.*;
-import java.util.concurrent.CompletableFuture;
-import java.util.stream.Collectors;
-import java.util.stream.Stream;
+import run.halo.gradle.HaloPluginExtension;
+import run.halo.gradle.WatchExecutionParameters;
+import run.halo.gradle.docker.DockerStartContainer;
+import run.halo.gradle.steps.CreateHttpClientStep;
+import run.halo.gradle.steps.InitializeHaloStep;
+import run.halo.gradle.steps.ReloadPluginStep;
 
 /**
  * @author guqing

@@ -1,9 +1,8 @@
 package run.halo.gradle.model;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
-import lombok.Data;
-
 import java.util.List;
+import lombok.Data;
 
 /**
  * @author guqing

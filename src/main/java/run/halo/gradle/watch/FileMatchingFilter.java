@@ -1,10 +1,9 @@
 package run.halo.gradle.watch;
 
-import org.apache.commons.lang3.StringUtils;
-import org.gradle.api.internal.file.pattern.PatternMatcher;
-
 import java.io.File;
 import java.io.FileFilter;
+import org.apache.commons.lang3.StringUtils;
+import org.gradle.api.internal.file.pattern.PatternMatcher;
 
 /**
  * @author guqing

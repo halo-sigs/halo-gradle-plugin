@@ -1,10 +1,9 @@
 package run.halo.gradle.steps;
 
-import run.halo.gradle.Assert;
-
 import java.net.Authenticator;
 import java.net.PasswordAuthentication;
 import java.net.http.HttpClient;
+import run.halo.gradle.Assert;
 
 /**
  * @author guqing

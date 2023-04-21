@@ -1,7 +1,7 @@
 package run.halo.gradle;
 
-import javax.annotation.Nullable;
 import java.util.function.Supplier;
+import javax.annotation.Nullable;
 
 /**
  * @author guqing

@@ -1,7 +1,11 @@
 package run.halo.gradle.docker;
 
 import com.github.dockerjava.api.command.CopyArchiveToContainerCmd;
-import run.halo.gradle.Assert;
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileNotFoundException;
+import java.util.ArrayList;
+import java.util.List;
 import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
 import org.gradle.api.GradleException;
@@ -13,12 +17,7 @@ import org.gradle.api.provider.Property;
 import org.gradle.api.tasks.Input;
 import org.gradle.api.tasks.Internal;
 import org.gradle.api.tasks.Optional;
-
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.FileNotFoundException;
-import java.util.ArrayList;
-import java.util.List;
+import run.halo.gradle.Assert;
 
 /**
  * @author guqing

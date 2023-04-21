@@ -1,14 +1,13 @@
 package run.halo.gradle;
 
-import run.halo.gradle.watch.WatchTarget;
+import java.io.File;
+import java.nio.file.Path;
 import lombok.Data;
 import org.gradle.api.Action;
 import org.gradle.api.NamedDomainObjectContainer;
 import org.gradle.api.Project;
 import org.gradle.api.plugins.ExtensionContainer;
-
-import java.io.File;
-import java.nio.file.Path;
+import run.halo.gradle.watch.WatchTarget;
 
 /**
  * 可以通过 {@link ExtensionContainer} 来创建和管理 Extension，{@link ExtensionContainer} 对象可以

@@ -2,13 +2,6 @@ package run.halo.gradle.steps;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
-import run.halo.gradle.Assert;
-import run.halo.gradle.RetryUtils;
-import run.halo.gradle.YamlUtils;
-import run.halo.gradle.model.ObjectNodeListResult;
-import lombok.extern.slf4j.Slf4j;
-import org.apache.commons.lang3.StringUtils;
-
 import java.io.IOException;
 import java.net.URI;
 import java.net.URISyntaxException;
@@ -17,6 +10,12 @@ import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.nio.charset.StandardCharsets;
 import java.util.UUID;
+import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.lang3.StringUtils;
+import run.halo.gradle.Assert;
+import run.halo.gradle.RetryUtils;
+import run.halo.gradle.YamlUtils;
+import run.halo.gradle.model.ObjectNodeListResult;
 
 /**
  * @author guqing

@@ -4,11 +4,10 @@ import com.github.dockerjava.api.DockerClient;
 import com.github.dockerjava.api.command.LogContainerCmd;
 import com.github.dockerjava.api.command.StartContainerCmd;
 import groovy.transform.CompileStatic;
-import lombok.extern.slf4j.Slf4j;
-
 import java.io.Closeable;
 import java.util.concurrent.TimeoutException;
 import java.util.function.Consumer;
+import lombok.extern.slf4j.Slf4j;
 
 @Slf4j
 @CompileStatic

@@ -1,9 +1,8 @@
 package run.halo.gradle.watch;
 
-import run.halo.gradle.Assert;
-import org.apache.commons.io.FilenameUtils;
-
 import java.io.File;
+import org.apache.commons.io.FilenameUtils;
+import run.halo.gradle.Assert;
 
 /**
  * @author guqing

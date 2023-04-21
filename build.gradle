@@ -55,12 +55,12 @@ ext {
     semver4j = '3.1.0'
     lombok = '1.18.24'
     asm = '9.4'
+    dockerJava = '3.3.0'
 }
 
 dependencies {
-    // https://mvnrepository.com/artifact/com.github.docker-java/docker-java-transport-httpclient5
-    implementation 'com.github.docker-java:docker-java-transport-httpclient5:3.2.14'
-    implementation 'com.github.docker-java:docker-java-core:3.2.14'
+    implementation "com.github.docker-java:docker-java-transport-httpclient5:$dockerJava"
+    implementation "com.github.docker-java:docker-java-core:$dockerJava"
 
     implementation "com.fasterxml.jackson.dataformat:jackson-dataformat-yaml:$jackjson"
     implementation "com.fasterxml.jackson.core:jackson-databind:$jackjson"

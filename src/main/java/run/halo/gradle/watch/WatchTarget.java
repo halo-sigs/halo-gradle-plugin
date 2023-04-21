@@ -1,11 +1,14 @@
 package run.halo.gradle.watch;
 
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Set;
 import lombok.NonNull;
 import lombok.ToString;
 import org.gradle.api.Named;
 import org.gradle.api.file.FileCollection;
-
-import java.util.*;
 
 /**
  * @author guqing

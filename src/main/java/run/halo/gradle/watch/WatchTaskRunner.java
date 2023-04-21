@@ -1,7 +1,8 @@
 package run.halo.gradle.watch;
 
-import run.halo.gradle.Assert;
-import run.halo.gradle.WatchExecutionParameters;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
 import org.gradle.StartParameter;
 import org.gradle.api.Project;
 import org.gradle.api.logging.Logging;
@@ -14,10 +15,8 @@ import org.gradle.tooling.internal.consumer.DefaultBuildLauncher;
 import org.gradle.tooling.internal.consumer.DefaultGradleConnector;
 import org.gradle.wrapper.GradleUserHomeLookup;
 import org.slf4j.Logger;
-
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
+import run.halo.gradle.Assert;
+import run.halo.gradle.WatchExecutionParameters;
 
 /**
  * @author guqing

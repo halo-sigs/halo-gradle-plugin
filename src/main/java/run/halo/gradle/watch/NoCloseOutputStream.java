@@ -1,9 +1,8 @@
 package run.halo.gradle.watch;
 
-import lombok.NonNull;
-
 import java.io.IOException;
 import java.io.OutputStream;
+import lombok.NonNull;
 
 /**
  * @author guqing
