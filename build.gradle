@@ -4,8 +4,8 @@ plugins {
     id 'maven-publish'
 }
 
-group 'io.github.guqing.plugin'
-version '0.0.7-SNAPSHOT'
+group 'run.halo.gradle'
+version '0.0.2-SNAPSHOT'
 sourceCompatibility = JavaVersion.VERSION_17
 
 repositories {
@@ -41,8 +41,10 @@ publishing {
 gradlePlugin {
     plugins {
         pluginDevelopment {
-            id = 'io.github.guqing.plugin-development'
-            implementationClass = 'io.github.guqing.plugin.PluginDevelopment'
+            id = 'run.halo.plugin-development'
+            displayName = "Halo Gradle Plugin"
+            description = "Halo Gradle Plugin For Plugin Development"
+            implementationClass = 'run.halo.gradle.PluginDevelopmentPlugin'
         }
     }
 }
