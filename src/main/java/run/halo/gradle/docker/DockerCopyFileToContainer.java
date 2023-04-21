@@ -50,7 +50,8 @@ public class DockerCopyFileToContainer extends DockerExistingContainer {
     @Optional
     final List<CopyFileToContainer> copyFiles = new ArrayList<>();
 
-    private final FileOperations fileOperations = ((ProjectInternal) getProject()).getFileOperations();
+    private final FileOperations fileOperations =
+        ((ProjectInternal) getProject()).getFileOperations();
 
     @Override
     public void runRemoteCommand() {
@@ -67,14 +68,17 @@ public class DockerCopyFileToContainer extends DockerExistingContainer {
         }
 
         for (CopyFileToContainer fileToCopy : copyFiles) {
-            log.debug("Copying file to container with ID [{}] at [{}].", containerId.get(), fileToCopy.getRemotePath());
-            CopyArchiveToContainerCmd containerCommand = getDockerClient().copyArchiveToContainerCmd(containerId.get());
+            log.debug("Copying file to container with ID [{}] at [{}].", containerId.get(),
+                fileToCopy.getRemotePath());
+            CopyArchiveToContainerCmd containerCommand =
+                getDockerClient().copyArchiveToContainerCmd(containerId.get());
             setContainerCommandConfig(containerCommand, fileToCopy);
             containerCommand.exec();
         }
     }
 
-    private void setContainerCommandConfig(CopyArchiveToContainerCmd containerCommand, CopyFileToContainer copyFileToContainer) {
+    private void setContainerCommandConfig(CopyArchiveToContainerCmd containerCommand,
+        CopyFileToContainer copyFileToContainer) {
         File localHostPath = fileOperations.file(copyFileToContainer.hostPath);
 
         containerCommand.withRemotePath(copyFileToContainer.remotePath.toString());
@@ -93,8 +97,10 @@ public class DockerCopyFileToContainer extends DockerExistingContainer {
     /**
      * Add a file to be copied into container
      *
-     * @param hostPath   can be either String, GString, File or Closure which returns any of the previous.
-     * @param remotePath can be either String, GString, File or Closure which returns any of the previous.
+     * @param hostPath can be either String, GString, File or Closure which returns any of the
+     * previous.
+     * @param remotePath can be either String, GString, File or Closure which returns any of the
+     * previous.
      */
     void withFile(String hostPath, String remotePath) {
         Assert.notNull(hostPath, "hostPath cannot be null");
@@ -123,7 +129,8 @@ public class DockerCopyFileToContainer extends DockerExistingContainer {
         /**
          * The host path.
          * <p>
-         * Can take the form of {@code String}, {@code GString}, {@code File}, or {@code Closure} which returns any of the previous.
+         * Can take the form of {@code String}, {@code GString}, {@code File}, or {@code Closure}
+         * which returns any of the previous.
          */
         @Input
         private Object hostPath;
@@ -131,7 +138,8 @@ public class DockerCopyFileToContainer extends DockerExistingContainer {
         /**
          * The remote path.
          * <p>
-         * Can take the form of {@code String}, {@code GString}, {@code File}, or {@code Closure} which returns any of the previous.
+         * Can take the form of {@code String}, {@code GString}, {@code File}, or {@code Closure}
+         * which returns any of the previous.
          */
         @Input
         private Object remotePath;

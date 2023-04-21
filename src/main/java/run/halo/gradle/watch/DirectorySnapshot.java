@@ -28,12 +28,13 @@ public class DirectorySnapshot {
     /**
      * Create a new {@link DirectorySnapshot} for the given directory.
      *
-     * @param directory     the source directory
+     * @param directory the source directory
      * @param excludeFilter exclude file filter, can be null
      */
     DirectorySnapshot(File directory, FileFilter excludeFilter) {
         Assert.notNull(directory, "Directory must not be null");
-        Assert.isTrue(!directory.isFile(), () -> "Directory '" + directory + "' must not be a file");
+        Assert.isTrue(!directory.isFile(),
+            () -> "Directory '" + directory + "' must not be a file");
         this.directory = directory;
         this.time = new Date();
         this.excludeFilter = excludeFilter;
@@ -64,22 +65,25 @@ public class DirectorySnapshot {
         Assert.notNull(snapshot, "Snapshot must not be null");
         File directory = this.directory;
         Assert.isTrue(snapshot.directory.equals(directory),
-                () -> "Snapshot source directory must be '" + directory + "'");
+            () -> "Snapshot source directory must be '" + directory + "'");
         Set<ChangedFile> changes = new LinkedHashSet<>();
         Map<File, FileSnapshot> previousFiles = getFilesMap();
         for (FileSnapshot currentFile : snapshot.files) {
             if (acceptChangedFile(triggerFilter, currentFile)) {
                 FileSnapshot previousFile = previousFiles.remove(currentFile.getFile());
                 if (previousFile == null) {
-                    changes.add(new ChangedFile(directory, currentFile.getFile(), ChangedFile.Type.ADD));
+                    changes.add(
+                        new ChangedFile(directory, currentFile.getFile(), ChangedFile.Type.ADD));
                 } else if (!previousFile.equals(currentFile)) {
-                    changes.add(new ChangedFile(directory, currentFile.getFile(), ChangedFile.Type.MODIFY));
+                    changes.add(
+                        new ChangedFile(directory, currentFile.getFile(), ChangedFile.Type.MODIFY));
                 }
             }
         }
         for (FileSnapshot previousFile : previousFiles.values()) {
             if (acceptChangedFile(triggerFilter, previousFile)) {
-                changes.add(new ChangedFile(directory, previousFile.getFile(), ChangedFile.Type.DELETE));
+                changes.add(
+                    new ChangedFile(directory, previousFile.getFile(), ChangedFile.Type.DELETE));
             }
         }
         return new ChangedFiles(directory, changes);

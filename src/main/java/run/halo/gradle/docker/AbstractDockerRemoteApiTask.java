@@ -31,7 +31,8 @@ public abstract class AbstractDockerRemoteApiTask extends DefaultTask {
     private final Property<String> url = getProject().getObjects().property(String.class);
 
     /**
-     * Path to the <a href="https://docs.docker.com/engine/security/https/">Docker certificate and key</a>.
+     * Path to the
+     * <a href="https://docs.docker.com/engine/security/https/">Docker certificate and key</a>.
      */
     @InputDirectory
     @PathSensitive(PathSensitivity.RELATIVE)
@@ -58,7 +59,8 @@ public abstract class AbstractDockerRemoteApiTask extends DefaultTask {
         return dockerClientService;
     }
 
-    private final Property<DockerClientService> dockerClientService = getProject().getObjects().property(DockerClientService.class);
+    private final Property<DockerClientService> dockerClientService =
+        getProject().getObjects().property(DockerClientService.class);
 
     private Action<? super Throwable> errorHandler;
     private Action<? super Object> nextHandler;
@@ -124,7 +126,8 @@ public abstract class AbstractDockerRemoteApiTask extends DefaultTask {
      * Returns the same instance for any successive method call.
      * To support the configuration cache we rely on DockerClientService's internal cache.
      * <p>
-     * Before accessing the Docker client, all data used for configuring its runtime behavior needs to be evaluated.
+     * Before accessing the Docker client, all data used for configuring its runtime behavior
+     * needs to be evaluated.
      * The data includes:
      * <ol>
      * <li>The property values of this class</li>
@@ -134,7 +137,8 @@ public abstract class AbstractDockerRemoteApiTask extends DefaultTask {
      * It is safe to access the Docker client under the following conditions:
      * <ol>
      * <li>In the task action</li>
-     * <li>In the task's constructor if used in {@code Action} or {@code Closure} of {@code outputs.upToDateWhen}</li>
+     * <li>In the task's constructor if used in {@code Action} or {@code Closure} of {@code
+     * outputs.upToDateWhen}</li>
      * </ol>
      *
      * @return The Docker client

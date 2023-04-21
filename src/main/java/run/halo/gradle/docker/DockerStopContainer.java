@@ -29,7 +29,7 @@ public class DockerStopContainer extends DockerExistingContainer {
 
     // overloaded method used by sub-classes and ad-hoc processes
     static void runRemoteCommand(DockerClient dockerClient, String containerId,
-                                 Integer optionalTimeout) {
+        Integer optionalTimeout) {
         StopContainerCmd stopContainerCmd = dockerClient.stopContainerCmd(containerId);
         if (optionalTimeout != null) {
             stopContainerCmd.withTimeout(optionalTimeout);

@@ -16,16 +16,16 @@ public class CreateHttpClientStep {
         Assert.notNull(username, "username must not be null");
         Assert.notNull(password, "password must not be null");
         this.client = HttpClient.newBuilder()
-                .authenticator(new Authenticator() {
+            .authenticator(new Authenticator() {
 
-                    @Override
-                    protected PasswordAuthentication getPasswordAuthentication() {
-                        return new PasswordAuthentication(
-                                username,
-                                password.toCharArray());
-                    }
-                })
-                .build();
+                @Override
+                protected PasswordAuthentication getPasswordAuthentication() {
+                    return new PasswordAuthentication(
+                        username,
+                        password.toCharArray());
+                }
+            })
+            .build();
     }
 
     public HttpClient create() {

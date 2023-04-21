@@ -21,6 +21,7 @@ public class WatchExecutionParameters {
 
     @NonNull
     File projectDir;
+
     @Builder.Default
     List<String> buildArgs = List.of("-q");
 
@@ -30,6 +31,7 @@ public class WatchExecutionParameters {
     ClassPath injectedClassPath;
 
     boolean embedded;
+    
     @Builder.Default
     OutputStream standardOutput = System.out;
 

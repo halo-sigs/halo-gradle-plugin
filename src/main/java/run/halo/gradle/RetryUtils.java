@@ -10,7 +10,8 @@ public class RetryUtils {
 
     /**
      * Retry the given call.
-     * We use a function <code>baseSleepMillis * Math.pow(retryTimes, 2)</code> to calculate the sleep time
+     * We use a function <code>baseSleepMillis * Math.pow(retryTimes, 2)</code> to calculate the
+     * sleep time
      */
     public static void withRetry(int maxTimes, long baseSleepMillis, CallToRetry call) {
         if (maxTimes <= 0) {

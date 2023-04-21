@@ -11,7 +11,8 @@ import org.gradle.api.tasks.Input;
 @CompileStatic
 public abstract class DockerExistingContainer extends AbstractDockerRemoteApiTask {
     /**
-     * The ID or name of container used to perform operation. The container for the provided ID has to be created first.
+     * The ID or name of container used to perform operation. The container for the provided ID
+     * has to be created first.
      */
     @Input
     final Property<String> containerId = getProject().getObjects().property(String.class);

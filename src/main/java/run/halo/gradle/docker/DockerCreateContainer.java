@@ -28,7 +28,8 @@ import run.halo.gradle.HaloPluginExtension;
 @Slf4j
 public class DockerCreateContainer extends DockerExistingImage {
     @Internal
-    private final HaloPluginExtension pluginExtension = getProject().getExtensions().getByType(HaloPluginExtension.class);
+    private final HaloPluginExtension pluginExtension =
+        getProject().getExtensions().getByType(HaloPluginExtension.class);
 
     @Input
     @Optional
@@ -47,13 +48,15 @@ public class DockerCreateContainer extends DockerExistingImage {
     final RegularFileProperty containerIdFile = getProject().getObjects().fileProperty();
 
     /**
-     * The ID of the container created. The value of this property requires the task action to be executed.
+     * The ID of the container created. The value of this property requires the task action to be
+     * executed.
      */
     @Internal
     final Property<String> containerId = getProject().getObjects().property(String.class);
 
     /**
-     * The target platform in the format {@code os[/arch[/variant]]}, for example {@code linux/s390x} or {@code darwin}.
+     * The target platform in the format {@code os[/arch[/variant]]}, for example {@code linux
+     * /s390x} or {@code darwin}.
      *
      * @since 7.1.0
      */
@@ -73,8 +76,8 @@ public class DockerCreateContainer extends DockerExistingImage {
 
         String safeTaskPath = getPath().replaceFirst("^:", "").replaceAll(":", "_");
         containerIdFile.convention(
-                getProject().getLayout().getBuildDirectory()
-                        .file(".docker/" + safeTaskPath + "-containerId.txt"));
+            getProject().getLayout().getBuildDirectory()
+                .file(".docker/" + safeTaskPath + "-containerId.txt"));
     }
 
     @Override
@@ -84,7 +87,7 @@ public class DockerCreateContainer extends DockerExistingImage {
         setContainerCommandConfig(containerCommand);
         CreateContainerResponse container = containerCommand.exec();
         final String localContainerName =
-                containerName.getOrNull() == null ? container.getId() : containerName.get();
+            containerName.getOrNull() == null ? container.getId() : containerName.get();
         log.info("Created container with ID [{}]", localContainerName);
         Files.writeString(containerIdFile.get().getAsFile().toPath(), container.getId());
         Action<? super Object> nextHandler = getNextHandler();
@@ -125,14 +128,15 @@ public class DockerCreateContainer extends DockerExistingImage {
         }
         HaloPluginExtension.HaloSecurity security = pluginExtension.getSecurity();
         containerCommand.withEnv("HALO_EXTERNAL_URL=" + pluginExtension.getHost(),
-                "HALO_SECURITY_INITIALIZER_SUPERADMINPASSWORD=" + security.getSuperAdminPassword(),
-                "HALO_SECURITY_INITIALIZER_SUPERADMINUSERNAME=" + security.getSuperAdminUsername(),
-                "JAVA_TOOL_OPTIONS=-agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=*:5005");
+            "HALO_SECURITY_INITIALIZER_SUPERADMINPASSWORD=" + security.getSuperAdminPassword(),
+            "HALO_SECURITY_INITIALIZER_SUPERADMINUSERNAME=" + security.getSuperAdminUsername(),
+            "JAVA_TOOL_OPTIONS=-agentlib:jdwp=transport=dt_socket,server=y,suspend=n,"
+                + "address=*:5005");
 
         containerCommand.withImage(getImageId().get());
         containerCommand.withLabels(Map.of(Constant.DEFAULT_CONTAINER_LABEL, "halo-gradle-plugin"));
         containerCommand.withExposedPorts(ExposedPort.parse("8090"), ExposedPort.parse("5005"));
         containerCommand.withHostConfig(new HostConfig()
-                .withPortBindings(PortBinding.parse("8090:8090"), PortBinding.parse("5005:5005")));
+            .withPortBindings(PortBinding.parse("8090:8090"), PortBinding.parse("5005:5005")));
     }
 }

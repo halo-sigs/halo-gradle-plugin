@@ -8,7 +8,8 @@ import org.gradle.api.tasks.Input;
 
 public abstract class DockerExistingImage extends AbstractDockerRemoteApiTask {
     /**
-     * The ID or name of image used to perform operation. The image for the provided ID has to be created first.
+     * The ID or name of image used to perform operation. The image for the provided ID has to be
+     * created first.
      */
     @Input
     public final Property<String> getImageId() {

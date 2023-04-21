@@ -21,7 +21,8 @@ import org.gradle.api.services.BuildServiceParameters;
 /**
  * Build service for Docker client.
  */
-public abstract class DockerClientService implements BuildService<DockerClientService.Params>, AutoCloseable {
+public abstract class DockerClientService
+    implements BuildService<DockerClientService.Params>, AutoCloseable {
     private final Map<DefaultDockerClientConfig, DockerClient> dockerClients;
 
     private final ObjectFactory objects;
@@ -72,13 +73,14 @@ public abstract class DockerClientService implements BuildService<DockerClientSe
     public DockerClient getDockerClient(DockerClientConfiguration dockerClientConfiguration) {
         String dockerUrl = getDockerHostUrl(dockerClientConfiguration);
         File dockerCertPath = thingOrProperty(objects.directoryProperty(),
-                dockerClientConfiguration.getCertPath(), getParameters().getCertPath())
-                .map(Directory::getAsFile).getOrNull();
+            dockerClientConfiguration.getCertPath(), getParameters().getCertPath())
+            .map(Directory::getAsFile).getOrNull();
         String apiVersion = thingOrProperty(objects.property(String.class),
-                dockerClientConfiguration.getApiVersion(), getParameters().getApiVersion()).getOrNull();
+            dockerClientConfiguration.getApiVersion(), getParameters().getApiVersion()).getOrNull();
 
         // Create configuration
-        DefaultDockerClientConfig.Builder dockerClientConfigBuilder = DefaultDockerClientConfig.createDefaultConfigBuilder();
+        DefaultDockerClientConfig.Builder dockerClientConfigBuilder =
+            DefaultDockerClientConfig.createDefaultConfigBuilder();
         dockerClientConfigBuilder.withDockerHost(dockerUrl);
 
         if (dockerCertPath != null) {
@@ -104,7 +106,9 @@ public abstract class DockerClientService implements BuildService<DockerClientSe
 
     private DockerClient createDefaultDockerClient(DefaultDockerClientConfig config) {
         return dockerClients.computeIfAbsent(config, i -> {
-            ApacheDockerHttpClient dockerClient = new ApacheDockerHttpClient.Builder().dockerHost(config.getDockerHost()).sslConfig(config.getSSLConfig()).build();
+            ApacheDockerHttpClient dockerClient =
+                new ApacheDockerHttpClient.Builder().dockerHost(config.getDockerHost())
+                    .sslConfig(config.getSSLConfig()).build();
             return DockerClientImpl.getInstance(config, dockerClient);
         });
     }
@@ -117,7 +121,9 @@ public abstract class DockerClientService implements BuildService<DockerClientSe
      * @return Docker host URL as string
      */
     private String getDockerHostUrl(DockerClientConfiguration dockerClientConfiguration) {
-        String url = thingOrProperty(objects.property(String.class), dockerClientConfiguration.getUrl(), getParameters().getUrl()).map(String::toLowerCase).get();
+        String url =
+            thingOrProperty(objects.property(String.class), dockerClientConfiguration.getUrl(),
+                getParameters().getUrl()).map(String::toLowerCase).get();
         return url.startsWith("http") ? "tcp" + url.substring(url.indexOf(':')) : url;
     }
 

@@ -1,105 +1,143 @@
 package run.halo.gradle;
 
-import java.io.File;
-import java.io.IOException;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.Paths;
-import java.util.Set;
+import com.github.dockerjava.api.DockerClient;
+import com.github.dockerjava.api.command.CreateContainerCmd;
+import com.github.dockerjava.api.command.CreateContainerResponse;
+import com.github.dockerjava.api.command.LogContainerCmd;
+import com.github.dockerjava.api.command.RemoveContainerCmd;
+import com.github.dockerjava.api.command.StartContainerCmd;
+import com.github.dockerjava.api.command.StopContainerCmd;
+import com.github.dockerjava.api.model.ExposedPort;
+import com.github.dockerjava.api.model.HostConfig;
+import com.github.dockerjava.api.model.PortBinding;
+import java.io.Closeable;
+import java.util.concurrent.TimeoutException;
+import java.util.function.Consumer;
 import lombok.extern.slf4j.Slf4j;
 import org.gradle.api.provider.Property;
 import org.gradle.api.tasks.Input;
-import org.gradle.api.tasks.JavaExec;
-import org.gradle.api.tasks.SourceSet;
+import org.gradle.api.tasks.Optional;
+import run.halo.gradle.docker.AbstractDockerRemoteApiTask;
+import run.halo.gradle.docker.FrameConsumerResultCallback;
+import run.halo.gradle.docker.OutputFrame;
+import run.halo.gradle.docker.ToStringConsumer;
+import run.halo.gradle.docker.WaitingConsumer;
 
 /**
  * @author guqing
  * @since 2.0.0
  */
 @Slf4j
-public class HaloServerTask extends JavaExec {
-    public static final String TASK_NAME = "haloServer";
-
+public class HaloServerTask extends AbstractDockerRemoteApiTask {
+    /**
+     * The image including repository, image name and tag to be pulled e.g. {@code vieux/apache:2.0}.
+     *
+     * @since 6.0.0
+     */
     @Input
-    final Property<Path> haloHome = getProject().getObjects().property(Path.class);
+    final Property<String> image = getProject().getObjects().property(String.class);
 
+    /**
+     * The target platform in the format {@code os[/arch[/variant]]}, for example {@code linux/s390x} or {@code darwin}.
+     *
+     * @since 7.1.0
+     */
     @Input
-    final Property<File> manifest = getProject().getObjects().property(File.class);
+    @Optional
+    final Property<String> platform = getProject().getObjects().property(String.class);
 
-    @Input
-    final Property<HaloPluginExtension> pluginEnvProperty =
-        getProject().getObjects().property(HaloPluginExtension.class);
+    private String containerId;
 
-    public Property<Path> getHaloHome() {
-        return haloHome;
-    }
-
-    public Property<File> getManifest() {
-        return manifest;
-    }
-
-    public void sourceResources(SourceSet sourceSet) {
-        File resourcesDir = sourceSet.getOutput().getResourcesDir();
-        Set<File> srcDirs = sourceSet.getResources().getSrcDirs();
-        setClasspath(getProject().files(srcDirs, getClasspath())
-            .filter((file) -> !file.equals(resourcesDir)));
-    }
-
-    public Property<HaloPluginExtension> getPluginEnvProperty() {
-        return pluginEnvProperty;
+    public HaloServerTask() {
+        doLast(action -> {
+            removeContainer(containerId);
+            System.out.println("DockerRunTask.doLast");
+        });
     }
 
     @Override
-    public void exec() {
-        HaloPluginExtension haloPluginEnv = pluginEnvProperty.get();
-        classpath(Paths.get(haloHome.get().resolve("halo.jar").toString()));
-        HaloPluginExtension.HaloSecurity security = haloPluginEnv.getSecurity();
-        Path themeManifest =
-            haloPluginEnv.getWorkDir().resolve(InstallDefaultThemeTask.DEFAULT_THEME_DIR);
+    public void runRemoteCommand() {
+        log.info("Pulling image '${image.get()}'.");
 
-        System.out.printf("Halo server will starting with username [%s] and password [%s]...\n",
-            security.getSuperAdminUsername(), security.getSuperAdminPassword());
+        CreateContainerCmd containerCmd = getDockerClient().createContainerCmd(image.get());
+        containerCmd.withName("halo-for-plugin");
 
-        File additionProperties = haloPluginEnv.getWorkDir()
-            .resolve("application-addition.properties").toFile();
-        if (!additionProperties.exists()) {
-            try {
-                Files.createFile(additionProperties.toPath());
-            } catch (IOException e) {
-                throw new RuntimeException(e);
+        if (platform.getOrNull() != null) {
+            containerCmd.withPlatform(platform.get());
+        }
+        containerCmd.withEnv("HALO_EXTERNAL_URL=http://localhost:8090/",
+            "HALO_SECURITY_INITIALIZER_SUPERADMINPASSWORD=123456",
+            "HALO_SECURITY_INITIALIZER_SUPERADMINUSERNAME=admin");
+        HostConfig hostConfig = containerCmd.getHostConfig();
+        if (hostConfig == null) {
+            containerCmd.withHostConfig(new HostConfig());
+            hostConfig = containerCmd.getHostConfig();
+        }
+        hostConfig.withPortBindings(PortBinding.parse("8090:8090"));
+        containerCmd.withExposedPorts(ExposedPort.parse("8090"));
+        CreateContainerResponse containerResponse = containerCmd.exec();
+        containerId = containerResponse.getId();
+
+        try (StartContainerCmd startContainerCmd = getDockerClient()
+            .startContainerCmd(containerResponse.getId())) {
+            startContainerCmd.exec();
+            WaitingConsumer waitingConsumer = new WaitingConsumer();
+            ToStringConsumer toStringConsumer = new ToStringConsumer();
+            Consumer<OutputFrame> outputFrameConsumer = toStringConsumer.andThen(waitingConsumer);
+            attachConsumer(getDockerClient(), containerResponse.getId(), outputFrameConsumer, true,
+                OutputFrame.OutputType.STDOUT);
+            waitingConsumer.waitUntil(frame -> false);
+        } catch (TimeoutException e) {
+            throw new RuntimeException(e);
+        } finally {
+            removeContainer(containerResponse.getId());
+            containerCmd.close();
+        }
+    }
+
+    private void removeContainer(String containerId) {
+        if (containerId == null) {
+            return;
+        }
+        try (StopContainerCmd stopContainerCmd = getDockerClient().stopContainerCmd(containerId);
+             RemoveContainerCmd removeContainerCmd = getDockerClient().removeContainerCmd(
+                 containerId)) {
+            stopContainerCmd.exec();
+            removeContainerCmd.exec();
+        }
+    }
+
+    private static Closeable attachConsumer(
+        DockerClient dockerClient,
+        String containerId,
+        Consumer<OutputFrame> consumer,
+        boolean followStream,
+        OutputFrame.OutputType... types
+    ) {
+        final LogContainerCmd cmd = dockerClient
+            .logContainerCmd(containerId)
+            .withFollowStream(followStream)
+            .withSince(0);
+
+        final FrameConsumerResultCallback callback = new FrameConsumerResultCallback();
+        for (OutputFrame.OutputType type : types) {
+            callback.addConsumer(type, consumer);
+            if (type == OutputFrame.OutputType.STDOUT) {
+                cmd.withStdOut(true);
+            }
+            if (type == OutputFrame.OutputType.STDERR) {
+                cmd.withStdErr(true);
             }
         }
-        args(haloHome.get().resolve("halo.jar").toFile(),
-            "--halo.work-dir=" + haloHome.get(),
-            "--spring.config.additional-location=" + additionProperties,
-            "--halo.plugin.fixed-plugin-path=" + getProject().getProjectDir(),
-            "--halo.plugin.runtime-mode=development",
-            "--halo.plugin.plugins-root=" + haloHome.get().resolve("plugins"),
-            "--halo.initial-extension-locations=" + toFileProtocol(manifest.get().toPath()),
-            "--halo.initial-extension-locations=" + themeManifest(haloPluginEnv),
-            "--halo.security.initializer.super-admin-username=" + security.getSuperAdminUsername(),
-            "--halo.security.initializer.super-admin-password=" + security.getSuperAdminPassword());
-        super.exec();
+
+        return cmd.exec(callback);
     }
 
-    private String toFileProtocol(Path path) {
-        return "file://" + path.toString();
+    public Property<String> getPlatform() {
+        return platform;
     }
 
-    private String themeManifest(HaloPluginExtension haloPluginEnv) {
-        Path themeManifest =
-            haloPluginEnv.getWorkDir().resolve(InstallDefaultThemeTask.DEFAULT_THEME_DIR);
-        return toFileProtocol(themeManifest) + "/*.yaml";
+    public Property<String> getImage() {
+        return image;
     }
-
-//    "--halo.work-dir=" + haloHome.get(),
-//        "--halo.security.initializer.super-admin-username=" + security.getSuperAdminUsername(),
-//        "--halo.security.initializer.super-admin-password=" + security.getSuperAdminPassword(),
-//        "--halo.plugin.fixed-plugin-path=" + getProject().getProjectDir(),
-//            "--halo.plugin.runtime-mode=development",
-//                "--halo.plugin.plugins-root=" + haloHome.get().resolve("plugins"),
-//            "--initial-extension-locations=" + manifest.get() + "," + themeManifest,
-//        "--logging.level.'run.halo.app'=DEBUG",
-//        "--springdoc.api-docs.enabled=true",
-//        "--springdoc.swagger-ui.enabled=true"
 }

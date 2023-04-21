@@ -31,7 +31,7 @@ public class DockerRemoveContainer extends DockerExistingContainer {
             return;
         }
         RemoveContainerCmd containerCommand =
-                getDockerClient().removeContainerCmd(id);
+            getDockerClient().removeContainerCmd(id);
         configureContainerCommandConfig(containerCommand);
         log.info("Removing container with ID [{}].", id);
         containerCommand.withForce(true).exec();

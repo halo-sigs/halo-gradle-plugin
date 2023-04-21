@@ -33,7 +33,7 @@ public class DefaultWatcher implements Watcher {
 
     @SuppressWarnings("rawtypes")
     private static final Kind[] EVENT_KIND = {
-            ENTRY_CREATE, ENTRY_MODIFY, ENTRY_DELETE
+        ENTRY_CREATE, ENTRY_MODIFY, ENTRY_DELETE
     };
 
     private static final Logger LOGGER = LoggerFactory.getLogger(DefaultWatcher.class);
@@ -46,7 +46,7 @@ public class DefaultWatcher implements Watcher {
 
     public DefaultWatcher() throws IOException {
         this.service = FileSystems.getDefault().newWatchService();
-        this.paths   = new LinkedHashMap<>();
+        this.paths = new LinkedHashMap<>();
     }
 
     Set<Path> getPaths() {
@@ -78,7 +78,7 @@ public class DefaultWatcher implements Watcher {
 
         Files.walkFileTree(path, new SimpleFileVisitor<Path>() {
             public FileVisitResult preVisitDirectory(Path dir, BasicFileAttributes attrs)
-                    throws IOException {
+                throws IOException {
 
                 paths.put(dir, dir.register(service, EVENT_KIND, HIGH));
 

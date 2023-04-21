@@ -80,7 +80,7 @@ public class PluginDevelopmentPlugin implements Plugin<Project> {
         project.getTasks().getByName("assemble").dependsOn(PluginAutoVersionTask.TASK_NAME);
 
         DockerExtension dockerExtension = project.getExtensions()
-                .create(DockerExtension.EXTENSION_NAME, DockerExtension.class, project.getObjects());
+            .create(DockerExtension.EXTENSION_NAME, DockerExtension.class, project.getObjects());
 
         final Provider<DockerClientService> serviceProvider = project.getGradle()
             .getSharedServices().registerIfAbsent("docker",
@@ -121,13 +121,14 @@ public class PluginDevelopmentPlugin implements Plugin<Project> {
         });
         project.getTasks().getByName("clean").dependsOn("removeHalo");
 
-        project.getTasks().create(HALO_SERVER_DEPENDENCY_CONFIGURATION_NAME, DockerStartContainer.class, it -> {
-            it.setGroup(GROUP);
-            it.getContainerId().set(createContainer.getContainerId());
-            it.setDescription("Run halo server container.");
-            it.dependsOn("createHaloContainer");
-            it.finalizedBy("removeHalo");
-        });
+        project.getTasks()
+            .create(HALO_SERVER_DEPENDENCY_CONFIGURATION_NAME, DockerStartContainer.class, it -> {
+                it.setGroup(GROUP);
+                it.getContainerId().set(createContainer.getContainerId());
+                it.setDescription("Run halo server container.");
+                it.dependsOn("createHaloContainer");
+                it.finalizedBy("removeHalo");
+            });
 
         project.getTasks().create("watch", WatchTask.class, it -> {
             it.setGroup(GROUP);
@@ -135,10 +136,8 @@ public class PluginDevelopmentPlugin implements Plugin<Project> {
             it.dependsOn("createHaloContainer");
         });
 
-
         project.getTasks().withType(AbstractDockerRemoteApiTask.class)
-                .configureEach(task -> task.getDockerClientService().set(serviceProvider));
-        System.out.println();
+            .configureEach(task -> task.getDockerClientService().set(serviceProvider));
     }
 
     private File getPluginManifest(Project project) {

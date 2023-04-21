@@ -8,7 +8,8 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * A consumer for container output that buffers lines in a {@link java.util.concurrent.BlockingDeque} and enables tests
+ * A consumer for container output that buffers lines in a
+ * {@link java.util.concurrent.BlockingDeque} and enables tests
  * to wait for a matching condition.
  */
 public class WaitingConsumer extends BaseConsumer<WaitingConsumer> {
@@ -23,7 +24,8 @@ public class WaitingConsumer extends BaseConsumer<WaitingConsumer> {
     }
 
     /**
-     * Get access to the underlying frame buffer. Modifying the buffer contents is likely to cause problems if the
+     * Get access to the underlying frame buffer. Modifying the buffer contents is likely to
+     * cause problems if the
      * waitUntil() methods are also being used, as they feed on the same data.
      *
      * @return the collection of frames
@@ -35,7 +37,8 @@ public class WaitingConsumer extends BaseConsumer<WaitingConsumer> {
     /**
      * Wait until any frame (usually, line) of output matches the provided predicate.
      * <p>
-     * Note that lines will often have a trailing newline character, and this is not stripped off before the
+     * Note that lines will often have a trailing newline character, and this is not stripped off
+     * before the
      * predicate is tested.
      *
      * @param predicate a predicate to test against each frame
@@ -48,11 +51,12 @@ public class WaitingConsumer extends BaseConsumer<WaitingConsumer> {
     /**
      * Wait until any frame (usually, line) of output matches the provided predicate.
      * <p>
-     * Note that lines will often have a trailing newline character, and this is not stripped off before the
+     * Note that lines will often have a trailing newline character, and this is not stripped off
+     * before the
      * predicate is tested.
      *
      * @param predicate a predicate to test against each frame
-     * @param limit     maximum time to wait
+     * @param limit maximum time to wait
      * @param limitUnit maximum time to wait (units)
      */
     public void waitUntil(Predicate<OutputFrame> predicate, int limit, TimeUnit limitUnit)
@@ -63,16 +67,17 @@ public class WaitingConsumer extends BaseConsumer<WaitingConsumer> {
     /**
      * Wait until any frame (usually, line) of output matches the provided predicate.
      * <p>
-     * Note that lines will often have a trailing newline character, and this is not stripped off before the
+     * Note that lines will often have a trailing newline character, and this is not stripped off
+     * before the
      * predicate is tested.
      *
      * @param predicate a predicate to test against each frame
-     * @param limit     maximum time to wait
+     * @param limit maximum time to wait
      * @param limitUnit maximum time to wait (units)
-     * @param times     number of times the predicate has to match
+     * @param times number of times the predicate has to match
      */
     public void waitUntil(Predicate<OutputFrame> predicate, long limit, TimeUnit limitUnit,
-                          int times)
+        int times)
         throws TimeoutException {
         long expiry = limitUnit.toMillis(limit) + System.currentTimeMillis();
 
@@ -84,24 +89,17 @@ public class WaitingConsumer extends BaseConsumer<WaitingConsumer> {
         int numberOfMatches = 0;
         while (System.currentTimeMillis() < expiry) {
             try {
-                OutputFrame frame = frames.pollLast(100, TimeUnit.MILLISECONDS);
+                OutputFrame frame = frames.take();
 
-                if (frame != null) {
-                    final String trimmedFrameText = frame.getUtf8String().replaceFirst("\n$", "");
-                    LOGGER.debug("{}: {}", frame.getType(), trimmedFrameText);
+                final String trimmedFrameText = frame.getUtf8String().replaceFirst("\n$", "");
+                LOGGER.debug("{}: {}", frame.getType(), trimmedFrameText);
 
-                    if (predicate.test(frame)) {
-                        numberOfMatches++;
+                if (predicate.test(frame)) {
+                    numberOfMatches++;
 
-                        if (numberOfMatches == times) {
-                            return;
-                        }
+                    if (numberOfMatches == times) {
+                        return;
                     }
-                }
-
-                if (frames.isEmpty()) {
-                    // sleep for a moment to avoid excessive CPU spinning
-                    Thread.sleep(10L);
                 }
             } catch (InterruptedException e) {
                 throw new RuntimeException(e);
@@ -127,7 +125,7 @@ public class WaitingConsumer extends BaseConsumer<WaitingConsumer> {
     /**
      * Wait until Docker closes the stream of output.
      *
-     * @param limit     maximum time to wait
+     * @param limit maximum time to wait
      * @param limitUnit maximum time to wait (units)
      */
     public void waitUntilEnd(long limit, TimeUnit limitUnit) throws TimeoutException {
@@ -139,15 +137,9 @@ public class WaitingConsumer extends BaseConsumer<WaitingConsumer> {
     private void waitUntilEnd(Long expiry) throws TimeoutException {
         while (System.currentTimeMillis() < expiry) {
             try {
-                OutputFrame frame = frames.pollLast(100, TimeUnit.MILLISECONDS);
-
+                OutputFrame frame = frames.take();
                 if (frame == OutputFrame.END) {
                     return;
-                }
-
-                if (frames.isEmpty()) {
-                    // sleep for a moment to avoid excessive CPU spinning
-                    Thread.sleep(10L);
                 }
             } catch (InterruptedException e) {
                 throw new RuntimeException(e);

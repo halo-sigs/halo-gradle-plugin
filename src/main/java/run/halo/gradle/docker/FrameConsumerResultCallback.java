@@ -49,6 +49,7 @@ public class FrameConsumerResultCallback extends
     /**
      * Set this callback to use the specified consumer for the given output type.
      * The same consumer can be configured for more than one output type.
+     *
      * @param outputType the output type to configure
      * @param consumer the consumer to use for that output type
      */
@@ -63,7 +64,8 @@ public class FrameConsumerResultCallback extends
             if (outputFrame != null) {
                 Consumer<OutputFrame> consumer = consumers.get(outputFrame.getType());
                 if (consumer == null) {
-                    LOGGER.error("got frame with type {}, for which no handler is configured", frame.getStreamType());
+                    LOGGER.error("got frame with type {}, for which no handler is configured",
+                        frame.getStreamType());
                 } else if (outputFrame.getBytes() != null && outputFrame.getBytes().length > 0) {
                     if (frame.getStreamType() == StreamType.RAW) {
                         processRawFrame(outputFrame, consumer);
@@ -80,7 +82,8 @@ public class FrameConsumerResultCallback extends
         // Sink any errors
         try {
             close();
-        } catch (IOException ignored) {}
+        } catch (IOException ignored) {
+        }
     }
 
     @Override
@@ -88,7 +91,8 @@ public class FrameConsumerResultCallback extends
         OutputFrame lastLine = null;
 
         if (logString.length() > 0) {
-            lastLine = new OutputFrame(OutputFrame.OutputType.STDOUT, logString.toString().getBytes());
+            lastLine =
+                new OutputFrame(OutputFrame.OutputType.STDOUT, logString.toString().getBytes());
         }
 
         // send an END frame to every consumer... but only once per consumer.
@@ -104,13 +108,15 @@ public class FrameConsumerResultCallback extends
     }
 
     /**
-     * @return a {@link CountDownLatch} that may be used to wait until {@link #close()} has been called.
+     * @return a {@link CountDownLatch} that may be used to wait until {@link #close()} has been
+     * called.
      */
     public CountDownLatch getCompletionLatch() {
         return completionLatch;
     }
 
-    private synchronized void processRawFrame(OutputFrame outputFrame, Consumer<OutputFrame> consumer) {
+    private synchronized void processRawFrame(OutputFrame outputFrame,
+        Consumer<OutputFrame> consumer) {
         String utf8String = outputFrame.getUtf8String();
         byte[] bytes = outputFrame.getBytes();
 
@@ -132,7 +138,8 @@ public class FrameConsumerResultCallback extends
         normalizeLogLines(utf8String, consumer);
     }
 
-    private synchronized void processOtherFrame(OutputFrame outputFrame, Consumer<OutputFrame> consumer) {
+    private synchronized void processOtherFrame(OutputFrame outputFrame,
+        Consumer<OutputFrame> consumer) {
         String utf8String = outputFrame.getUtf8String();
 
         utf8String = processAnsiColorCodes(utf8String, consumer);

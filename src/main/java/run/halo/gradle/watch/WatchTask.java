@@ -38,7 +38,8 @@ import run.halo.gradle.steps.ReloadPluginStep;
 @Slf4j
 public class WatchTask extends DockerStartContainer {
 
-    private final HaloPluginExtension pluginExtension = getProject().getExtensions().getByType(HaloPluginExtension.class);
+    private final HaloPluginExtension pluginExtension =
+        getProject().getExtensions().getByType(HaloPluginExtension.class);
 
     final HttpClient httpClient = createHttpClient();
 
@@ -49,7 +50,7 @@ public class WatchTask extends DockerStartContainer {
             // No shutdown hook registered yet.
             this.shutdownHook = new Thread(() -> {
                 try (KillContainerCmd killContainerCmd = getDockerClient()
-                        .killContainerCmd(getContainerId().get())) {
+                    .killContainerCmd(getContainerId().get())) {
                     killContainerCmd.exec();
                 }
             });
@@ -59,10 +60,10 @@ public class WatchTask extends DockerStartContainer {
 
     WatchExecutionParameters getParameters(List<String> buildArgs) {
         return WatchExecutionParameters.builder()
-                .projectDir(getProject().getProjectDir())
-                .buildArgs(buildArgs)
-                .environment(System.getenv())
-                .build();
+            .projectDir(getProject().getProjectDir())
+            .buildArgs(buildArgs)
+            .environment(System.getenv())
+            .build();
     }
 
     private ClassPath getInjectedClassPath() {
@@ -70,8 +71,8 @@ public class WatchTask extends DockerStartContainer {
         String classpath = parameter.getProjectProperties().get("classpath");
         if (classpath != null) {
             List<File> files = Arrays.stream(classpath.split(", "))
-                    .map(File::new)
-                    .toList();
+                .map(File::new)
+                .toList();
             return DefaultClassPath.of(files);
         }
         return null;
@@ -99,7 +100,7 @@ public class WatchTask extends DockerStartContainer {
         Duration quietPeriod = Duration.ofMillis(500);
 
         FileSystemWatcher watcher = new FileSystemWatcher(false, pollInterval,
-                quietPeriod, SnapshotStateRepository.STATIC);
+            quietPeriod, SnapshotStateRepository.STATIC);
         configWatchFiles(watcher);
 
         String host = pluginExtension.getHost();
@@ -129,15 +130,16 @@ public class WatchTask extends DockerStartContainer {
     }
 
     private void configWatchFiles(FileSystemWatcher watcher) {
-        HaloPluginExtension haloPluginExtension = getProject().getExtensions().getByType(HaloPluginExtension.class);
+        HaloPluginExtension haloPluginExtension =
+            getProject().getExtensions().getByType(HaloPluginExtension.class);
         List<WatchTarget> watchTargets = haloPluginExtension.getWatchDomains().stream().toList();
         Set<File> watchFiles = new HashSet<>();
         Set<String> excludes = new HashSet<>();
         for (WatchTarget watchTarget : watchTargets) {
             Set<File> files = watchTarget.getFiles().stream()
-                    .map(FileCollection::getFiles)
-                    .flatMap(Collection::stream)
-                    .collect(Collectors.toSet());
+                .map(FileCollection::getFiles)
+                .flatMap(Collection::stream)
+                .collect(Collectors.toSet());
             watchFiles.addAll(files);
             excludes.addAll(watchTarget.getExcludes());
         }
@@ -145,7 +147,8 @@ public class WatchTask extends DockerStartContainer {
         log.info("Excludes files to watching: {}", excludes);
 
         // set exclude file filter with pattern matcher
-        PatternMatcher patternsMatcher = PatternMatcherFactory.getPatternsMatcher(false, true, excludes);
+        PatternMatcher patternsMatcher =
+            PatternMatcherFactory.getPatternsMatcher(false, true, excludes);
         watcher.setExcludeFileFilter(new FileMatchingFilter(patternsMatcher));
 
         log.info("Watching files: {}", watchFiles);
@@ -174,8 +177,8 @@ public class WatchTask extends DockerStartContainer {
             return fileName.endsWith(".jar");
         })) {
             return pathStream.findFirst()
-                    .orElseThrow(() -> new IllegalStateException("未找到插件jar包"))
-                    .toFile();
+                .orElseThrow(() -> new IllegalStateException("未找到插件jar包"))
+                .toFile();
         } catch (IOException e) {
             throw new IllegalStateException("未找到插件jar包", e);
         }

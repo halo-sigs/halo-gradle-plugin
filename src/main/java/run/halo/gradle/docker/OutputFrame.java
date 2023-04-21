@@ -42,16 +42,11 @@ public class OutputFrame {
         END;
 
         public static OutputType forStreamType(StreamType streamType) {
-            switch (streamType) {
-                case RAW:
-                    return STDOUT;
-                case STDOUT:
-                    return STDOUT;
-                case STDERR:
-                    return STDERR;
-                default:
-                    return null;
-            }
+            return switch (streamType) {
+                case RAW, STDOUT -> STDOUT;
+                case STDERR -> STDERR;
+                default -> null;
+            };
         }
     }
 

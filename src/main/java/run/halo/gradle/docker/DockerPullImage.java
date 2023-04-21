@@ -20,7 +20,8 @@ import org.gradle.api.tasks.Optional;
 public class DockerPullImage extends AbstractDockerRemoteApiTask {
 
     /**
-     * The image including repository, image name and tag to be pulled e.g. {@code vieux/apache:2.0}.
+     * The image including repository, image name and tag to be pulled
+     * e.g. {@code vieux/apache:2.0}.
      *
      * @since 6.0.0
      */
@@ -28,7 +29,8 @@ public class DockerPullImage extends AbstractDockerRemoteApiTask {
     protected final Property<String> image = getProject().getObjects().property(String.class);
 
     /**
-     * The target platform in the format {@code os[/arch[/variant]]}, for example {@code linux/s390x} or {@code darwin}.
+     * The target platform in the format {@code os[/arch[/variant]]},
+     * for example {@code linux/s390x} or {@code darwin}.
      *
      * @since 7.1.0
      */

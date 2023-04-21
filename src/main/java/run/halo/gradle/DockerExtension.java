@@ -15,7 +15,8 @@ public class DockerExtension {
     /**
      * The server URL to connect to via Docker’s remote API.
      * <p>
-     * Defaults to {@code unix:///var/run/docker.sock} for Unix systems and {@code tcp://127.0.0.1:2375} for Windows systems.
+     * Defaults to {@code unix:///var/run/docker.sock} for Unix systems
+     * and {@code tcp://127.0.0.1:2375} for Windows systems.
      */
     public final Property<String> getUrl() {
         return url;

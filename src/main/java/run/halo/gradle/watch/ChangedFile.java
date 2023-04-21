@@ -19,8 +19,8 @@ public class ChangedFile {
      * Create a new {@link ChangedFile} instance.
      *
      * @param sourceDirectory the source directory
-     * @param file            the file
-     * @param type            the type of change
+     * @param file the file
+     * @param type the type of change
      */
     public ChangedFile(File sourceDirectory, File file, Type type) {
         Assert.notNull(sourceDirectory, "SourceDirectory must not be null");
@@ -60,7 +60,8 @@ public class ChangedFile {
         String directoryName = FilenameUtils.normalize(directory.getPath());
         String fileName = FilenameUtils.normalize(file.getPath());
         Assert.state(fileName.startsWith(directoryName),
-                () -> "The file " + fileName + " is not contained in the source directory " + directoryName);
+            () -> "The file " + fileName + " is not contained in the source directory "
+                + directoryName);
         return fileName.substring(directoryName.length() + 1);
     }
 

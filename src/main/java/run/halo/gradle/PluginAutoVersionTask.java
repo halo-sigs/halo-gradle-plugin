@@ -39,7 +39,6 @@ public class PluginAutoVersionTask extends DefaultTask {
         }
         File outputPluginYaml = new File(outputResourceDir, manifest.get().getName());
         String projectVersion = getProjectVersion();
-        System.out.println("-------->project version: " + projectVersion);
         YamlUtils.write(manifest.get(), pluginYaml -> {
             try {
                 System.out.println(YamlUtils.mapper.writeValueAsString(pluginYaml));
@@ -54,8 +53,6 @@ public class PluginAutoVersionTask extends DefaultTask {
             ((ObjectNode) spec).put("version", projectVersion);
             return pluginYaml;
         }, outputPluginYaml);
-        System.out.println(
-            "-------->output plugin yaml: " + Files.readString(outputPluginYaml.toPath()));
     }
 
     private String getProjectVersion() {
