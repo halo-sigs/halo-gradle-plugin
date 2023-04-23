@@ -4,26 +4,21 @@ import org.gradle.api.java.archives.Attributes;
 import org.gradle.api.java.archives.Manifest;
 
 public class PluginArchiveSupport {
+
     private static final String UNSPECIFIED_VERSION = "unspecified";
 
-    private final String loaderMainClass;
+    private final String pluginMainClass;
 
-    PluginArchiveSupport(String loaderMainClass) {
-        this.loaderMainClass = loaderMainClass;
+    PluginArchiveSupport(String pluginMainClass) {
+        this.pluginMainClass = pluginMainClass;
     }
 
-    void configureManifest(Manifest manifest, String mainClass, String classes, String lib,
-        String classPathIndex,
-        String layersIndex, String jdkVersion, String implementationTitle,
+    void configureManifest(Manifest manifest, String lib,
+        String jdkVersion, String implementationTitle,
         Object implementationVersion) {
         Attributes attributes = manifest.getAttributes();
-        attributes.putIfAbsent("Main-Class", this.loaderMainClass);
-        if (classPathIndex != null) {
-            attributes.putIfAbsent("Spring-Boot-Classpath-Index", classPathIndex);
-        }
-        if (layersIndex != null) {
-            attributes.putIfAbsent("Spring-Boot-Layers-Index", layersIndex);
-        }
+        attributes.putIfAbsent("Plugin-Main-Class", pluginMainClass);
+        attributes.putIfAbsent("Class-Path", lib);
         attributes.putIfAbsent("Build-Jdk-Spec", jdkVersion);
         attributes.putIfAbsent("Implementation-Title", implementationTitle);
         if (implementationVersion != null) {
