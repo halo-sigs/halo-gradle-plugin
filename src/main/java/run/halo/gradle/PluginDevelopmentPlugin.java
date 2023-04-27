@@ -11,6 +11,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 import org.gradle.api.Plugin;
 import org.gradle.api.Project;
+import org.gradle.api.artifacts.Configuration;
 import org.gradle.api.file.FileCollection;
 import org.gradle.api.file.SourceDirectorySet;
 import org.gradle.api.plugins.JavaPlugin;
@@ -190,6 +191,14 @@ public class PluginDevelopmentPlugin implements Plugin<Project> {
 
     private void configurePluginJarTask(Project project,
         TaskProvider<ResolvePluginMainClassName> resolveMainClassName) {
+        SourceSet mainSourceSet = javaPluginExtension(project).getSourceSets()
+            .getByName(SourceSet.MAIN_SOURCE_SET_NAME);
+        Configuration developmentOnly = project.getConfigurations()
+            .getByName("developmentOnly");
+        Configuration productionRuntimeClasspath = project.getConfigurations()
+            .getByName("productionRuntimeClasspath");
+        Callable<FileCollection> classpath = () -> mainSourceSet.getRuntimeClasspath()
+            .minus((developmentOnly.minus(productionRuntimeClasspath)));
         project.getTasks().named(JAR_TASK_NAME, Jar.class)
             .configure((jar) -> {
                     var customizer = new PluginJarManifestCustomizer(project);
@@ -206,6 +215,7 @@ public class PluginDevelopmentPlugin implements Plugin<Project> {
                     customizer.getTargetJavaVersion()
                         .set(project.provider(
                             () -> javaPluginExtension(project).getTargetCompatibility()));
+                    customizer.classpath(classpath);
                     customizer.configureManifest(jar.getManifest());
                 }
             );
