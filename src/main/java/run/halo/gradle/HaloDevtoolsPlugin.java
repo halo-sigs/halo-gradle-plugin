@@ -35,7 +35,7 @@ import run.halo.gradle.watch.WatchTask;
  * @since 2.0.0
  */
 @Slf4j
-public class PluginDevelopmentPlugin implements Plugin<Project> {
+public class HaloDevtoolsPlugin implements Plugin<Project> {
     public static final String HALO_SERVER_DEPENDENCY_CONFIGURATION_NAME = "haloServer";
     public static final String GROUP = "halo server";
 
