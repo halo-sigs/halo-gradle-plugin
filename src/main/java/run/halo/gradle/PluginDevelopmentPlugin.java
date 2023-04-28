@@ -1,7 +1,6 @@
 package run.halo.gradle;
 
 import static org.gradle.api.plugins.JavaPlugin.JAR_TASK_NAME;
-import static org.gradle.api.tasks.SourceSet.MAIN_SOURCE_SET_NAME;
 import static run.halo.gradle.ResolvePluginMainClassName.TASK_NAME;
 
 import java.io.File;
@@ -39,6 +38,7 @@ import run.halo.gradle.watch.WatchTask;
 public class PluginDevelopmentPlugin implements Plugin<Project> {
     public static final String HALO_SERVER_DEPENDENCY_CONFIGURATION_NAME = "haloServer";
     public static final String GROUP = "halo server";
+
     /**
      * The name of the {@code developmentOnly} configuration.
      *
@@ -74,18 +74,7 @@ public class PluginDevelopmentPlugin implements Plugin<Project> {
         haloPluginExt.setVersion((String) project.getVersion());
         System.setProperty("halo.plugin.name", pluginManifest.getMetadata().getName());
 
-        project.getTasks()
-            .register(PluginAutoVersionTask.TASK_NAME, PluginAutoVersionTask.class, it -> {
-                it.setDescription("Auto populate plugin version to manifest file.");
-                it.setGroup(GROUP);
-                it.manifest.set(manifestFile);
-                File file =
-                    project.getExtensions().getByType(SourceSetContainer.class)
-                        .getByName(MAIN_SOURCE_SET_NAME)
-                        .getOutput().getResourcesDir();
-                it.resourcesDir.set(file);
-            });
-        project.getTasks().getByName("processResources").dependsOn(PluginAutoVersionTask.TASK_NAME);
+        YamlPluginVersionSupport.configurePluginYamlVersion(project, manifestFile);
 
         project.getTasks()
             .register(PluginComponentsIndexTask.TASK_NAME, PluginComponentsIndexTask.class,

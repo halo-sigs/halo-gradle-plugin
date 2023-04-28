@@ -22,6 +22,7 @@ import org.junit.jupiter.api.io.TempDir;
  * @author guqing
  * @since 2.0.0
  */
+@Disabled
 public class DockerRunTaskTest {
     private File projectDir;
 

@@ -14,6 +14,7 @@ import org.gradle.api.DefaultTask;
 import org.gradle.api.file.ConfigurableFileCollection;
 import org.gradle.api.tasks.InputFiles;
 import org.gradle.api.tasks.TaskAction;
+import org.gradle.jvm.tasks.Jar;
 import org.gradle.work.DisableCachingByDefault;
 import org.objectweb.asm.ClassReader;
 import run.halo.gradle.utils.AsmConst;
@@ -72,6 +73,12 @@ public class PluginComponentsIndexTask extends DefaultTask {
             Files.createFile(componentsIdxPath);
         }
         Files.write(componentsIdxPath, componentsIdxFileLines, StandardCharsets.UTF_8);
+
+        getProject().getTasks().named("jar", Jar.class).configure(jar -> {
+            jar.into("META-INF", copySpec -> {
+                copySpec.from(componentsIdxPath);
+            });
+        });
     }
 
     public ConfigurableFileCollection getClassesDirs() {

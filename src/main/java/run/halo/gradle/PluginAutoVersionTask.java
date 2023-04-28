@@ -8,6 +8,7 @@ import com.fasterxml.jackson.databind.node.ObjectNode;
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
+import java.util.function.Function;
 import org.apache.commons.lang3.StringUtils;
 import org.gradle.api.DefaultTask;
 import org.gradle.api.provider.Property;
@@ -39,20 +40,66 @@ public class PluginAutoVersionTask extends DefaultTask {
         }
         File outputPluginYaml = new File(outputResourceDir, manifest.get().getName());
         String projectVersion = getProjectVersion();
-        YamlUtils.write(manifest.get(), pluginYaml -> {
+        // YamlUtils.write(manifest.get(), pluginYaml -> {
+        //     try {
+        //         System.out.println(YamlUtils.mapper.writeValueAsString(pluginYaml));
+        //     } catch (JsonProcessingException e) {
+        //         throw new RuntimeException(e);
+        //     }
+        //
+        //     return pluginYaml;
+        // }, outputPluginYaml);
+        System.out.println("===>" + outputPluginYaml);
+        getProject().getTasks().getByName("jar").doFirst(task -> {
+            rewritePluginYaml(outputPluginYaml);
+        });
+
+        // getProject().getTasks().named("jar", Jar.class, jar -> {
+        //     jar.into(".", copySpec -> {
+        //         copySpec.from(manifest.get())
+        //             .filter(this::configureProjectVersion);
+        //     });
+        // });
+    }
+
+    private void rewritePluginYaml(File outputPluginYaml) {
+        YamlUtils.write(outputPluginYaml, pluginYaml -> {
+            JsonNode spec = pluginYaml.get("spec");
+            if (spec == null || spec.isNull()) {
+                ObjectNode node = (ObjectNode) pluginYaml;
+                spec = node.putObject("spec");
+            }
+            ((ObjectNode) spec).put("version", getProjectVersion());
             try {
                 System.out.println(YamlUtils.mapper.writeValueAsString(pluginYaml));
             } catch (JsonProcessingException e) {
                 throw new RuntimeException(e);
             }
+            return pluginYaml;
+        }, outputPluginYaml);
+    }
+
+    String configureProjectVersion(String pluginYamlString) {
+        System.out.println("==>" + pluginYamlString);
+        return transformYaml(pluginYamlString, pluginYaml -> {
             JsonNode spec = pluginYaml.get("spec");
-            if (spec == null) {
+            if (spec == null || spec.isNull()) {
                 ObjectNode node = (ObjectNode) pluginYaml;
                 spec = node.putObject("spec");
             }
-            ((ObjectNode) spec).put("version", projectVersion);
-            return pluginYaml;
-        }, outputPluginYaml);
+            ((ObjectNode) spec).put("version", getProjectVersion());
+            System.out.println(pluginYaml);
+            return YamlUtils.mapper.convertValue(pluginYaml, String.class);
+        });
+    }
+
+    String transformYaml(String yamlSource, Function<JsonNode, String> transform) {
+        try {
+            JsonNode jsonNode = YamlUtils.mapper.readTree(yamlSource);
+            return transform.apply(jsonNode);
+        } catch (JsonProcessingException e) {
+            throw new RuntimeException(e);
+        }
     }
 
     private String getProjectVersion() {
