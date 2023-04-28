@@ -24,7 +24,6 @@ public class PluginArchiveSupport {
         Object implementationVersion) {
         Attributes attributes = manifest.getAttributes();
         attributes.putIfAbsent("Plugin-Main-Class", pluginMainClass);
-        attributes.putIfAbsent("Class-Path", lib);
         attributes.putIfAbsent("Build-Jdk-Spec", jdkVersion);
         attributes.putIfAbsent("Implementation-Title", implementationTitle);
         if (implementationVersion != null) {
