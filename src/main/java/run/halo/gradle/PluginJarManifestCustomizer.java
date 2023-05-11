@@ -62,7 +62,7 @@ public class PluginJarManifestCustomizer {
     }
 
     public void configureJarArchiveFilesSpec(Jar jarSpec) {
-        jarSpec.into("./", fromCallTo(() -> libArchiveFiles().stream()
+        jarSpec.into(null, fromCallTo(() -> libArchiveFiles().stream()
                 .map(project::zipTree)
                 .collect(Collectors.toSet())
             )
