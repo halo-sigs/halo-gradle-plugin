@@ -2,10 +2,10 @@ plugins {
     id 'java'
     id 'java-gradle-plugin'
     id 'maven-publish'
+    id "io.freefair.lombok" version "8.0.1"
 }
 
 group 'run.halo.gradle'
-version '0.0.2-SNAPSHOT'
 sourceCompatibility = JavaVersion.VERSION_17
 
 repositories {
@@ -15,10 +15,11 @@ repositories {
 publishing {
     repositories {
         maven {
-            name = "SonatypeSnapShotsPackages"
-            def releasesRepoUrl = 'https://s01.oss.sonatype.org/service/local/staging/deploy/maven2/'
+            name = "SonatypePackages"
+            def releasesRepoUrl = 'https://s01.oss.sonatype.org/content/repositories/releases/'
             def snapshotsRepoUrl = 'https://s01.oss.sonatype.org/content/repositories/snapshots/'
             url = version.endsWith('-SNAPSHOT') ? snapshotsRepoUrl : releasesRepoUrl
+            print url
             credentials {
                 username = project.findProperty("ossr.user") ?: System.getenv("OSSR_USERNAME")
                 password = project.findProperty("ossr.password") ?: System.getenv("OSSR_PASSWORD")
@@ -55,7 +56,6 @@ ext {
     jackjson = '2.14.0'
     lang3 = '3.12.0'
     semver4j = '3.1.0'
-    lombok = '1.18.24'
     asm = '9.4'
     dockerJava = '3.3.0'
 }
@@ -72,8 +72,6 @@ dependencies {
     implementation "org.ow2.asm:asm:$asm"
     implementation "org.ow2.asm:asm-commons:$asm"
     implementation 'commons-io:commons-io:2.11.0'
-    compileOnly "org.projectlombok:lombok:$lombok"
-    annotationProcessor "org.projectlombok:lombok:$lombok"
 
     testImplementation 'org.junit.jupiter:junit-jupiter-api:5.9.0'
     testRuntimeOnly 'org.junit.jupiter:junit-jupiter-engine:5.9.0'
