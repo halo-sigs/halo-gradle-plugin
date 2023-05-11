@@ -8,8 +8,11 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import java.io.File;
 import java.nio.file.Path;
+import lombok.NonNull;
 import org.apache.commons.lang3.StringUtils;
+import org.gradle.api.Action;
 import org.gradle.api.Project;
+import org.gradle.api.Task;
 import org.gradle.api.tasks.SourceSetContainer;
 
 public class YamlPluginVersionSupport {
@@ -23,9 +26,13 @@ public class YamlPluginVersionSupport {
             throw new RuntimeException("Can not find resources dir.");
         }
         Path outputPluginYaml = file.toPath().resolve(manifestFile.getName());
-        project.getTasks().getByName("jar").doFirst(task -> {
-            rewritePluginYaml(outputPluginYaml.toFile(), project);
-        });
+        Action<Task> action = new Action<>() {
+            @Override
+            public void execute(@NonNull Task task) {
+                rewritePluginYaml(outputPluginYaml.toFile(), project);
+            }
+        };
+        project.getTasks().getByName("jar").doFirst(action);
     }
 
     private static void rewritePluginYaml(File outputPluginYaml, Project project) {
@@ -36,11 +43,6 @@ public class YamlPluginVersionSupport {
                 spec = node.putObject("spec");
             }
             ((ObjectNode) spec).put("version", getProjectVersion(project));
-            try {
-                System.out.println(YamlUtils.mapper.writeValueAsString(pluginYaml));
-            } catch (JsonProcessingException e) {
-                throw new RuntimeException(e);
-            }
             return pluginYaml;
         }, outputPluginYaml);
     }

@@ -6,13 +6,22 @@ import static run.halo.gradle.ResolvePluginMainClassName.TASK_NAME;
 import java.io.File;
 import java.util.Set;
 import java.util.concurrent.Callable;
+import java.util.stream.Collectors;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 import org.gradle.api.Plugin;
 import org.gradle.api.Project;
 import org.gradle.api.artifacts.Configuration;
+import org.gradle.api.artifacts.DependencySet;
+import org.gradle.api.artifacts.dsl.DependencyHandler;
+import org.gradle.api.attributes.AttributeContainer;
+import org.gradle.api.attributes.Bundling;
+import org.gradle.api.attributes.LibraryElements;
+import org.gradle.api.attributes.Usage;
+import org.gradle.api.file.DuplicatesStrategy;
 import org.gradle.api.file.FileCollection;
 import org.gradle.api.file.SourceDirectorySet;
+import org.gradle.api.model.ObjectFactory;
 import org.gradle.api.plugins.JavaPlugin;
 import org.gradle.api.plugins.JavaPluginExtension;
 import org.gradle.api.provider.Provider;
@@ -180,34 +189,58 @@ public class HaloDevtoolsPlugin implements Plugin<Project> {
 
     private void configurePluginJarTask(Project project,
         TaskProvider<ResolvePluginMainClassName> resolveMainClassName) {
+        configureDevelopmentOnlyConfiguration(project);
         SourceSet mainSourceSet = javaPluginExtension(project).getSourceSets()
             .getByName(SourceSet.MAIN_SOURCE_SET_NAME);
         Configuration developmentOnly = project.getConfigurations()
-            .getByName("developmentOnly");
+            .getByName(DEVELOPMENT_ONLY_CONFIGURATION_NAME);
         Configuration productionRuntimeClasspath = project.getConfigurations()
-            .getByName("productionRuntimeClasspath");
+            .getByName(PRODUCTION_RUNTIME_CLASSPATH_CONFIGURATION_NAME);
         Callable<FileCollection> classpath = () -> mainSourceSet.getRuntimeClasspath()
             .minus((developmentOnly.minus(productionRuntimeClasspath)));
         project.getTasks().named(JAR_TASK_NAME, Jar.class)
             .configure((jar) -> {
-                    var customizer = new PluginJarManifestCustomizer(project);
-                    Provider<String> manifestStartClass = project
-                        .provider(() -> (String) jar.getManifest().getAttributes()
-                            .get("Plugin-Main-Class")
-                        );
-                    customizer.getMainClass()
-                        .convention(resolveMainClassName
-                            .flatMap((resolver) -> manifestStartClass.isPresent()
-                                ? manifestStartClass :
-                                resolveMainClassName.get().readMainClassName())
-                        );
-                    customizer.getTargetJavaVersion()
-                        .set(project.provider(
-                            () -> javaPluginExtension(project).getTargetCompatibility()));
-                    customizer.classpath(classpath);
-                    customizer.configureManifest(jar.getManifest());
-                }
-            );
+                var customizer = new PluginJarManifestCustomizer(project);
+                Provider<String> manifestStartClass = project
+                    .provider(() -> (String) jar.getManifest().getAttributes()
+                        .get("Plugin-Main-Class")
+                    );
+                customizer.getMainClass()
+                    .convention(resolveMainClassName
+                        .flatMap((resolver) -> manifestStartClass.isPresent()
+                            ? manifestStartClass :
+                            resolveMainClassName.get().readMainClassName())
+                    );
+                customizer.getTargetJavaVersion()
+                    .set(project.provider(
+                        () -> javaPluginExtension(project).getTargetCompatibility()));
+                customizer.classpath(classpath);
+                customizer.configureManifest(jar.getManifest());
+                jar.setDuplicatesStrategy(DuplicatesStrategy.EXCLUDE);
+                customizer.configureJarArchiveFilesSpec(jar);
+            });
+    }
+
+    private void configureDevelopmentOnlyConfiguration(Project project) {
+        Configuration developmentOnly = project.getConfigurations()
+            .create(DEVELOPMENT_ONLY_CONFIGURATION_NAME);
+        Configuration runtimeClasspath = project.getConfigurations()
+            .getByName(JavaPlugin.RUNTIME_CLASSPATH_CONFIGURATION_NAME);
+        Configuration productionRuntimeClasspath = project.getConfigurations()
+            .create(PRODUCTION_RUNTIME_CLASSPATH_CONFIGURATION_NAME);
+        AttributeContainer attributes = productionRuntimeClasspath.getAttributes();
+        ObjectFactory objectFactory = project.getObjects();
+        attributes.attribute(Usage.USAGE_ATTRIBUTE,
+            objectFactory.named(Usage.class, Usage.JAVA_RUNTIME));
+        attributes.attribute(
+            Bundling.BUNDLING_ATTRIBUTE, objectFactory.named(Bundling.class, Bundling.EXTERNAL));
+        attributes.attribute(LibraryElements.LIBRARY_ELEMENTS_ATTRIBUTE,
+            objectFactory.named(LibraryElements.class, LibraryElements.JAR));
+        productionRuntimeClasspath.setVisible(false);
+        productionRuntimeClasspath.setExtendsFrom(runtimeClasspath.getExtendsFrom());
+        productionRuntimeClasspath.setCanBeResolved(runtimeClasspath.isCanBeResolved());
+        productionRuntimeClasspath.setCanBeConsumed(runtimeClasspath.isCanBeConsumed());
+        runtimeClasspath.extendsFrom(developmentOnly);
     }
 
     private JavaPluginExtension javaPluginExtension(Project project) {
