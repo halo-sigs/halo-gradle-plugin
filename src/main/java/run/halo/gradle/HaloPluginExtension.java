@@ -35,7 +35,7 @@ public class HaloPluginExtension {
 
     private String pluginName;
 
-    private String require;
+    private String requires;
 
     private String version;
 
@@ -64,11 +64,11 @@ public class HaloPluginExtension {
         action.execute(watchDomains);
     }
 
-    public String getRequire() {
-        if (this.require == null || "*".equals(require)) {
-            return "2.0.0";
+    public String getRequires() {
+        if (this.requires == null || "*".equals(requires)) {
+            return "latest";
         }
-        return require;
+        return requires;
     }
 
     @Data

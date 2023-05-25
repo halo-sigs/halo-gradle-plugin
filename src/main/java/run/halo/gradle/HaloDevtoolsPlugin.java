@@ -6,14 +6,11 @@ import static run.halo.gradle.ResolvePluginMainClassName.TASK_NAME;
 import java.io.File;
 import java.util.Set;
 import java.util.concurrent.Callable;
-import java.util.stream.Collectors;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 import org.gradle.api.Plugin;
 import org.gradle.api.Project;
 import org.gradle.api.artifacts.Configuration;
-import org.gradle.api.artifacts.DependencySet;
-import org.gradle.api.artifacts.dsl.DependencyHandler;
 import org.gradle.api.attributes.AttributeContainer;
 import org.gradle.api.attributes.Bundling;
 import org.gradle.api.attributes.LibraryElements;
@@ -73,7 +70,7 @@ public class HaloDevtoolsPlugin implements Plugin<Project> {
         haloPluginExt.setManifestFile(manifestFile);
 
         PluginManifest pluginManifest = YamlUtils.read(manifestFile, PluginManifest.class);
-        haloPluginExt.setRequire(pluginManifest.getSpec().getRequire());
+        haloPluginExt.setRequires(pluginManifest.getSpec().getRequires());
         haloPluginExt.setPluginName(pluginManifest.getMetadata().getName());
 
         if (StringUtils.isBlank(pluginManifest.getMetadata().getName())) {
@@ -113,8 +110,7 @@ public class HaloDevtoolsPlugin implements Plugin<Project> {
                     parameters.getApiVersion().set(dockerExtension.getApiVersion());
                 }));
 
-        String require = haloPluginExt.getRequire();
-        String imageName = dockerExtension.getImageName() + ":" + require;
+        String imageName = dockerExtension.getImageName() + ":" + haloPluginExt.getRequires();
         project.getTasks().create("pullHaloImage", DockerPullImage.class, it -> {
             it.getImage().set(imageName);
             it.setGroup(GROUP);

@@ -1,11 +1,16 @@
 package run.halo.gradle;
 
 import lombok.Data;
+import org.apache.commons.lang3.SystemUtils;
 import org.gradle.api.model.ObjectFactory;
 import org.gradle.api.provider.Property;
 
 @Data
 public class DockerExtension {
+    static final String DEFAULT_DOCKER_HOST = "unix:///var/run/docker.sock";
+
+    static final String WINDOWS_DEFAULT_DOCKER_HOST = "npipe:////./pipe/docker_engine";
+
     public static final String EXTENSION_NAME = "docker";
 
     private String DEFAULT_HALO_IMAGE_NAME = "halohub/halo";
@@ -41,7 +46,6 @@ public class DockerExtension {
     }
 
     public String getDefaultDockerUrl() {
-        return "tcp://127.0.0.1:2375";
+        return SystemUtils.IS_OS_WINDOWS ? WINDOWS_DEFAULT_DOCKER_HOST : DEFAULT_DOCKER_HOST;
     }
-
 }

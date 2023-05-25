@@ -20,7 +20,7 @@ import org.gradle.api.tasks.TaskAction;
 public abstract class AbstractDockerRemoteApiTask extends DefaultTask {
 
     /**
-     * Docker remote API server URL. Defaults to "http://localhost:2375".
+     * Docker remote API server URL. Defaults to "tcp://localhost:2375".
      */
     @Input
     @Optional

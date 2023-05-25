@@ -2,14 +2,24 @@ package run.halo.gradle.docker;
 
 import com.github.dockerjava.api.command.CreateContainerCmd;
 import com.github.dockerjava.api.command.CreateContainerResponse;
+import com.github.dockerjava.api.command.RemoveContainerCmd;
+import com.github.dockerjava.api.model.Bind;
 import com.github.dockerjava.api.model.ExposedPort;
 import com.github.dockerjava.api.model.HostConfig;
 import com.github.dockerjava.api.model.PortBinding;
+import com.github.dockerjava.api.model.Volume;
 import java.io.File;
 import java.io.IOException;
+import java.lang.management.ManagementFactory;
+import java.lang.management.RuntimeMXBean;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
+import java.nio.file.Paths;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Map;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.io.FileUtils;
@@ -83,6 +93,8 @@ public class DockerCreateContainer extends DockerExistingImage {
     @Override
     public void runRemoteCommand() throws Exception {
         String imageId = getImageId().get();
+        removeContainerIfPresent();
+
         CreateContainerCmd containerCommand = getDockerClient().createContainerCmd(imageId);
         setContainerCommandConfig(containerCommand);
         CreateContainerResponse container = containerCommand.exec();
@@ -93,6 +105,28 @@ public class DockerCreateContainer extends DockerExistingImage {
         Action<? super Object> nextHandler = getNextHandler();
         if (nextHandler != null) {
             nextHandler.execute(container);
+        }
+    }
+
+    private void removeContainerIfPresent() {
+        try {
+            List<String> containerIds =
+                Files.readAllLines(containerIdFile.get().getAsFile().toPath());
+            if (containerIds.isEmpty()) {
+                return;
+            }
+            String containerIdValue = containerIds.get(0);
+            if (StringUtils.isBlank(containerIdValue)) {
+                return;
+            }
+            try (RemoveContainerCmd cmd = getDockerClient().removeContainerCmd(containerIdValue)
+                .withForce(true)) {
+                cmd.exec();
+            } catch (Exception e) {
+                log.debug("Failed to remove container with ID: " + containerIdValue);
+            }
+        } catch (IOException e) {
+            // ignore
         }
     }
 
@@ -126,17 +160,75 @@ public class DockerCreateContainer extends DockerExistingImage {
         if (platform.getOrNull() != null) {
             containerCommand.withPlatform(platform.get());
         }
-        HaloPluginExtension.HaloSecurity security = pluginExtension.getSecurity();
-        containerCommand.withEnv("HALO_EXTERNAL_URL=" + pluginExtension.getHost(),
-            "HALO_SECURITY_INITIALIZER_SUPERADMINPASSWORD=" + security.getSuperAdminPassword(),
-            "HALO_SECURITY_INITIALIZER_SUPERADMINUSERNAME=" + security.getSuperAdminUsername(),
-            "JAVA_TOOL_OPTIONS=-agentlib:jdwp=transport=dt_socket,server=y,suspend=n,"
-                + "address=*:5005");
+        containerCommand.withCmd("--rm");
 
+        HaloPluginExtension.HaloSecurity security = pluginExtension.getSecurity();
+        String pluginName = pluginExtension.getPluginName();
+
+        // Set environment variables and port bindings
+        Integer debugPort = debugPort();
+        List<String> envs = new ArrayList<>();
+        envs.add("HALO_EXTERNAL_URL=" + pluginExtension.getHost());
+        envs.add(
+            "HALO_SECURITY_INITIALIZER_SUPERADMINPASSWORD=" + security.getSuperAdminPassword());
+        envs.add(
+            "HALO_SECURITY_INITIALIZER_SUPERADMINUSERNAME=" + security.getSuperAdminUsername());
+        if (debugPort != null) {
+            envs.add("JAVA_TOOL_OPTIONS=-agentlib:jdwp=transport=dt_socket,server=y,suspend=n,"
+                + "address=*:" + debugPort);
+        }
+        envs.add("HALO_PLUGIN_RUNTIMEMODE=development");
+        envs.add("HALO_PLUGIN_FIXEDPLUGINPATH=" + Paths.get(buildPluginDestPath(pluginName)));
+        containerCommand.withEnv(envs);
+        System.out.println(envs);
         containerCommand.withImage(getImageId().get());
         containerCommand.withLabels(Map.of(Constant.DEFAULT_CONTAINER_LABEL, "halo-gradle-plugin"));
-        containerCommand.withExposedPorts(ExposedPort.parse("8090"), ExposedPort.parse("5005"));
-        containerCommand.withHostConfig(new HostConfig()
-            .withPortBindings(PortBinding.parse("8090:8090"), PortBinding.parse("5005:5005")));
+
+        List<ExposedPort> exposedPorts = new ArrayList<>(2);
+        exposedPorts.add(ExposedPort.parse("8090"));
+        if (debugPort != null) {
+            exposedPorts.add(ExposedPort.tcp(debugPort));
+        }
+        containerCommand.withExposedPorts(exposedPorts);
+
+        List<PortBinding> portBindings = new ArrayList<>(2);
+        portBindings.add(PortBinding.parse("8090:8090"));
+        if (debugPort != null) {
+            portBindings.add(PortBinding.parse(debugPort + ":" + debugPort));
+        }
+        HostConfig hostConfig = new HostConfig();
+        hostConfig.withPortBindings(portBindings);
+
+        File projectDir = getProject().getBuildDir();
+        hostConfig.withBinds(new Bind(projectDir.toString(),
+            new Volume(buildPluginDestPath(pluginName) + "build"))
+        );
+
+        containerCommand.withHostConfig(hostConfig);
+    }
+
+    String buildPluginDestPath(String pluginName) {
+        return "/data/plugins/" + pluginName + "/";
+    }
+
+    Integer debugPort() {
+        RuntimeMXBean runtimeMXBean = ManagementFactory.getRuntimeMXBean();
+        List<String> inputArguments = runtimeMXBean.getInputArguments();
+        System.out.println("-->" + inputArguments);
+        return inputArguments.stream()
+            .filter(argument -> argument.startsWith("-agentlib:jdwp="))
+            .findFirst()
+            .map(this::parsePort)
+            .orElse(null);
+    }
+
+    Integer parsePort(String debugOption) {
+        Pattern pattern = Pattern.compile("address=.*:(\\d{1,5})$");
+        Matcher matcher = pattern.matcher(debugOption);
+        if (matcher.find()) {
+            String port = matcher.group(1);
+            return Integer.parseInt(port);
+        }
+        return null;
     }
 }

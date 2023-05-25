@@ -22,7 +22,7 @@ public class PluginManifest {
     @JsonIgnoreProperties(ignoreUnknown = true)
     public static class PluginSpec {
         private String version;
-        private String require;
+        private String requires;
     }
 
     @Data

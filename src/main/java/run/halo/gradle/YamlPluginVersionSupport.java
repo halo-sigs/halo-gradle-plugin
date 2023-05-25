@@ -3,7 +3,6 @@ package run.halo.gradle;
 import static org.gradle.api.Project.DEFAULT_VERSION;
 import static org.gradle.api.tasks.SourceSet.MAIN_SOURCE_SET_NAME;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import java.io.File;

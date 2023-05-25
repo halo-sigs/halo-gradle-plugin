@@ -37,7 +37,7 @@ public class InitializeHaloStep {
         waitForReadiness(client);
         try {
             initializeHalo(client);
-            initializeTheme(client);
+            // initializeTheme(client);
             createMenu(client);
         } catch (Exception e) {
             throw new RuntimeException(e);
@@ -50,9 +50,14 @@ public class InitializeHaloStep {
             .GET()
             .build();
         RetryUtils.withRetry(20, 400, () -> {
-            HttpResponse<String> response =
-                client.send(request, HttpResponse.BodyHandlers.ofString());
-            return isSuccessful(response);
+            try {
+                HttpResponse<String> response =
+                    client.send(request, HttpResponse.BodyHandlers.ofString());
+                return isSuccessful(response);
+            } catch (Exception e) {
+                // ignore
+                return false;
+            }
         });
     }
 
@@ -127,8 +132,7 @@ public class InitializeHaloStep {
     private void createTheme(HttpClient client, String payload)
         throws URISyntaxException, IOException, InterruptedException {
         HttpRequest installRequest = HttpRequest.newBuilder()
-            .uri(new URI(
-                "http://localhost:8090/apis/theme.halo.run/v1alpha1/themes"))
+            .uri(buildUri("/apis/theme.halo.run/v1alpha1/themes"))
             .header("Content-Type", "application/json")
             .POST(HttpRequest.BodyPublishers.ofString(payload))
             .build();

@@ -1,6 +1,6 @@
 package run.halo.gradle.watch;
 
-import com.github.dockerjava.api.command.KillContainerCmd;
+import com.github.dockerjava.api.command.RemoveContainerCmd;
 import java.io.File;
 import java.io.IOException;
 import java.net.http.HttpClient;
@@ -49,9 +49,9 @@ public class WatchTask extends DockerStartContainer {
         if (this.shutdownHook == null) {
             // No shutdown hook registered yet.
             this.shutdownHook = new Thread(() -> {
-                try (KillContainerCmd killContainerCmd = getDockerClient()
-                    .killContainerCmd(getContainerId().get())) {
-                    killContainerCmd.exec();
+                try (RemoveContainerCmd removeContainerCmd = getDockerClient()
+                    .removeContainerCmd(getContainerId().get())) {
+                    removeContainerCmd.withForce(true).exec();
                 }
             });
             Runtime.getRuntime().addShutdownHook(this.shutdownHook);
@@ -132,14 +132,22 @@ public class WatchTask extends DockerStartContainer {
     private void configWatchFiles(FileSystemWatcher watcher) {
         HaloPluginExtension haloPluginExtension =
             getProject().getExtensions().getByType(HaloPluginExtension.class);
-        List<WatchTarget> watchTargets = haloPluginExtension.getWatchDomains().stream().toList();
+        List<WatchTarget> watchTargets = new ArrayList<>(haloPluginExtension.getWatchDomains());
         Set<File> watchFiles = new HashSet<>();
         Set<String> excludes = new HashSet<>();
+        if (watchTargets.isEmpty()) {
+            WatchTarget watchTarget = new WatchTarget("javaSource");
+            watchTarget.files(getProject().files("src/main/"));
+            watchTarget.excludes("**/src/main/resources/**");
+            watchTargets.add(watchTarget);
+        }
         for (WatchTarget watchTarget : watchTargets) {
             Set<File> files = watchTarget.getFiles().stream()
                 .map(FileCollection::getFiles)
                 .flatMap(Collection::stream)
+                .filter(File::isDirectory)
                 .collect(Collectors.toSet());
+            System.out.println("files: " + files);
             watchFiles.addAll(files);
             excludes.addAll(watchTarget.getExcludes());
         }

@@ -54,7 +54,7 @@ gradlePlugin {
 ext {
     jackjson = '2.14.0'
     lang3 = '3.12.0'
-    semver4j = '3.1.0'
+    semver4j = '0.9.0'
     asm = '9.4'
     dockerJava = '3.3.0'
 }
@@ -67,7 +67,7 @@ dependencies {
     implementation "com.fasterxml.jackson.core:jackson-databind:$jackjson"
     implementation "com.fasterxml.jackson.datatype:jackson-datatype-jsr310:$jackjson"
     implementation "org.apache.commons:commons-lang3:$lang3"
-    implementation "com.vdurmont:semver4j:$semver4j"
+    implementation "com.github.zafarkhaja:java-semver:$semver4j"
     implementation "org.ow2.asm:asm:$asm"
     implementation "org.ow2.asm:asm-commons:$asm"
     implementation 'commons-io:commons-io:2.11.0'

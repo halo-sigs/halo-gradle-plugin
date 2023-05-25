@@ -37,11 +37,7 @@ public class ReloadPluginStep {
 
     public void execute(String pluginName, File file) {
         try {
-            boolean exists = checkPluginExists(client, pluginName);
-            if (exists) {
-                uninstallPlugin(client, pluginName);
-            }
-            installPlugin(client, file);
+            reloadPlugin(client, pluginName);
         } catch (IOException | InterruptedException e) {
             throw new RuntimeException(e);
         }
@@ -63,6 +59,21 @@ public class ReloadPluginStep {
 
     private boolean is404(HttpResponse<String> response) {
         return response.statusCode() == 404;
+    }
+
+    private void reloadPlugin(HttpClient client, String pluginName)
+        throws IOException, InterruptedException {
+        HttpRequest request = HttpRequest.newBuilder()
+            .uri(buildUri("/apis/api.console.halo.run/v1alpha1/plugins/" + pluginName + "/reload"))
+            .PUT(HttpRequest.BodyPublishers.ofString(""))
+            .build();
+        HttpResponse<String> response =
+            client.send(request, HttpResponse.BodyHandlers.ofString(StandardCharsets.UTF_8));
+        if (isSuccessful(response)) {
+            log.info("Reload plugin successfully.");
+        } else {
+            log.error("Reload plugin failed, [{}].", response.body());
+        }
     }
 
     private void installPlugin(HttpClient client, File pluginFile)

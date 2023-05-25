@@ -38,9 +38,9 @@ public class DefaultWatcher implements Watcher {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(DefaultWatcher.class);
 
-    private WatchService service;
+    private final WatchService service;
 
-    private Map<Path, WatchKey> paths;
+    private final Map<Path, WatchKey> paths;
 
     private boolean closed;
 
