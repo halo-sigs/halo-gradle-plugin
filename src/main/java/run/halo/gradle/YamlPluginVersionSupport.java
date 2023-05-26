@@ -16,7 +16,7 @@ import org.gradle.api.tasks.SourceSetContainer;
 
 public class YamlPluginVersionSupport {
 
-    public static void configurePluginYamlVersion(Project project, File manifestFile) {
+    public static Action<Task> configurePluginYamlVersion(Project project, File manifestFile) {
         File file =
             project.getExtensions().getByType(SourceSetContainer.class)
                 .getByName(MAIN_SOURCE_SET_NAME)
@@ -31,7 +31,7 @@ public class YamlPluginVersionSupport {
                 rewritePluginYaml(outputPluginYaml.toFile(), project);
             }
         };
-        project.getTasks().getByName("jar").doFirst(action);
+        return action;
     }
 
     private static void rewritePluginYaml(File outputPluginYaml, Project project) {

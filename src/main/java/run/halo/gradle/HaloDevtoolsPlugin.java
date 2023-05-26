@@ -8,8 +8,10 @@ import java.util.Set;
 import java.util.concurrent.Callable;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
+import org.gradle.api.Action;
 import org.gradle.api.Plugin;
 import org.gradle.api.Project;
+import org.gradle.api.Task;
 import org.gradle.api.artifacts.Configuration;
 import org.gradle.api.attributes.AttributeContainer;
 import org.gradle.api.attributes.Bundling;
@@ -80,7 +82,8 @@ public class HaloDevtoolsPlugin implements Plugin<Project> {
         haloPluginExt.setVersion((String) project.getVersion());
         System.setProperty("halo.plugin.name", pluginManifest.getMetadata().getName());
 
-        YamlPluginVersionSupport.configurePluginYamlVersion(project, manifestFile);
+        Action<Task> yamlVersionAction =
+            YamlPluginVersionSupport.configurePluginYamlVersion(project, manifestFile);
 
         project.getTasks()
             .register(PluginComponentsIndexTask.TASK_NAME, PluginComponentsIndexTask.class,
@@ -91,8 +94,9 @@ public class HaloDevtoolsPlugin implements Plugin<Project> {
                             .getByName("main")
                             .getOutput().getClassesDirs();
                     it.classesDirs.from(files);
+                    it.doFirst(yamlVersionAction);
                 });
-        project.getTasks().getByName("assemble").dependsOn(PluginComponentsIndexTask.TASK_NAME);
+        project.getTasks().getByName("jar").dependsOn(PluginComponentsIndexTask.TASK_NAME);
 
         TaskProvider<ResolvePluginMainClassName> resolvePluginMainClassName =
             configureResolvePluginMainClassNameTask(project);
