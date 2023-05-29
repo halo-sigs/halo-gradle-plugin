@@ -179,7 +179,6 @@ public class DockerCreateContainer extends DockerExistingImage {
         envs.add("HALO_PLUGIN_RUNTIMEMODE=development");
         envs.add("HALO_PLUGIN_FIXEDPLUGINPATH=" + Paths.get(buildPluginDestPath(pluginName)));
         containerCommand.withEnv(envs);
-        System.out.println(envs);
         containerCommand.withImage(getImageId().get());
         containerCommand.withLabels(Map.of(Constant.DEFAULT_CONTAINER_LABEL, "halo-gradle-plugin"));
 
@@ -199,9 +198,15 @@ public class DockerCreateContainer extends DockerExistingImage {
         hostConfig.withPortBindings(portBindings);
 
         File projectDir = getProject().getBuildDir();
-        hostConfig.withBinds(new Bind(projectDir.toString(),
-            new Volume(buildPluginDestPath(pluginName) + "build"))
-        );
+
+        List<Bind> binds = new ArrayList<>();
+        binds.add(new Bind(projectDir.toString(),
+            new Volume(buildPluginDestPath(pluginName) + "build")));
+        if (pluginExtension.getWorkDir() != null) {
+            binds.add(new Bind(pluginExtension.getWorkDir().toString(),
+                new Volume("/root/.halo2")));
+        }
+        hostConfig.withBinds(binds);
 
         containerCommand.withHostConfig(hostConfig);
     }
@@ -213,7 +218,6 @@ public class DockerCreateContainer extends DockerExistingImage {
     Integer debugPort() {
         RuntimeMXBean runtimeMXBean = ManagementFactory.getRuntimeMXBean();
         List<String> inputArguments = runtimeMXBean.getInputArguments();
-        System.out.println("-->" + inputArguments);
         return inputArguments.stream()
             .filter(argument -> argument.startsWith("-agentlib:jdwp="))
             .findFirst()

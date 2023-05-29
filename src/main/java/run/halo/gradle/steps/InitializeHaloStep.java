@@ -37,8 +37,6 @@ public class InitializeHaloStep {
         waitForReadiness(client);
         try {
             initializeHalo(client);
-            // initializeTheme(client);
-            createMenu(client);
         } catch (Exception e) {
             throw new RuntimeException(e);
         }
@@ -106,6 +104,8 @@ public class InitializeHaloStep {
         if (!isSuccessful(createResponse)) {
             throw new RuntimeException(createResponse.body());
         }
+        // create menu
+        createMenu(client);
     }
 
     private void initializeTheme(HttpClient client)

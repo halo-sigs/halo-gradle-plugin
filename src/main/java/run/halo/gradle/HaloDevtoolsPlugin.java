@@ -77,6 +77,7 @@ public class HaloDevtoolsPlugin implements Plugin<Project> {
         log.info("Halo plugin development gradle plugin run...");
         HaloPluginExtension haloPluginExt = project.getExtensions()
             .create(HaloPluginExtension.EXTENSION_NAME, HaloPluginExtension.class, project);
+        haloPluginExt.setWorkDir(project.getProjectDir().toPath().resolve("workplace"));
         // populate plugin manifest info
         File manifestFile = getPluginManifest(project);
         haloPluginExt.setManifestFile(manifestFile);
@@ -158,8 +159,8 @@ public class HaloDevtoolsPlugin implements Plugin<Project> {
             .create(HaloServerTask.TASK_NAME, DockerStartContainer.class, it -> {
                 it.setGroup(GROUP);
                 it.getContainerId().set(createContainer.getContainerId());
-                it.setDescription("Run halo server container.");
                 it.dependsOn("createHaloContainer");
+                it.setDescription("Run halo server container.");
             });
 
         project.getTasks().create("watch", WatchTask.class, it -> {
