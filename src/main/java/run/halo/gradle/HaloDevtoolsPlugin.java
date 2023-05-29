@@ -6,6 +6,8 @@ import static run.halo.gradle.ResolvePluginMainClassName.TASK_NAME;
 import java.io.File;
 import java.util.Set;
 import java.util.concurrent.Callable;
+import javax.inject.Inject;
+import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 import org.gradle.api.Action;
@@ -27,6 +29,7 @@ import org.gradle.api.provider.Provider;
 import org.gradle.api.tasks.SourceSet;
 import org.gradle.api.tasks.SourceSetContainer;
 import org.gradle.api.tasks.TaskProvider;
+import org.gradle.internal.build.event.BuildEventListenerRegistryInternal;
 import org.gradle.jvm.tasks.Jar;
 import run.halo.gradle.docker.AbstractDockerRemoteApiTask;
 import run.halo.gradle.docker.DockerClientService;
@@ -44,7 +47,6 @@ import run.halo.gradle.watch.WatchTask;
  */
 @Slf4j
 public class HaloDevtoolsPlugin implements Plugin<Project> {
-    public static final String HALO_SERVER_DEPENDENCY_CONFIGURATION_NAME = "haloServer";
     public static final String GROUP = "halo server";
 
     /**
@@ -60,6 +62,14 @@ public class HaloDevtoolsPlugin implements Plugin<Project> {
     public static final String PRODUCTION_RUNTIME_CLASSPATH_CONFIGURATION_NAME =
         "productionRuntimeClasspath";
 
+
+    @Getter
+    private final BuildEventListenerRegistryInternal buildEvents;
+
+    @Inject
+    public HaloDevtoolsPlugin(BuildEventListenerRegistryInternal buildEvents) {
+        this.buildEvents = buildEvents;
+    }
 
     @Override
     public void apply(Project project) {
@@ -133,7 +143,7 @@ public class HaloDevtoolsPlugin implements Plugin<Project> {
         project.getTasks().create("stopHalo", DockerStopContainer.class, it -> {
             it.setGroup(GROUP);
             it.getContainerId().set(createContainer.getContainerId());
-            it.shouldRunAfter(HALO_SERVER_DEPENDENCY_CONFIGURATION_NAME);
+            it.shouldRunAfter(HaloServerTask.TASK_NAME);
             it.setDescription("Stop halo server container.");
         });
 
@@ -145,12 +155,11 @@ public class HaloDevtoolsPlugin implements Plugin<Project> {
         project.getTasks().getByName("clean").dependsOn("removeHalo");
 
         project.getTasks()
-            .create(HALO_SERVER_DEPENDENCY_CONFIGURATION_NAME, DockerStartContainer.class, it -> {
+            .create(HaloServerTask.TASK_NAME, DockerStartContainer.class, it -> {
                 it.setGroup(GROUP);
                 it.getContainerId().set(createContainer.getContainerId());
                 it.setDescription("Run halo server container.");
                 it.dependsOn("createHaloContainer");
-                it.finalizedBy("removeHalo");
             });
 
         project.getTasks().create("watch", WatchTask.class, it -> {
@@ -161,6 +170,22 @@ public class HaloDevtoolsPlugin implements Plugin<Project> {
 
         project.getTasks().withType(AbstractDockerRemoteApiTask.class)
             .configureEach(task -> task.getDockerClientService().set(serviceProvider));
+
+        Provider<HaloServerBuildOperationListener> haloServerBuildOperationListenerProvider =
+            project.getGradle().getSharedServices()
+                .registerIfAbsent("halo-server-build-operation-listener",
+                    HaloServerBuildOperationListener.class,
+                    builderServiceSpec -> {
+                        builderServiceSpec.parameters(parameters -> {
+                            parameters.getDockerClientService().set(serviceProvider);
+                            // TODO use a better way to get container id
+                            File containerIdFile =
+                                new File(project.getLayout().getBuildDirectory().getAsFile().get(),
+                                    ".docker/createHaloContainer-containerId.txt");
+                            parameters.getContainerId().set(containerIdFile);
+                        });
+                    });
+        buildEvents.onOperationCompletion(haloServerBuildOperationListenerProvider);
     }
 
     private TaskProvider<ResolvePluginMainClassName> configureResolvePluginMainClassNameTask(

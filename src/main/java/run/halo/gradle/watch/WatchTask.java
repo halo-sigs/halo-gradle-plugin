@@ -1,6 +1,5 @@
 package run.halo.gradle.watch;
 
-import com.github.dockerjava.api.command.RemoveContainerCmd;
 import java.io.File;
 import java.io.IOException;
 import java.net.http.HttpClient;
@@ -43,21 +42,6 @@ public class WatchTask extends DockerStartContainer {
 
     final HttpClient httpClient = createHttpClient();
 
-    Thread shutdownHook;
-
-    public void registerShutdownHook() {
-        if (this.shutdownHook == null) {
-            // No shutdown hook registered yet.
-            this.shutdownHook = new Thread(() -> {
-                try (RemoveContainerCmd removeContainerCmd = getDockerClient()
-                    .removeContainerCmd(getContainerId().get())) {
-                    removeContainerCmd.withForce(true).exec();
-                }
-            });
-            Runtime.getRuntime().addShutdownHook(this.shutdownHook);
-        }
-    }
-
     WatchExecutionParameters getParameters(List<String> buildArgs) {
         return WatchExecutionParameters.builder()
             .projectDir(getProject().getProjectDir())
@@ -93,7 +77,6 @@ public class WatchTask extends DockerStartContainer {
 
     @Override
     public void runRemoteCommand() {
-        registerShutdownHook();
         //Amount of time to wait between polling for classpath changes.
         Duration pollInterval = Duration.ofSeconds(2);
         //Amount of quiet time required without any classpath changes before a restart is triggered.

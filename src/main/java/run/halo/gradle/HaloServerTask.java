@@ -29,6 +29,7 @@ import run.halo.gradle.docker.WaitingConsumer;
  */
 @Slf4j
 public class HaloServerTask extends AbstractDockerRemoteApiTask {
+    public static final String TASK_NAME = "haloServer";
     /**
      * The image including repository, image name and tag to be pulled e.g. {@code vieux/apache:2.0}.
      *

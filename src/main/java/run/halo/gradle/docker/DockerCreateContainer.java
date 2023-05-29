@@ -22,7 +22,6 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.commons.io.FileUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.gradle.api.Action;
 import org.gradle.api.file.RegularFileProperty;
@@ -141,7 +140,7 @@ public class DockerCreateContainer extends DockerExistingImage {
                 return containerId;
             }
 
-            FileUtils.delete(file);
+            Files.writeString(file.toPath(), "");
         } catch (IOException e) {
             throw new RuntimeException(e);
         }
