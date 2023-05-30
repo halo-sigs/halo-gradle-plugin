@@ -16,7 +16,6 @@ import run.halo.gradle.Assert;
 import run.halo.gradle.RetryUtils;
 import run.halo.gradle.YamlUtils;
 import run.halo.gradle.model.ObjectNodeListResult;
-import run.halo.gradle.utils.PathUtils;
 
 /**
  * @author guqing
@@ -61,8 +60,10 @@ public class InitializeHaloStep {
     }
 
     private URI buildUri(String endpoint) {
+        String path = StringUtils.prependIfMissing(endpoint, "/");
+        String hostPrepared = StringUtils.removeEnd(host, "/");
         try {
-            return new URI(PathUtils.combinePath(host, endpoint));
+            return new URI(hostPrepared + path);
         } catch (URISyntaxException e) {
             throw new RuntimeException(e);
         }

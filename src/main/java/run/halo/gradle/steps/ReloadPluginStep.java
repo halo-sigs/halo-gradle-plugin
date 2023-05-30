@@ -11,13 +11,13 @@ import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.nio.charset.StandardCharsets;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.lang3.StringUtils;
 import org.apache.hc.client5.http.entity.mime.FileBody;
 import org.apache.hc.client5.http.entity.mime.MultipartEntityBuilder;
 import org.apache.hc.core5.http.ContentType;
 import org.apache.hc.core5.http.HttpEntity;
 import run.halo.gradle.Assert;
 import run.halo.gradle.RetryUtils;
-import run.halo.gradle.utils.PathUtils;
 
 /**
  * @author guqing
@@ -44,8 +44,10 @@ public class ReloadPluginStep {
     }
 
     private URI buildUri(String endpoint) {
+        String path = StringUtils.prependIfMissing(endpoint, "/");
+        String hostPrepared = StringUtils.removeEnd(host, "/");
         try {
-            return new URI(PathUtils.combinePath(host, endpoint));
+            return new URI(hostPrepared + path);
         } catch (URISyntaxException e) {
             throw new RuntimeException(e);
         }
