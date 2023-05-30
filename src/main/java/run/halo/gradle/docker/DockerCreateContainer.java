@@ -40,6 +40,7 @@ import org.gradle.api.tasks.OutputFile;
 import run.halo.gradle.Constant;
 import run.halo.gradle.HaloExtension;
 import run.halo.gradle.HaloPluginExtension;
+import run.halo.gradle.utils.PathUtils;
 
 @Slf4j
 public class DockerCreateContainer extends DockerExistingImage {
@@ -185,6 +186,10 @@ public class DockerCreateContainer extends DockerExistingImage {
         envs.add("HALO_PLUGIN_RUNTIMEMODE=development");
         envs.add("HALO_PLUGIN_FIXEDPLUGINPATH=" + Paths.get(buildPluginDestPath(pluginName)));
         envs.add("HALO_WORKDIR=" + haloWorkDir());
+        String configLocation = PathUtils.combinePath(haloWorkDir(), "/config") + "/";
+        envs.add(
+            "SPRING_CONFIG_IMPORT=optional:file:" + configLocation + ";optional:file:"
+                + configLocation + "*/");
         containerCommand.withEnv(envs);
         containerCommand.withImage(getImageId().get());
         containerCommand.withLabels(Map.of(Constant.DEFAULT_CONTAINER_LABEL, "halo-gradle-plugin"));
