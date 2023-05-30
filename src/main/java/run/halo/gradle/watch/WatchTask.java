@@ -23,6 +23,7 @@ import org.gradle.api.internal.file.pattern.PatternMatcher;
 import org.gradle.api.internal.file.pattern.PatternMatcherFactory;
 import org.gradle.internal.classpath.ClassPath;
 import org.gradle.internal.classpath.DefaultClassPath;
+import run.halo.gradle.HaloExtension;
 import run.halo.gradle.HaloPluginExtension;
 import run.halo.gradle.WatchExecutionParameters;
 import run.halo.gradle.docker.DockerStartContainer;
@@ -39,6 +40,9 @@ public class WatchTask extends DockerStartContainer {
 
     private final HaloPluginExtension pluginExtension =
         getProject().getExtensions().getByType(HaloPluginExtension.class);
+
+    private final HaloExtension haloExtension =
+        getProject().getExtensions().getByType(HaloExtension.class);
 
     final HttpClient httpClient = createHttpClient();
 
@@ -86,7 +90,7 @@ public class WatchTask extends DockerStartContainer {
             quietPeriod, SnapshotStateRepository.STATIC);
         configWatchFiles(watcher);
 
-        String host = pluginExtension.getHost();
+        String host = haloExtension.getExternalUrl();
         ReloadPluginStep reloadPluginStep = new ReloadPluginStep(host, httpClient);
         System.out.println("运行........");
 
@@ -113,9 +117,7 @@ public class WatchTask extends DockerStartContainer {
     }
 
     private void configWatchFiles(FileSystemWatcher watcher) {
-        HaloPluginExtension haloPluginExtension =
-            getProject().getExtensions().getByType(HaloPluginExtension.class);
-        List<WatchTarget> watchTargets = new ArrayList<>(haloPluginExtension.getWatchDomains());
+        List<WatchTarget> watchTargets = new ArrayList<>(pluginExtension.getWatchDomains());
         Set<File> watchFiles = new HashSet<>();
         Set<String> excludes = new HashSet<>();
         if (watchTargets.isEmpty()) {
@@ -176,8 +178,8 @@ public class WatchTask extends DockerStartContainer {
     }
 
     private HttpClient createHttpClient() {
-        String username = pluginExtension.getSecurity().getSuperAdminUsername();
-        String password = pluginExtension.getSecurity().getSuperAdminPassword();
+        String username = haloExtension.getSecurity().getSuperAdminUsername();
+        String password = haloExtension.getSecurity().getSuperAdminPassword();
         return new CreateHttpClientStep(username, password).create();
     }
 

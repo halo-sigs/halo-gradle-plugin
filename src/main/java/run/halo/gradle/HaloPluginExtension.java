@@ -6,32 +6,15 @@ import lombok.Data;
 import org.gradle.api.Action;
 import org.gradle.api.NamedDomainObjectContainer;
 import org.gradle.api.Project;
-import org.gradle.api.plugins.ExtensionContainer;
 import org.gradle.api.provider.Property;
 import run.halo.gradle.watch.WatchTarget;
 
-/**
- * 可以通过 {@link ExtensionContainer} 来创建和管理 Extension，{@link ExtensionContainer} 对象可以
- * 通过 {@link Project} 对象的 {@link Project#getExtensions} 方法获取：
- * <pre>
- *     project.getExtensions().create("haloPluginExt", HaloPluginExtension)
- * </pre>
- *
- * @author guqing
- * @since 0.0.1
- */
 @Data
 public class HaloPluginExtension {
     public static final String[] MANIFEST = {"plugin.yaml", "plugin.yml"};
-    public static final String EXTENSION_NAME = "halo";
-
-    private final Project project;
-
-    private final Property<String> mainClass;
+    public static final String EXTENSION_NAME = "haloPlugin";
 
     private Path workDir;
-
-    private File manifestFile;
 
     private String pluginName;
 
@@ -39,17 +22,7 @@ public class HaloPluginExtension {
 
     private String version;
 
-    private String host = "http://localhost:8090";
-
-    private NamedDomainObjectContainer<WatchTarget> watchDomains;
-
-    private HaloSecurity security = new HaloSecurity();
-
-    public HaloPluginExtension(Project project) {
-        this.project = project;
-        this.watchDomains = project.container(WatchTarget.class);
-        this.mainClass = this.project.getObjects().property(String.class);
-    }
+    private final Property<String> mainClass;
 
     /**
      * Returns the fully-qualified name of the plugin's main class.
@@ -60,8 +33,13 @@ public class HaloPluginExtension {
         return this.mainClass;
     }
 
-    public void watchDomain(Action<NamedDomainObjectContainer<WatchTarget>> action) {
-        action.execute(watchDomains);
+    private File manifestFile;
+
+    private NamedDomainObjectContainer<WatchTarget> watchDomains;
+
+    public HaloPluginExtension(Project project) {
+        this.watchDomains = project.container(WatchTarget.class);
+        this.mainClass = project.getObjects().property(String.class);
     }
 
     public String getRequires() {
@@ -71,9 +49,8 @@ public class HaloPluginExtension {
         return requires;
     }
 
-    @Data
-    public static class HaloSecurity {
-        String superAdminUsername = "admin";
-        String superAdminPassword = "123456";
+    public void watchDomain(Action<NamedDomainObjectContainer<WatchTarget>> action) {
+        action.execute(watchDomains);
     }
+
 }

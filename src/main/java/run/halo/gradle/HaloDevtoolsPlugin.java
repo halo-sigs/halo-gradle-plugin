@@ -75,22 +75,25 @@ public class HaloDevtoolsPlugin implements Plugin<Project> {
     public void apply(Project project) {
         project.getPluginManager().apply(JavaPlugin.class);
         log.info("Halo plugin development gradle plugin run...");
-        HaloPluginExtension haloPluginExt = project.getExtensions()
+        HaloExtension haloExtension = project.getExtensions()
+            .create(HaloExtension.EXTENSION_NAME, HaloExtension.class, project.getObjects());
+
+        HaloPluginExtension pluginExtension = project.getExtensions()
             .create(HaloPluginExtension.EXTENSION_NAME, HaloPluginExtension.class, project);
-        haloPluginExt.setWorkDir(project.getProjectDir().toPath().resolve("workplace"));
+        pluginExtension.setWorkDir(project.getProjectDir().toPath().resolve("workplace"));
         // populate plugin manifest info
         File manifestFile = getPluginManifest(project);
-        haloPluginExt.setManifestFile(manifestFile);
+        pluginExtension.setManifestFile(manifestFile);
 
         PluginManifest pluginManifest = YamlUtils.read(manifestFile, PluginManifest.class);
-        haloPluginExt.setRequires(pluginManifest.getSpec().getRequires());
-        haloPluginExt.setPluginName(pluginManifest.getMetadata().getName());
+        pluginExtension.setRequires(pluginManifest.getSpec().getRequires());
+        pluginExtension.setPluginName(pluginManifest.getMetadata().getName());
 
         if (StringUtils.isBlank(pluginManifest.getMetadata().getName())) {
             throw new IllegalStateException("Plugin name must not be blank.");
         }
 
-        haloPluginExt.setVersion((String) project.getVersion());
+        pluginExtension.setVersion((String) project.getVersion());
         System.setProperty("halo.plugin.name", pluginManifest.getMetadata().getName());
 
         Action<Task> yamlVersionAction =
@@ -114,8 +117,7 @@ public class HaloDevtoolsPlugin implements Plugin<Project> {
 
         configurePluginJarTask(project, resolvePluginMainClassName);
 
-        DockerExtension dockerExtension = project.getExtensions()
-            .create(DockerExtension.EXTENSION_NAME, DockerExtension.class, project.getObjects());
+        HaloExtension.Docker dockerExtension = haloExtension.getDocker();
 
         final Provider<DockerClientService> serviceProvider = project.getGradle()
             .getSharedServices().registerIfAbsent("docker",
@@ -125,7 +127,7 @@ public class HaloDevtoolsPlugin implements Plugin<Project> {
                     parameters.getApiVersion().set(dockerExtension.getApiVersion());
                 }));
 
-        String imageName = dockerExtension.getImageName() + ":" + haloPluginExt.getRequires();
+        String imageName = haloExtension.getImageName() + ":" + haloExtension.getVersion();
         project.getTasks().create("pullHaloImage", DockerPullImage.class, it -> {
             it.getImage().set(imageName);
             it.setGroup(GROUP);
@@ -135,7 +137,7 @@ public class HaloDevtoolsPlugin implements Plugin<Project> {
         DockerCreateContainer createContainer =
             project.getTasks().create("createHaloContainer", DockerCreateContainer.class, it -> {
                 it.getImageId().set(imageName);
-                it.getContainerName().set(dockerExtension.getContainerName());
+                it.getContainerName().set(haloExtension.getContainerName());
                 it.setGroup(GROUP);
                 it.setDescription("Create halo server container.");
                 it.dependsOn("build", "pullHaloImage");

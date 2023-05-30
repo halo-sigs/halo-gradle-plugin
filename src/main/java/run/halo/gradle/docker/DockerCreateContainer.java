@@ -38,12 +38,16 @@ import org.gradle.api.tasks.Internal;
 import org.gradle.api.tasks.Optional;
 import org.gradle.api.tasks.OutputFile;
 import run.halo.gradle.Constant;
+import run.halo.gradle.HaloExtension;
 import run.halo.gradle.HaloPluginExtension;
 
 @Slf4j
 public class DockerCreateContainer extends DockerExistingImage {
     private final HaloPluginExtension pluginExtension =
         getProject().getExtensions().getByType(HaloPluginExtension.class);
+
+    private final HaloExtension haloExtension =
+        getProject().getExtensions().getByType(HaloExtension.class);
 
     @Input
     @Optional
@@ -163,13 +167,13 @@ public class DockerCreateContainer extends DockerExistingImage {
         }
         containerCommand.withCmd("--rm");
 
-        HaloPluginExtension.HaloSecurity security = pluginExtension.getSecurity();
+        HaloExtension.HaloSecurity security = haloExtension.getSecurity();
         String pluginName = pluginExtension.getPluginName();
 
         // Set environment variables and port bindings
         Integer debugPort = debugPort();
         List<String> envs = new ArrayList<>();
-        envs.add("HALO_EXTERNAL_URL=" + pluginExtension.getHost());
+        envs.add("HALO_EXTERNAL_URL=" + haloExtension.getExternalUrl());
         envs.add(
             "HALO_SECURITY_INITIALIZER_SUPERADMINPASSWORD=" + security.getSuperAdminPassword());
         envs.add(
@@ -180,6 +184,7 @@ public class DockerCreateContainer extends DockerExistingImage {
         }
         envs.add("HALO_PLUGIN_RUNTIMEMODE=development");
         envs.add("HALO_PLUGIN_FIXEDPLUGINPATH=" + Paths.get(buildPluginDestPath(pluginName)));
+        envs.add("HALO_WORKDIR=" + haloWorkDir());
         containerCommand.withEnv(envs);
         containerCommand.withImage(getImageId().get());
         containerCommand.withLabels(Map.of(Constant.DEFAULT_CONTAINER_LABEL, "halo-gradle-plugin"));
@@ -206,11 +211,15 @@ public class DockerCreateContainer extends DockerExistingImage {
             new Volume(buildPluginDestPath(pluginName) + "build")));
         if (pluginExtension.getWorkDir() != null) {
             binds.add(new Bind(pluginExtension.getWorkDir().toString(),
-                new Volume("/root/.halo2")));
+                new Volume(haloWorkDir())));
         }
         hostConfig.withBinds(binds);
 
         containerCommand.withHostConfig(hostConfig);
+    }
+
+    String haloWorkDir() {
+        return haloExtension.getServerWorkDir();
     }
 
     String buildPluginDestPath(String pluginName) {
