@@ -2,7 +2,8 @@ package run.halo.gradle.docker;
 
 import com.github.dockerjava.api.command.CreateContainerCmd;
 import com.github.dockerjava.api.command.CreateContainerResponse;
-import com.github.dockerjava.api.command.RemoveContainerCmd;
+import com.github.dockerjava.api.command.InspectContainerCmd;
+import com.github.dockerjava.api.exception.DockerException;
 import com.github.dockerjava.api.model.Bind;
 import com.github.dockerjava.api.model.ExposedPort;
 import com.github.dockerjava.api.model.HostConfig;
@@ -10,9 +11,10 @@ import com.github.dockerjava.api.model.PortBinding;
 import com.github.dockerjava.api.model.Volume;
 import java.io.File;
 import java.io.IOException;
+import java.io.Serializable;
+import java.io.UncheckedIOException;
 import java.lang.management.ManagementFactory;
 import java.lang.management.RuntimeMXBean;
-import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.util.ArrayList;
@@ -20,12 +22,17 @@ import java.util.List;
 import java.util.Map;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import javax.annotation.Nonnull;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 import org.gradle.api.Action;
+import org.gradle.api.Task;
+import org.gradle.api.Transformer;
+import org.gradle.api.file.RegularFile;
 import org.gradle.api.file.RegularFileProperty;
 import org.gradle.api.provider.Property;
+import org.gradle.api.specs.Spec;
 import org.gradle.api.tasks.Input;
 import org.gradle.api.tasks.Internal;
 import org.gradle.api.tasks.Optional;
@@ -33,18 +40,18 @@ import org.gradle.api.tasks.OutputFile;
 import run.halo.gradle.Constant;
 import run.halo.gradle.HaloPluginExtension;
 
-@Getter
 @Slf4j
 public class DockerCreateContainer extends DockerExistingImage {
-    @Internal
     private final HaloPluginExtension pluginExtension =
         getProject().getExtensions().getByType(HaloPluginExtension.class);
 
     @Input
     @Optional
+    @Getter
     final Property<String> containerName = getProject().getObjects().property(String.class);
 
     @Input
+    @Getter
     @Optional
     final Property<String> workingDir = getProject().getObjects().property(String.class);
 
@@ -53,6 +60,7 @@ public class DockerCreateContainer extends DockerExistingImage {
      * Defaults to "$buildDir/.docker/$taskpath-containerId.txt".
      * If path contains ':' it will be replaced by '_'.
      */
+    @Getter
     @OutputFile
     final RegularFileProperty containerIdFile = getProject().getObjects().fileProperty();
 
@@ -60,39 +68,73 @@ public class DockerCreateContainer extends DockerExistingImage {
      * The ID of the container created. The value of this property requires the task action to be
      * executed.
      */
+    @Getter
     @Internal
     final Property<String> containerId = getProject().getObjects().property(String.class);
 
     /**
      * The target platform in the format {@code os[/arch[/variant]]}, for example {@code linux
      * /s390x} or {@code darwin}.
-     *
-     * @since 7.1.0
      */
     @Input
+    @Getter
     @Optional
     final Property<String> platform = getProject().getObjects().property(String.class);
 
     public DockerCreateContainer() {
-        containerId.convention(containerIdFile.map(it -> {
-            File file = it.getAsFile();
-            String containerId = getAndValidateContainerId(file);
-            if (containerId == null) {
-                containerIdFile.fileValue(null);
-            }
-            return StringUtils.defaultString(containerId);
-        }));
+        containerId.convention(containerIdFile.map(new RegularFileToStringTransformer()));
 
         String safeTaskPath = getPath().replaceFirst("^:", "").replaceAll(":", "_");
-        containerIdFile.convention(
-            getProject().getLayout().getBuildDirectory()
-                .file(".docker/" + safeTaskPath + "-containerId.txt"));
+        containerIdFile.convention(getProject().getLayout().getBuildDirectory()
+            .file(".docker/" + safeTaskPath + "-containerId.txt"));
+
+        getOutputs().upToDateWhen(getUpToDateWhenSpec());
+    }
+
+    private Spec<Task> getUpToDateWhenSpec() {
+        return element -> {
+            File file = getContainerIdFile().get().getAsFile();
+            if (file.exists()) {
+                try {
+                    String fileContainerId;
+                    try {
+                        fileContainerId = Files.readString(file.toPath());
+                    } catch (IOException e) {
+                        throw new UncheckedIOException(e);
+                    }
+                    try (
+                        InspectContainerCmd inspectContainerCmd = getDockerClient()
+                            .inspectContainerCmd(fileContainerId)) {
+                        inspectContainerCmd.exec();
+                    }
+                    return true;
+                } catch (DockerException ignored) {
+                }
+            }
+            return false;
+        };
+    }
+
+    public static class RegularFileToStringTransformer
+        implements Transformer<String, RegularFile>, Serializable {
+        @Override
+        @Nonnull
+        public String transform(RegularFile it) {
+            File file = it.getAsFile();
+            if (file.exists()) {
+                try {
+                    return Files.readString(file.toPath());
+                } catch (IOException e) {
+                    throw new UncheckedIOException(e);
+                }
+            }
+            return StringUtils.EMPTY;
+        }
     }
 
     @Override
     public void runRemoteCommand() throws Exception {
         String imageId = getImageId().get();
-        removeContainerIfPresent();
 
         CreateContainerCmd containerCommand = getDockerClient().createContainerCmd(imageId);
         setContainerCommandConfig(containerCommand);
@@ -105,46 +147,6 @@ public class DockerCreateContainer extends DockerExistingImage {
         if (nextHandler != null) {
             nextHandler.execute(container);
         }
-    }
-
-    private void removeContainerIfPresent() {
-        try {
-            List<String> containerIds =
-                Files.readAllLines(containerIdFile.get().getAsFile().toPath());
-            if (containerIds.isEmpty()) {
-                return;
-            }
-            String containerIdValue = containerIds.get(0);
-            if (StringUtils.isBlank(containerIdValue)) {
-                return;
-            }
-            try (RemoveContainerCmd cmd = getDockerClient().removeContainerCmd(containerIdValue)
-                .withForce(true)) {
-                cmd.exec();
-            } catch (Exception e) {
-                log.debug("Failed to remove container with ID: " + containerIdValue);
-            }
-        } catch (IOException e) {
-            // ignore
-        }
-    }
-
-    private String getAndValidateContainerId(File file) {
-        if (!file.exists()) {
-            return null;
-        }
-        try {
-            String containerId = Files.readString(file.toPath(), StandardCharsets.UTF_8);
-            boolean exists = new CheckContainerExistsStep(getDockerClient(), containerId).execute();
-            if (exists) {
-                return containerId;
-            }
-
-            Files.writeString(file.toPath(), "");
-        } catch (IOException e) {
-            throw new RuntimeException(e);
-        }
-        return null;
     }
 
     private void setContainerCommandConfig(CreateContainerCmd containerCommand) {
