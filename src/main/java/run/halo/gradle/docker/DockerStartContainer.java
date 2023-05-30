@@ -1,73 +1,89 @@
 package run.halo.gradle.docker;
 
-import com.github.dockerjava.api.DockerClient;
-import com.github.dockerjava.api.command.LogContainerCmd;
+import com.github.dockerjava.api.command.AttachContainerCmd;
 import com.github.dockerjava.api.command.StartContainerCmd;
+import com.github.dockerjava.api.command.WaitContainerCmd;
+import com.github.dockerjava.api.command.WaitContainerResultCallback;
+import com.github.dockerjava.api.model.WaitResponse;
 import groovy.transform.CompileStatic;
-import java.io.Closeable;
-import java.io.IOException;
-import java.util.concurrent.TimeoutException;
-import java.util.function.Consumer;
+import java.util.concurrent.TimeUnit;
+import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
+import org.gradle.api.Action;
+import org.gradle.api.GradleException;
+import org.gradle.api.provider.Property;
+import org.gradle.api.tasks.Input;
+import org.gradle.api.tasks.Internal;
+import org.gradle.api.tasks.Optional;
 
 @Slf4j
 @CompileStatic
 public class DockerStartContainer extends DockerExistingContainer {
+
+    private int exitCode;
+
+    @Input
+    @Optional
+    @Getter
+    private final Property<Integer> awaitStatusTimeout =
+        getProject().getObjects().property(Integer.class);
+
     @Override
     public void runRemoteCommand() {
         log.info("Starting container with ID [{}].", containerId.get());
         try (StartContainerCmd containerCommand = getDockerClient()
             .startContainerCmd(containerId.get())) {
             containerCommand.exec();
-            waitForContainerRunning();
+        } catch (Exception e) {
+            throw new GradleException("Failed to start container", e);
         }
-    }
 
-    private void waitForContainerRunning() {
-        Closeable closeable = null;
-        try {
-            WaitingConsumer waitingConsumer = new WaitingConsumer();
+        try (AttachContainerCmd attachContainerCmd = getDockerClient().attachContainerCmd(
+            containerId.get())) {
+            final FrameConsumerResultCallback callback = new FrameConsumerResultCallback();
             ToStringConsumer toStringConsumer = new ToStringConsumer();
-            Consumer<OutputFrame> outputFrameConsumer = toStringConsumer.andThen(waitingConsumer);
-            closeable =
-                attachConsumer(getDockerClient(), getContainerId().get(), outputFrameConsumer,
-                    OutputFrame.OutputType.STDOUT);
-            waitingConsumer.waitUntil(frame -> false);
-        } catch (TimeoutException e) {
-            throw new RuntimeException(e);
-        } finally {
-            if (closeable != null) {
-                try {
-                    closeable.close();
-                } catch (IOException ignored) {
+            callback.addConsumer(OutputFrame.OutputType.STDOUT, toStringConsumer);
+            callback.addConsumer(OutputFrame.OutputType.STDERR, toStringConsumer);
+            attachContainerCmd.withStdErr(true)
+                .withStdOut(true)
+                .withFollowStream(true)
+                .withLogs(true)
+                .exec(callback);
+        } catch (Exception e) {
+            throw new GradleException("Failed to attach to container", e);
+        }
+
+        try (WaitContainerCmd containerCommand =
+                 getDockerClient().waitContainerCmd(getContainerId().get())) {
+            WaitContainerResultCallback callback =
+                containerCommand.exec(createCallback(getNextHandler()));
+            exitCode = awaitStatusTimeout.getOrNull() != null ? callback.awaitStatusCode(
+                awaitStatusTimeout.get(), TimeUnit.SECONDS) : callback.awaitStatusCode();
+            getLogger().quiet("Container exited with code " + getExitCode());
+        } catch (Exception e) {
+            throw new GradleException("Failed to wait for container to exit", e);
+        }
+    }
+
+    @Internal
+    public int getExitCode() {
+        return exitCode;
+    }
+
+    private WaitContainerResultCallback createCallback(final Action<Object> nextHandler) {
+        return new WaitContainerResultCallback() {
+            @Override
+            public void onNext(WaitResponse waitResponse) {
+                if (nextHandler != null) {
+                    try {
+                        nextHandler.execute(waitResponse);
+                    } catch (Exception e) {
+                        getLogger().error("Failed to handle wait response", e);
+                        return;
+                    }
                 }
+                super.onNext(waitResponse);
             }
-        }
+        };
     }
-
-    private static Closeable attachConsumer(
-        DockerClient dockerClient,
-        String containerId,
-        Consumer<OutputFrame> consumer,
-        OutputFrame.OutputType... types
-    ) {
-        final LogContainerCmd cmd = dockerClient
-            .logContainerCmd(containerId)
-            .withFollowStream(true)
-            .withSince(0);
-
-        final FrameConsumerResultCallback callback = new FrameConsumerResultCallback();
-        for (OutputFrame.OutputType type : types) {
-            callback.addConsumer(type, consumer);
-            if (type == OutputFrame.OutputType.STDOUT) {
-                cmd.withStdOut(true);
-            }
-            if (type == OutputFrame.OutputType.STDERR) {
-                cmd.withStdErr(true);
-            }
-        }
-
-        return cmd.exec(callback);
-    }
-
 }
