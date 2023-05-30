@@ -123,7 +123,7 @@ public class WatchTask extends DockerStartContainer {
         if (watchTargets.isEmpty()) {
             WatchTarget watchTarget = new WatchTarget("javaSource");
             watchTarget.files(getProject().files("src/main/"));
-            watchTarget.excludes("**/src/main/resources/**");
+            watchTarget.excludes("**/src/main/resources/console/**");
             watchTargets.add(watchTarget);
         }
         for (WatchTarget watchTarget : watchTargets) {
