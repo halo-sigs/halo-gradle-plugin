@@ -35,9 +35,7 @@ import run.halo.gradle.docker.AbstractDockerRemoteApiTask;
 import run.halo.gradle.docker.DockerClientService;
 import run.halo.gradle.docker.DockerCreateContainer;
 import run.halo.gradle.docker.DockerPullImage;
-import run.halo.gradle.docker.DockerRemoveContainer;
 import run.halo.gradle.docker.DockerStartContainer;
-import run.halo.gradle.docker.DockerStopContainer;
 import run.halo.gradle.watch.WatchTask;
 
 
@@ -117,78 +115,69 @@ public class HaloDevtoolsPlugin implements Plugin<Project> {
 
         configurePluginJarTask(project, resolvePluginMainClassName);
 
-        HaloExtension.Docker dockerExtension = haloExtension.getDocker();
+        project.afterEvaluate(action -> {
 
-        final Provider<DockerClientService> serviceProvider = project.getGradle()
-            .getSharedServices().registerIfAbsent("docker",
-                DockerClientService.class,
-                pBuildServiceSpec -> pBuildServiceSpec.parameters(parameters -> {
-                    parameters.getUrl().set(dockerExtension.getUrl());
-                    parameters.getApiVersion().set(dockerExtension.getApiVersion());
-                }));
+            HaloExtension.Docker dockerExtension = haloExtension.getDocker();
+            final Provider<DockerClientService> serviceProvider = project.getGradle()
+                .getSharedServices().registerIfAbsent("docker",
+                    DockerClientService.class,
+                    pBuildServiceSpec -> pBuildServiceSpec.parameters(parameters -> {
+                        parameters.getUrl().set(dockerExtension.getUrl());
+                        parameters.getApiVersion().set(dockerExtension.getApiVersion());
+                    }));
 
-        String imageName = haloExtension.getImageName() + ":" + haloExtension.getVersion();
-        project.getTasks().create("pullHaloImage", DockerPullImage.class, it -> {
-            it.getImage().set(imageName);
-            it.setGroup(GROUP);
-            it.setDescription("Pull halo server image from docker hub.");
-        });
-
-        DockerCreateContainer createContainer =
-            project.getTasks().create("createHaloContainer", DockerCreateContainer.class, it -> {
-                it.getImageId().set(imageName);
-                it.getContainerName().set(haloExtension.getContainerName());
+            String imageName = haloExtension.getImageName() + ":" + haloExtension.getVersion();
+            project.getTasks().create("pullHaloImage", DockerPullImage.class, it -> {
+                it.getImage().set(imageName);
                 it.setGroup(GROUP);
-                it.setDescription("Create halo server container.");
-                it.dependsOn("build", "pullHaloImage");
+                it.setDescription("Pull halo server image from docker hub.");
             });
 
-        project.getTasks().create("stopHalo", DockerStopContainer.class, it -> {
-            it.setGroup(GROUP);
-            it.getContainerId().set(createContainer.getContainerId());
-            it.shouldRunAfter(HaloServerTask.TASK_NAME);
-            it.setDescription("Stop halo server container.");
-        });
+            DockerCreateContainer createContainer =
+                project.getTasks()
+                    .create("createHaloContainer", DockerCreateContainer.class, it -> {
+                        it.getImageId().set(imageName);
+                        it.getContainerName().set(haloExtension.getContainerName());
+                        it.setGroup(GROUP);
+                        it.setDescription("Create halo server container.");
+                        it.dependsOn("build", "pullHaloImage");
+                    });
 
-        project.getTasks().create("removeHalo", DockerRemoveContainer.class, it -> {
-            it.setGroup(GROUP);
-            it.getContainerId().set(createContainer.getContainerId());
-            it.setDescription("Remove halo server container.");
-        });
-        project.getTasks().getByName("clean").dependsOn("removeHalo");
+            project.getTasks()
+                .create(HaloServerTask.TASK_NAME, DockerStartContainer.class, it -> {
+                    it.setGroup(GROUP);
+                    it.getContainerId().set(createContainer.getContainerId());
+                    it.dependsOn("createHaloContainer");
+                    it.setDescription("Run halo server container.");
+                });
 
-        project.getTasks()
-            .create(HaloServerTask.TASK_NAME, DockerStartContainer.class, it -> {
+            project.getTasks().create("watch", WatchTask.class, it -> {
                 it.setGroup(GROUP);
                 it.getContainerId().set(createContainer.getContainerId());
                 it.dependsOn("createHaloContainer");
-                it.setDescription("Run halo server container.");
             });
 
-        project.getTasks().create("watch", WatchTask.class, it -> {
-            it.setGroup(GROUP);
-            it.getContainerId().set(createContainer.getContainerId());
-            it.dependsOn("createHaloContainer");
-        });
+            project.getTasks().withType(AbstractDockerRemoteApiTask.class)
+                .configureEach(task -> task.getDockerClientService().set(serviceProvider));
 
-        project.getTasks().withType(AbstractDockerRemoteApiTask.class)
-            .configureEach(task -> task.getDockerClientService().set(serviceProvider));
 
-        Provider<HaloServerBuildOperationListener> haloServerBuildOperationListenerProvider =
-            project.getGradle().getSharedServices()
-                .registerIfAbsent("halo-server-build-operation-listener",
-                    HaloServerBuildOperationListener.class,
-                    builderServiceSpec -> {
-                        builderServiceSpec.parameters(parameters -> {
-                            parameters.getDockerClientService().set(serviceProvider);
-                            // TODO use a better way to get container id
-                            File containerIdFile =
-                                new File(project.getLayout().getBuildDirectory().getAsFile().get(),
-                                    ".docker/createHaloContainer-containerId.txt");
-                            parameters.getContainerId().set(containerIdFile);
+            Provider<HaloServerBuildOperationListener> haloServerBuildOperationListenerProvider =
+                project.getGradle().getSharedServices()
+                    .registerIfAbsent("halo-server-build-operation-listener",
+                        HaloServerBuildOperationListener.class,
+                        builderServiceSpec -> {
+                            builderServiceSpec.parameters(parameters -> {
+                                parameters.getDockerClientService().set(serviceProvider);
+                                // TODO use a better way to get container id
+                                File containerIdFile =
+                                    new File(
+                                        project.getLayout().getBuildDirectory().getAsFile().get(),
+                                        ".docker/createHaloContainer-containerId.txt");
+                                parameters.getContainerId().set(containerIdFile);
+                            });
                         });
-                    });
-        buildEvents.onOperationCompletion(haloServerBuildOperationListenerProvider);
+            buildEvents.onOperationCompletion(haloServerBuildOperationListenerProvider);
+        });
     }
 
     private TaskProvider<ResolvePluginMainClassName> configureResolvePluginMainClassNameTask(

@@ -178,8 +178,8 @@ public class WatchTask extends DockerStartContainer {
     }
 
     private HttpClient createHttpClient() {
-        String username = haloExtension.getSecurity().getSuperAdminUsername();
-        String password = haloExtension.getSecurity().getSuperAdminPassword();
+        String username = haloExtension.getSuperAdminUsername();
+        String password = haloExtension.getSuperAdminPassword();
         return new CreateHttpClientStep(username, password).create();
     }
 

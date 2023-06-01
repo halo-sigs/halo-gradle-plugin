@@ -168,7 +168,6 @@ public class DockerCreateContainer extends DockerExistingImage {
         }
         containerCommand.withCmd("--rm");
 
-        HaloExtension.HaloSecurity security = haloExtension.getSecurity();
         String pluginName = pluginExtension.getPluginName();
 
         // Set environment variables and port bindings
@@ -176,9 +175,9 @@ public class DockerCreateContainer extends DockerExistingImage {
         List<String> envs = new ArrayList<>();
         envs.add("HALO_EXTERNAL_URL=" + haloExtension.getExternalUrl());
         envs.add(
-            "HALO_SECURITY_INITIALIZER_SUPERADMINPASSWORD=" + security.getSuperAdminPassword());
+            "HALO_SECURITY_INITIALIZER_SUPERADMINPASSWORD=" + haloExtension.getSuperAdminPassword());
         envs.add(
-            "HALO_SECURITY_INITIALIZER_SUPERADMINUSERNAME=" + security.getSuperAdminUsername());
+            "HALO_SECURITY_INITIALIZER_SUPERADMINUSERNAME=" + haloExtension.getSuperAdminUsername());
         if (debugPort != null) {
             envs.add("JAVA_TOOL_OPTIONS=-agentlib:jdwp=transport=dt_socket,server=y,suspend=n,"
                 + "address=*:" + debugPort);

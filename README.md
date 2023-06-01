@@ -29,7 +29,30 @@ plugins {
 
 这两个任务会将 Halo 的工作目录挂在到插件项目的 `workplace` 目录下，以确保重启任务时不会丢失数据。
 
-如果你想要修改 Halo 的配置，可以在 `workplace` 目录下创建一个 `config` 目录并添加一个 `application.yaml` 文件，然后在此文件中添加 Halo 的配置以覆盖 Halo 的 `default` 配置。
+如果你想要修改 Halo 的配置，可以在 `workplace` 目录下创建一个 `config` 目录并添加一个 `application.yaml` 文件，然后在此文件中添加 Halo 的配置以覆盖 Halo 的 `default` 配置, 如：
+```yaml
+# workplace/config/application.yaml
+logging:
+  level:
+    run.halo.app: DEBUG 
+```
+
+Halo 使用的缺省配置如下：
+```groovy
+halo {
+    version = '2.5.2'
+    superAdminUsername = 'admin'
+    superAdminPassword = 'admin'
+    externalUrl = 'http://localhost:8090'
+    docker {
+        // windows 默认为 npipe:////./pipe/docker_engine
+        url = 'unix:///var/run/docker.sock'
+        apiVersion = '1.42'
+    }
+}
+```
+如需修改，你可以在 `build.gradle` 配置。
+
 #### haloServer 任务
 使用方式：
 ```shell

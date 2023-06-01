@@ -2,6 +2,7 @@ package run.halo.gradle;
 
 import lombok.Data;
 import org.apache.commons.lang3.SystemUtils;
+import org.gradle.api.Action;
 import org.gradle.api.Project;
 import org.gradle.api.model.ObjectFactory;
 import org.gradle.api.plugins.ExtensionContainer;
@@ -31,18 +32,18 @@ public class HaloExtension {
 
     private String externalUrl = "http://localhost:8090";
 
-    private Docker docker;
+    private String superAdminUsername = "admin";
 
-    private HaloSecurity security = new HaloSecurity();
+    private String superAdminPassword = "admin";
+
+    private Docker docker;
 
     public HaloExtension(ObjectFactory objectFactory) {
         this.docker = new Docker(objectFactory);
     }
 
-    @Data
-    public static class HaloSecurity {
-        String superAdminUsername = "admin";
-        String superAdminPassword = "admin";
+    public void docker(Action<? super Docker> action) {
+        action.execute(docker);
     }
 
     public static class Docker {
@@ -77,6 +78,14 @@ public class HaloExtension {
          */
         public final Property<String> getUrl() {
             return url;
+        }
+
+        public void setUrl(String url) {
+            this.url.set(url);
+        }
+
+        public void setApiVersion(String apiVersion) {
+            this.apiVersion.set(apiVersion);
         }
 
         String getDefaultDockerUrl() {
