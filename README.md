@@ -85,6 +85,14 @@ haloPlugin {
     }
 }
 ```
+
+### Debug 
+如果你想要调试 Halo 插件项目，可以使用 IntelliJ IDEA 的 Debug 模式运行 `haloServer` 或 `watch` 任务，而后会在日志开头看到类似如下信息：
+```shell
+Listening for transport dt_socket at address: 50781 Attach debugger
+```
+然后点击 `Attach debugger` 即可开启调试面板。
+
 ### 使用 Snapshot 版本
 克隆本项目到本地，然后执行
 ```shell
