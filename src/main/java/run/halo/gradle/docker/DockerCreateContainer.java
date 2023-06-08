@@ -183,7 +183,7 @@ public class DockerCreateContainer extends DockerExistingImage {
                 + "address=*:" + debugPort);
         }
         envs.add("HALO_PLUGIN_RUNTIMEMODE=development");
-        envs.add("HALO_PLUGIN_FIXEDPLUGINPATH=" + Paths.get(buildPluginDestPath(pluginName)));
+        envs.add("HALO_PLUGIN_FIXEDPLUGINPATH=" + buildPluginDestPath(pluginName));
         envs.add("HALO_WORKDIR=" + haloWorkDir());
         String configLocation = PathUtils.combinePath(haloWorkDir(), "/config") + "/";
         envs.add(
