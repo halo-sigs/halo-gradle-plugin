@@ -5,7 +5,6 @@ import com.github.dockerjava.api.command.StartContainerCmd;
 import com.github.dockerjava.api.command.WaitContainerCmd;
 import com.github.dockerjava.api.command.WaitContainerResultCallback;
 import com.github.dockerjava.api.model.WaitResponse;
-import groovy.transform.CompileStatic;
 import java.util.concurrent.TimeUnit;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
@@ -17,7 +16,6 @@ import org.gradle.api.tasks.Internal;
 import org.gradle.api.tasks.Optional;
 
 @Slf4j
-@CompileStatic
 public class DockerStartContainer extends DockerExistingContainer {
 
     private int exitCode;
@@ -25,12 +23,12 @@ public class DockerStartContainer extends DockerExistingContainer {
     @Input
     @Optional
     @Getter
-    private final Property<Integer> awaitStatusTimeout =
+    final Property<Integer> awaitStatusTimeout =
         getProject().getObjects().property(Integer.class);
 
     @Override
     public void runRemoteCommand() {
-        log.info("Starting container with ID [{}].", containerId.get());
+        getLogger().quiet("Starting container with ID [{}].", containerId.get());
         try (StartContainerCmd containerCommand = getDockerClient()
             .startContainerCmd(containerId.get())) {
             containerCommand.exec();

@@ -35,6 +35,7 @@ import run.halo.gradle.docker.AbstractDockerRemoteApiTask;
 import run.halo.gradle.docker.DockerClientService;
 import run.halo.gradle.docker.DockerCreateContainer;
 import run.halo.gradle.docker.DockerPullImage;
+import run.halo.gradle.docker.DockerRemoveContainer;
 import run.halo.gradle.docker.DockerStartContainer;
 import run.halo.gradle.watch.WatchTask;
 
@@ -141,6 +142,14 @@ public class HaloDevtoolsPlugin implements Plugin<Project> {
                         it.setGroup(GROUP);
                         it.setDescription("Create halo server container.");
                         it.dependsOn("build", "pullHaloImage");
+                    });
+
+            project.getTasks()
+                    .create("removeHaloContainer", DockerRemoveContainer.class, it -> {
+                        it.getForce().set(true);
+                        it.getContainerId().set(createContainer.getContainerId());
+                        it.setGroup(GROUP);
+                        it.setDescription("Remove halo server container.");
                     });
 
             project.getTasks()

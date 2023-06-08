@@ -47,18 +47,17 @@ public class DockerRunTaskTest {
     }
 
     @Test
-    @Disabled
     void autoVersionTaskTest() throws IOException {
         createPluginManifestFile();
         try (PrintWriter out = new PrintWriter(new FileWriter(this.buildFile))) {
             out.println("plugins {");
-            out.println("    id 'io.github.guqing.plugin-development'");
+            out.println("    id 'run.halo.plugin.devtools'");
             out.println("}");
             out.println("group 'io.github.guqing'");
             out.println("version '1.0.0'");
 
-            out.println("halo {");
-            out.println("   watchDomain {");
+            out.println("haloPlugin {");
+            out.println("   watchDomains {");
             out.println("       testDomain {");
             out.println("         files files('src/')");
             out.println("         exclude '**/plugin.yaml'");
@@ -68,7 +67,7 @@ public class DockerRunTaskTest {
         }
         ClassPath classPath = DefaultClassPath.of(PluginUnderTestMetadataReading.readImplementationClasspath());
         String asURLs = classPath.getAsURLs().stream().map(URL::toString).collect(Collectors.joining(", "));
-        BuildResult buildResult = runGradle("watch", "-Pclasspath="+asURLs);
+        BuildResult buildResult = runGradle("haloServer", "-Pclasspath="+asURLs);
         System.out.println(buildResult.getOutput());
     }
 

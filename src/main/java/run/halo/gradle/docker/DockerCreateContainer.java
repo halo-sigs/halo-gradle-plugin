@@ -27,6 +27,7 @@ import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 import org.gradle.api.Action;
+import org.gradle.api.GradleException;
 import org.gradle.api.Task;
 import org.gradle.api.Transformer;
 import org.gradle.api.file.RegularFile;
@@ -141,16 +142,20 @@ public class DockerCreateContainer extends DockerExistingImage {
     public void runRemoteCommand() throws Exception {
         String imageId = getImageId().get();
 
-        CreateContainerCmd containerCommand = getDockerClient().createContainerCmd(imageId);
-        setContainerCommandConfig(containerCommand);
-        CreateContainerResponse container = containerCommand.exec();
-        final String localContainerName =
-            containerName.getOrNull() == null ? container.getId() : containerName.get();
-        log.info("Created container with ID [{}]", localContainerName);
-        Files.writeString(containerIdFile.get().getAsFile().toPath(), container.getId());
-        Action<? super Object> nextHandler = getNextHandler();
-        if (nextHandler != null) {
-            nextHandler.execute(container);
+        try (CreateContainerCmd containerCommand = getDockerClient().createContainerCmd(imageId)) {
+            setContainerCommandConfig(containerCommand);
+            CreateContainerResponse container = containerCommand.exec();
+
+            final String localContainerName =
+                containerName.getOrNull() == null ? container.getId() : containerName.get();
+            log.info("Created container with ID [{}]", localContainerName);
+            Files.writeString(containerIdFile.get().getAsFile().toPath(), container.getId());
+            Action<? super Object> nextHandler = getNextHandler();
+            if (nextHandler != null) {
+                nextHandler.execute(container);
+            }
+        } catch (Exception e) {
+            throw new GradleException("Failed to create container", e);
         }
     }
 
