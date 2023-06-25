@@ -16,8 +16,11 @@ import java.util.concurrent.atomic.AtomicInteger;
 import run.halo.gradle.Assert;
 
 /**
+ * From
+ * <a href="https://github.com/spring-projects/spring-boot/blob/main/spring-boot-project/spring-boot-devtools/src/main/java/org/springframework/boot/devtools/filewatch/FileSystemWatcher.java">Springboot devtools file system watcher</a>
+ *
  * @author guqing
- * @since 2.0.0
+ * @since 1.0.0
  */
 public class FileSystemWatcher {
     private static final Duration DEFAULT_POLL_INTERVAL = Duration.ofMillis(1000);

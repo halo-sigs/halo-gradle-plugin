@@ -17,6 +17,7 @@ import java.util.concurrent.CompletableFuture;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.lang3.StringUtils;
 import org.gradle.StartParameter;
 import org.gradle.api.file.FileCollection;
 import org.gradle.api.internal.file.pattern.PatternMatcher;
@@ -120,19 +121,17 @@ public class WatchTask extends DockerStartContainer {
         List<WatchTarget> watchTargets = new ArrayList<>(pluginExtension.getWatchDomains());
         Set<File> watchFiles = new HashSet<>();
         Set<String> excludes = new HashSet<>();
-        if (watchTargets.isEmpty()) {
-            WatchTarget watchTarget = new WatchTarget("javaSource");
-            watchTarget.files(getProject().files("src/main/"));
-            watchTarget.excludes("**/src/main/resources/console/**");
-            watchTargets.add(watchTarget);
-        }
+
+        WatchTarget javaSourceTarget = new WatchTarget("javaSource");
+        javaSourceTarget.files(getProject().files("src/main/"));
+        watchTargets.add(javaSourceTarget);
+
         for (WatchTarget watchTarget : watchTargets) {
             Set<File> files = watchTarget.getFiles().stream()
                 .map(FileCollection::getFiles)
                 .flatMap(Collection::stream)
                 .filter(File::isDirectory)
                 .collect(Collectors.toSet());
-            System.out.println("files: " + files);
             watchFiles.addAll(files);
             excludes.addAll(watchTarget.getExcludes());
         }
@@ -148,19 +147,25 @@ public class WatchTask extends DockerStartContainer {
         watcher.addSourceDirectories(watchFiles);
     }
 
-    private static void populateDefaultExcludeRules(Set<String> excludes) {
+    private void populateDefaultExcludeRules(Set<String> excludes) {
         if (excludes == null) {
             return;
         }
-        excludes.add("**/build/**");
-        excludes.add("**/.gradle/**");
-        excludes.add("**/gradle/**");
+        excludes.add("**/node_modules/**");
         excludes.add("**/.idea/**");
         excludes.add("**/.git/**");
-        excludes.add("**/dist/**");
-        excludes.add("**/node_modules/**");
-        excludes.add("**/test/java/**");
-        excludes.add("**/test/resources/**");
+        excludes.add("**/.gradle/**");
+        excludes.add(excludePattern("src/main/resources/console/**"));
+        excludes.add(excludePattern("build/**"));
+        excludes.add(excludePattern("gradle/**"));
+        excludes.add(excludePattern("dist/**"));
+        excludes.add(excludePattern("test/java/**"));
+        excludes.add(excludePattern("test/resources/**"));
+    }
+
+    String excludePattern(String pattern) {
+        Path projectPath = getProject().getProjectDir().toPath();
+        return projectPath.resolve(StringUtils.removeStart(pattern, "/")).toString();
     }
 
     private File getPluginBuildFile() {
