@@ -117,6 +117,8 @@ public class HaloDevtoolsPlugin implements Plugin<Project> {
         configurePluginJarTask(project, resolvePluginMainClassName);
 
         project.afterEvaluate(action -> {
+            // configure it after evaluate
+            configureReloadPluginTask(project, pluginExtension.getPluginName());
 
             HaloExtension.Docker dockerExtension = haloExtension.getDocker();
             final Provider<DockerClientService> serviceProvider = project.getGradle()
@@ -145,12 +147,12 @@ public class HaloDevtoolsPlugin implements Plugin<Project> {
                     });
 
             project.getTasks()
-                    .create("removeHaloContainer", DockerRemoveContainer.class, it -> {
-                        it.getForce().set(true);
-                        it.getContainerId().set(createContainer.getContainerId());
-                        it.setGroup(GROUP);
-                        it.setDescription("Remove halo server container.");
-                    });
+                .create("removeHaloContainer", DockerRemoveContainer.class, it -> {
+                    it.getForce().set(true);
+                    it.getContainerId().set(createContainer.getContainerId());
+                    it.setGroup(GROUP);
+                    it.setDescription("Remove halo server container.");
+                });
 
             project.getTasks()
                 .create(HaloServerTask.TASK_NAME, DockerStartContainer.class, it -> {
@@ -187,6 +189,16 @@ public class HaloDevtoolsPlugin implements Plugin<Project> {
                         });
             buildEvents.onOperationCompletion(haloServerBuildOperationListenerProvider);
         });
+    }
+
+    private TaskProvider<ReloadPluginTask> configureReloadPluginTask(Project project, String pluginName) {
+        return project.getTasks()
+            .register(ReloadPluginTask.TASK_NAME, ReloadPluginTask.class, (reloadTask) -> {
+                reloadTask.setDescription("Reloads the plugin by name.");
+                reloadTask.setGroup(GROUP);
+                reloadTask.dependsOn("build");
+                reloadTask.getPluginName().set(pluginName);
+            });
     }
 
     private TaskProvider<ResolvePluginMainClassName> configureResolvePluginMainClassNameTask(

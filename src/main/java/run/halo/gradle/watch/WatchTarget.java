@@ -5,16 +5,20 @@ import java.util.Arrays;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
+import lombok.EqualsAndHashCode;
 import lombok.NonNull;
 import lombok.ToString;
 import org.gradle.api.Named;
 import org.gradle.api.file.FileCollection;
 
 /**
+ * If two objects have the same name, they are considered the same object.
+ *
  * @author guqing
  * @since 2.0.0
  */
 @ToString
+@EqualsAndHashCode(of = "name")
 public class WatchTarget implements Named {
 
     private final String name;

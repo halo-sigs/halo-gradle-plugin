@@ -96,7 +96,7 @@ public class WatchTask extends DockerStartContainer {
 
         CompletableFuture<Void> initializeFuture = CompletableFuture.runAsync(() -> {
             new InitializeHaloStep(host, httpClient).execute();
-            reloadPluginStep.execute(getPluginName(), getPluginBuildFile());
+            reloadPluginStep.execute(getPluginName());
         });
         initializeFuture.exceptionally(e -> {
             e.printStackTrace();
@@ -108,7 +108,7 @@ public class WatchTask extends DockerStartContainer {
             watcher.addListener(changeSet -> {
                 System.out.println("File changed......" + changeSet);
                 runner.run(parameters);
-                reloadPluginStep.execute(getPluginName(), getPluginBuildFile());
+                reloadPluginStep.execute(getPluginName());
             });
             watcher.start();
             // start docker container and waiting

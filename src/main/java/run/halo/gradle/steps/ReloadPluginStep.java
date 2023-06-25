@@ -35,7 +35,7 @@ public class ReloadPluginStep {
         this.host = host;
     }
 
-    public void execute(String pluginName, File file) {
+    public void execute(String pluginName) {
         try {
             reloadPlugin(client, pluginName);
         } catch (IOException | InterruptedException e) {
