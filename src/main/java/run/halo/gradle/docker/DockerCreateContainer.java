@@ -16,13 +16,13 @@ import java.io.UncheckedIOException;
 import java.lang.management.ManagementFactory;
 import java.lang.management.RuntimeMXBean;
 import java.nio.file.Files;
-import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import javax.annotation.Nonnull;
+import javax.annotation.Nullable;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
@@ -176,16 +176,25 @@ public class DockerCreateContainer extends DockerExistingImage {
         String pluginName = pluginExtension.getPluginName();
 
         // Set environment variables and port bindings
-        Integer debugPort = debugPort();
+        int debugPort = getDebugPort();
+        boolean isDebugMode = isDebugMode();
+        Integer port = haloExtension.getPort();
         List<String> envs = new ArrayList<>();
+        envs.add("server_port=" + port);
         envs.add("HALO_EXTERNAL_URL=" + haloExtension.getExternalUrl());
         envs.add(
-            "HALO_SECURITY_INITIALIZER_SUPERADMINPASSWORD=" + haloExtension.getSuperAdminPassword());
+            "HALO_SECURITY_INITIALIZER_SUPERADMINPASSWORD="
+                + haloExtension.getSuperAdminPassword());
         envs.add(
-            "HALO_SECURITY_INITIALIZER_SUPERADMINUSERNAME=" + haloExtension.getSuperAdminUsername());
-        if (debugPort != null) {
-            envs.add("JAVA_TOOL_OPTIONS=-agentlib:jdwp=transport=dt_socket,server=y,suspend=n,"
-                + "address=*:" + debugPort);
+            "HALO_SECURITY_INITIALIZER_SUPERADMINUSERNAME="
+                + haloExtension.getSuperAdminUsername());
+        if (isDebugMode) {
+            String suspend = haloExtension.getSuspend() ? "y" : "n";
+            envs.add(
+                ("JAVA_TOOL_OPTIONS=-agentlib:jdwp=transport=dt_socket,server=y,suspend=%s,"
+                    + "address=*:%s")
+                    .formatted(suspend, debugPort)
+            );
         }
         envs.add("HALO_PLUGIN_RUNTIMEMODE=development");
         envs.add("HALO_PLUGIN_FIXEDPLUGINPATH=" + buildPluginDestPath(pluginName));
@@ -199,15 +208,15 @@ public class DockerCreateContainer extends DockerExistingImage {
         containerCommand.withLabels(Map.of(Constant.DEFAULT_CONTAINER_LABEL, "halo-gradle-plugin"));
 
         List<ExposedPort> exposedPorts = new ArrayList<>(2);
-        exposedPorts.add(ExposedPort.parse("8090"));
-        if (debugPort != null) {
+        exposedPorts.add(ExposedPort.parse(String.valueOf(port)));
+        if (isDebugMode) {
             exposedPorts.add(ExposedPort.tcp(debugPort));
         }
         containerCommand.withExposedPorts(exposedPorts);
 
         List<PortBinding> portBindings = new ArrayList<>(2);
-        portBindings.add(PortBinding.parse("8090:8090"));
-        if (debugPort != null) {
+        portBindings.add(PortBinding.parse("%s:%s".formatted(port, port)));
+        if (isDebugMode) {
             portBindings.add(PortBinding.parse(debugPort + ":" + debugPort));
         }
         HostConfig hostConfig = new HostConfig();
@@ -235,7 +244,22 @@ public class DockerCreateContainer extends DockerExistingImage {
         return "/data/plugins/" + pluginName + "/";
     }
 
-    Integer debugPort() {
+    @Internal
+    boolean isDebugMode() {
+        return jvmDebugPort() != null || haloExtension.getDebug();
+    }
+
+    @Internal
+    int getDebugPort() {
+        Integer jvmDebugPort = jvmDebugPort();
+        if (jvmDebugPort != null) {
+            return jvmDebugPort;
+        }
+        return haloExtension.getDebugPort();
+    }
+
+    @Nullable
+    private Integer jvmDebugPort() {
         RuntimeMXBean runtimeMXBean = ManagementFactory.getRuntimeMXBean();
         List<String> inputArguments = runtimeMXBean.getInputArguments();
         return inputArguments.stream()

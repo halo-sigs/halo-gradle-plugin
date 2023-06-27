@@ -1,12 +1,15 @@
 package run.halo.gradle;
 
 import lombok.Data;
+import org.apache.commons.lang3.ObjectUtils;
 import org.apache.commons.lang3.SystemUtils;
 import org.gradle.api.Action;
 import org.gradle.api.Project;
 import org.gradle.api.model.ObjectFactory;
 import org.gradle.api.plugins.ExtensionContainer;
 import org.gradle.api.provider.Property;
+import run.halo.gradle.utils.DebugUtils;
+import javax.annotation.Nonnull;
 
 /**
  * 可以通过 {@link ExtensionContainer} 来创建和管理 Extension，{@link ExtensionContainer} 对象可以
@@ -35,6 +38,41 @@ public class HaloExtension {
     private String superAdminUsername = "admin";
 
     private String superAdminPassword = "admin";
+
+    private Integer debugPort;
+
+    private Integer port;
+
+    private Boolean debug = false;
+
+    private Boolean suspend = false;
+
+    @Nonnull
+    public Boolean getSuspend() {
+        return ObjectUtils.defaultIfNull(suspend, false);
+    }
+
+    @Nonnull
+    public Integer getPort() {
+        return ObjectUtils.defaultIfNull(port, 8090);
+    }
+
+    @Nonnull
+    public Boolean getDebug() {
+        return ObjectUtils.defaultIfNull(this.debug, false);
+    }
+
+    @Nonnull
+    public Integer getDebugPort() {
+        if (debugPort != null) {
+            return debugPort;
+        }
+        try {
+            return Integer.parseInt(DebugUtils.findAvailableDebugAddress());
+        } catch (Exception e) {
+            return 5005;
+        }
+    }
 
     private Docker docker;
 
