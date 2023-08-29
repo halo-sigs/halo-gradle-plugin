@@ -17,7 +17,6 @@ import java.util.concurrent.CompletableFuture;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.commons.lang3.StringUtils;
 import org.gradle.StartParameter;
 import org.gradle.api.file.FileCollection;
 import org.gradle.api.internal.file.pattern.PatternMatcher;
@@ -165,7 +164,7 @@ public class WatchTask extends DockerStartContainer {
 
     String excludePattern(String pattern) {
         Path projectPath = getProject().getProjectDir().toPath();
-        return projectPath.resolve(StringUtils.removeStart(pattern, "/")).toString();
+        return projectPath + "/" + pattern;
     }
 
     private File getPluginBuildFile() {
