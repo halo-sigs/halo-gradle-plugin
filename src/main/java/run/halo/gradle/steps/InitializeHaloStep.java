@@ -1,21 +1,21 @@
 package run.halo.gradle.steps;
 
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.node.ObjectNode;
 import java.io.IOException;
 import java.net.URI;
-import java.net.URISyntaxException;
-import java.net.http.HttpClient;
-import java.net.http.HttpRequest;
-import java.net.http.HttpResponse;
-import java.nio.charset.StandardCharsets;
-import java.util.UUID;
+import com.fasterxml.jackson.databind.JsonNode;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.commons.lang3.StringUtils;
+import org.apache.hc.client5.http.classic.methods.HttpGet;
+import org.apache.hc.client5.http.classic.methods.HttpPost;
+import org.apache.hc.client5.http.impl.classic.CloseableHttpClient;
+import org.apache.hc.client5.http.impl.classic.CloseableHttpResponse;
+import org.apache.hc.client5.http.impl.classic.HttpClients;
+import org.apache.hc.core5.http.ContentType;
+import org.apache.hc.core5.http.ParseException;
+import org.apache.hc.core5.http.io.entity.EntityUtils;
+import org.apache.hc.core5.http.io.entity.StringEntity;
 import run.halo.gradle.Assert;
 import run.halo.gradle.RetryUtils;
 import run.halo.gradle.YamlUtils;
-import run.halo.gradle.model.ObjectNodeListResult;
 
 /**
  * @author guqing
@@ -23,34 +23,30 @@ import run.halo.gradle.model.ObjectNodeListResult;
  */
 @Slf4j
 public class InitializeHaloStep {
-    private final HttpClient client;
-    private final String host;
+    private final HaloSiteOption haloSiteOption;
 
-    public InitializeHaloStep(String host, HttpClient client) {
-        Assert.notNull(host, "host must not be null");
-        Assert.notNull(client, "httpClient must not be null");
-        this.host = StringUtils.defaultString(host, "http://localhost:8090");
-        this.client = client;
+    public InitializeHaloStep(HaloSiteOption haloSiteOption) {
+        Assert.notNull(haloSiteOption, "haloSiteOption must not be null");
+        this.haloSiteOption = haloSiteOption;
     }
 
     public void execute() {
-        waitForReadiness(client);
-        try {
-            initializeHalo(client);
-        } catch (Exception e) {
+        try (var client = HttpClients.createDefault()) {
+            waitForReadiness(client);
+            initializeUserAccount(client);
+            System.out.println("Halo 初始化成功，访问： " + requestUri("/console") + "\n" +
+                    "用户名：" + haloSiteOption.username() + "\n" +
+                    "密码：" + haloSiteOption.password() + "\n");
+        } catch (IOException | ParseException e) {
             throw new RuntimeException(e);
         }
     }
 
-    private void waitForReadiness(HttpClient client) {
-        HttpRequest request = HttpRequest.newBuilder()
-            .uri(buildUri("/actuator/health"))
-            .GET()
-            .build();
+    private void waitForReadiness(CloseableHttpClient client) {
+        var httpGet = new HttpGet(requestUri("/actuator/health"));
         RetryUtils.withRetry(20, 400, () -> {
             try {
-                HttpResponse<String> response =
-                    client.send(request, HttpResponse.BodyHandlers.ofString());
+                var response = client.execute(httpGet);
                 return isSuccessful(response);
             } catch (Exception e) {
                 // ignore
@@ -59,155 +55,47 @@ public class InitializeHaloStep {
         });
     }
 
-    private URI buildUri(String endpoint) {
-        String path = StringUtils.prependIfMissing(endpoint, "/");
-        String hostPrepared = StringUtils.removeEnd(host, "/");
-        try {
-            return new URI(hostPrepared + path);
-        } catch (URISyntaxException e) {
-            throw new RuntimeException(e);
-        }
+    URI requestUri(String path) {
+        return haloSiteOption.externalUrl().resolve(path);
     }
 
-    private boolean isSuccessful(HttpResponse<String> response) {
-        return response.statusCode() >= 200 && response.statusCode() < 300;
+    private static boolean isSuccessful(CloseableHttpResponse response) {
+        return response.getCode() >= 200 && response.getCode() < 300;
     }
 
-    private void initializeHalo(HttpClient client) throws IOException, InterruptedException {
-        HttpRequest checkSystemStates = HttpRequest.newBuilder()
-            .uri(buildUri("/api/v1alpha1/configmaps/system-states"))
-            .GET()
-            .build();
-        HttpResponse<String> checkResponse = client.send(checkSystemStates,
-            HttpResponse.BodyHandlers.ofString(StandardCharsets.UTF_8));
-        if (isSuccessful(checkResponse)) {
+    private void initializeUserAccount(CloseableHttpClient client)
+            throws IOException, ParseException {
+        var globalInfoHttpGet = new HttpGet(requestUri("/actuator/globalinfo"));
+        var globalInfoResp = client.execute(globalInfoHttpGet);
+        var globalInfo =
+                YamlUtils.mapper.convertValue(EntityUtils.toString(globalInfoResp.getEntity()),
+                        JsonNode.class);
+        var userInitialized = globalInfo.get("userInitialized");
+        if (userInitialized != null && userInitialized.asBoolean()) {
             return;
         }
-        HttpRequest createSystemStateConfig = HttpRequest.newBuilder()
-            .uri(buildUri("/api/v1alpha1/configmaps"))
-            .header("Content-Type", "application/json")
-            .POST(HttpRequest.BodyPublishers.ofString("""
-                {
-                    "data": {
-                        "states": "{\\"isSetup\\":true}"
-                    },
-                    "apiVersion": "v1alpha1",
-                    "kind": "ConfigMap",
-                    "metadata": {
-                        "name": "system-states"
-                    }
-                }
-                """))
-            .build();
-        HttpResponse<String> createResponse = client.send(createSystemStateConfig,
-            HttpResponse.BodyHandlers.ofString(StandardCharsets.UTF_8));
-        if (!isSuccessful(createResponse)) {
-            throw new RuntimeException(createResponse.body());
-        }
-        // create menu
-        createMenu(client);
-    }
-
-    private void initializeTheme(HttpClient client)
-        throws URISyntaxException, IOException, InterruptedException {
-        HttpRequest listUninstalledTheme = HttpRequest.newBuilder()
-            .uri(buildUri("/apis/api.console.halo.run/v1alpha1/themes?uninstalled=true"))
-            .GET()
-            .build();
-        HttpResponse<String> listUninstalledThemResp = client.send(listUninstalledTheme,
-            HttpResponse.BodyHandlers.ofString(StandardCharsets.UTF_8));
-        if (!isSuccessful(listUninstalledThemResp)) {
-            throw new RuntimeException(listUninstalledThemResp.body());
-        }
-        String body = listUninstalledThemResp.body();
-        ObjectNodeListResult listResult =
-            YamlUtils.mapper.readValue(body, ObjectNodeListResult.class);
-        if (listResult == null || listResult.getItems().isEmpty()) {
-            return;
-        }
-        ObjectNode item = listResult.getItems().get(0);
-        createTheme(client, item.toString());
-    }
-
-    private void createTheme(HttpClient client, String payload)
-        throws URISyntaxException, IOException, InterruptedException {
-        HttpRequest installRequest = HttpRequest.newBuilder()
-            .uri(buildUri("/apis/theme.halo.run/v1alpha1/themes"))
-            .header("Content-Type", "application/json")
-            .POST(HttpRequest.BodyPublishers.ofString(payload))
-            .build();
-        HttpResponse<String> response = client.send(installRequest,
-            HttpResponse.BodyHandlers.ofString(StandardCharsets.UTF_8));
-        if (!isSuccessful(response)) {
-            throw new RuntimeException(response.body());
-        }
-        String body = response.body();
-        ObjectNode theme = YamlUtils.mapper.readValue(body, ObjectNode.class);
-        JsonNode nameNode = theme.at("/metadata/name");
-        if (nameNode == null) {
-            throw new IllegalStateException("Unexpected theme name from [" + theme + "]");
-        }
-        HttpRequest reloadSettingReq = HttpRequest.newBuilder()
-            .uri(buildUri(
-                "/apis/api.console.halo.run/v1alpha1/themes/" + nameNode.asText() + "/reload"))
-            .PUT(HttpRequest.BodyPublishers.noBody())
-            .build();
-        HttpResponse<String> reloadResponse = client.send(reloadSettingReq,
-            HttpResponse.BodyHandlers.ofString(StandardCharsets.UTF_8));
-        if (!isSuccessful(reloadResponse)) {
-            throw new IllegalStateException(
-                "Reload theme setting failed: " + reloadResponse.body());
+        var initializeRequest = getInitializeRequest();
+        var response = client.execute(initializeRequest);
+        if (isSuccessful(response)) {
+            log.info("Initialize system successfully.");
+        } else {
+            log.error("Initialize system failed: {}", EntityUtils.toString(response.getEntity()));
         }
     }
 
-    private void createMenu(HttpClient client) throws IOException, InterruptedException {
-        UUID menuItemUid = UUID.randomUUID();
-        HttpRequest installRequest = HttpRequest.newBuilder()
-            .uri(buildUri("/api/v1alpha1/menus"))
-            .header("Content-Type", "application/json")
-            .POST(HttpRequest.BodyPublishers.ofString("""
+    private HttpPost getInitializeRequest() {
+        var initializeRequest =
+                new HttpPost(requestUri("/apis/api.console.halo.run/v1alpha1/system/initialize"));
+        var entity = new StringEntity("""
                 {
-                    "spec": {
-                        "displayName": "默认",
-                        "menuItems": ["%s"]
-                    },
-                    "apiVersion": "v1alpha1",
-                    "kind": "Menu",
-                    "metadata": {
-                        "name": "",
-                        "generateName": "menu-"
-                    }
+                    "siteTitle": "Halo",
+                    "username": "%s",
+                    "password": "%s",
+                    "email": "admin@halo.run"
                 }
-                """.formatted(menuItemUid)))
-            .build();
-        HttpResponse<String> response = client.send(installRequest,
-            HttpResponse.BodyHandlers.ofString(StandardCharsets.UTF_8));
-        if (!isSuccessful(response)) {
-            throw new RuntimeException(response.body());
-        }
-        HttpRequest createMenuItem = HttpRequest.newBuilder()
-            .uri(buildUri("/api/v1alpha1/menuitems"))
-            .header("Content-Type", "application/json")
-            .POST(HttpRequest.BodyPublishers.ofString("""
-                {
-                    "spec": {
-                        "displayName": "首页",
-                        "href": "/index",
-                        "children": [],
-                        "priority": 0
-                    },
-                    "apiVersion": "v1alpha1",
-                    "kind": "MenuItem",
-                    "metadata": {
-                        "name": "%s"
-                    }
-                }
-                """.formatted(menuItemUid)))
-            .build();
-        HttpResponse<String> menuItemResponse = client.send(createMenuItem,
-            HttpResponse.BodyHandlers.ofString(StandardCharsets.UTF_8));
-        if (!isSuccessful(menuItemResponse)) {
-            throw new RuntimeException(menuItemResponse.body());
-        }
+                """.formatted(haloSiteOption.username(), haloSiteOption.password()),
+                ContentType.APPLICATION_JSON);
+        initializeRequest.setEntity(entity);
+        return initializeRequest;
     }
 }

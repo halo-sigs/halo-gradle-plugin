@@ -3,10 +3,10 @@ package run.halo.gradle;
 import static org.gradle.api.plugins.JavaPlugin.JAR_TASK_NAME;
 import static run.halo.gradle.ResolvePluginMainClassName.TASK_NAME;
 
+import javax.inject.Inject;
 import java.io.File;
 import java.util.Set;
 import java.util.concurrent.Callable;
-import javax.inject.Inject;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
@@ -31,12 +31,7 @@ import org.gradle.api.tasks.SourceSetContainer;
 import org.gradle.api.tasks.TaskProvider;
 import org.gradle.internal.build.event.BuildEventListenerRegistryInternal;
 import org.gradle.jvm.tasks.Jar;
-import run.halo.gradle.docker.AbstractDockerRemoteApiTask;
-import run.halo.gradle.docker.DockerClientService;
-import run.halo.gradle.docker.DockerCreateContainer;
-import run.halo.gradle.docker.DockerPullImage;
-import run.halo.gradle.docker.DockerRemoveContainer;
-import run.halo.gradle.docker.DockerStartContainer;
+import run.halo.gradle.docker.*;
 import run.halo.gradle.watch.WatchTask;
 
 
@@ -155,7 +150,7 @@ public class HaloDevtoolsPlugin implements Plugin<Project> {
                 });
 
             project.getTasks()
-                .create(HaloServerTask.TASK_NAME, DockerStartContainer.class, it -> {
+                .create(HaloServerTask.TASK_NAME, HaloServerTask.class, it -> {
                     it.setGroup(GROUP);
                     it.getContainerId().set(createContainer.getContainerId());
                     it.dependsOn("createHaloContainer");

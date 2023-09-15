@@ -1,13 +1,12 @@
 package run.halo.gradle;
 
-import java.net.http.HttpClient;
 import lombok.Getter;
 import org.gradle.api.DefaultTask;
 import org.gradle.api.provider.Property;
 import org.gradle.api.tasks.Input;
 import org.gradle.api.tasks.TaskAction;
 import org.gradle.work.DisableCachingByDefault;
-import run.halo.gradle.steps.CreateHttpClientStep;
+import run.halo.gradle.steps.HaloSiteOption;
 import run.halo.gradle.steps.ReloadPluginStep;
 
 /**
@@ -31,18 +30,12 @@ public class ReloadPluginTask extends DefaultTask {
 
     public ReloadPluginTask() {
         HaloExtension haloExt = getProject().getExtensions().getByType(HaloExtension.class);
-        reloadPluginStep = new ReloadPluginStep(haloExt.getExternalUrl(), createHttpClient());
+        var siteOption = HaloSiteOption.from(haloExt);
+        reloadPluginStep = new ReloadPluginStep(siteOption);
     }
 
     @TaskAction
     public void reloadPlugin() {
         reloadPluginStep.execute(pluginName.get());
-    }
-
-    private HttpClient createHttpClient() {
-        HaloExtension haloExt = getProject().getExtensions().getByType(HaloExtension.class);
-        String username = haloExt.getSuperAdminUsername();
-        String password = haloExt.getSuperAdminPassword();
-        return new CreateHttpClientStep(username, password).create();
     }
 }

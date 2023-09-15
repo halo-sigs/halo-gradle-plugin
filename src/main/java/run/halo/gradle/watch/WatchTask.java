@@ -2,7 +2,6 @@ package run.halo.gradle.watch;
 
 import java.io.File;
 import java.io.IOException;
-import java.net.http.HttpClient;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.Duration;
@@ -27,7 +26,7 @@ import run.halo.gradle.HaloExtension;
 import run.halo.gradle.HaloPluginExtension;
 import run.halo.gradle.WatchExecutionParameters;
 import run.halo.gradle.docker.DockerStartContainer;
-import run.halo.gradle.steps.CreateHttpClientStep;
+import run.halo.gradle.steps.HaloSiteOption;
 import run.halo.gradle.steps.InitializeHaloStep;
 import run.halo.gradle.steps.ReloadPluginStep;
 
@@ -43,8 +42,6 @@ public class WatchTask extends DockerStartContainer {
 
     private final HaloExtension haloExtension =
         getProject().getExtensions().getByType(HaloExtension.class);
-
-    final HttpClient httpClient = createHttpClient();
 
     WatchExecutionParameters getParameters(List<String> buildArgs) {
         return WatchExecutionParameters.builder()
@@ -90,16 +87,16 @@ public class WatchTask extends DockerStartContainer {
             quietPeriod, SnapshotStateRepository.STATIC);
         configWatchFiles(watcher);
 
-        String host = haloExtension.getExternalUrl();
-        ReloadPluginStep reloadPluginStep = new ReloadPluginStep(host, httpClient);
+        var haloSiteOption = HaloSiteOption.from(haloExtension);
+        ReloadPluginStep reloadPluginStep = new ReloadPluginStep(haloSiteOption);
         System.out.println("运行........");
 
         CompletableFuture<Void> initializeFuture = CompletableFuture.runAsync(() -> {
-            new InitializeHaloStep(host, httpClient).execute();
+            new InitializeHaloStep(haloSiteOption).execute();
             reloadPluginStep.execute(getPluginName());
         });
         initializeFuture.exceptionally(e -> {
-            e.printStackTrace();
+            log.error(e.getMessage(), e);
             return null;
         });
 
@@ -179,12 +176,6 @@ public class WatchTask extends DockerStartContainer {
         } catch (IOException e) {
             throw new IllegalStateException("未找到插件jar包", e);
         }
-    }
-
-    private HttpClient createHttpClient() {
-        String username = haloExtension.getSuperAdminUsername();
-        String password = haloExtension.getSuperAdminPassword();
-        return new CreateHttpClientStep(username, password).create();
     }
 
     private String getPluginName() {
