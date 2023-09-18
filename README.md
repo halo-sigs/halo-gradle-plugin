@@ -16,7 +16,7 @@ pluginManagement {
 plugins {
     // ...
     // 添加此 gradle 插件依赖
-    id "run.halo.plugin.devtools" version "0.0.6"
+    id "run.halo.plugin.devtools" version "0.0.7"
 }
 ```
 
@@ -40,7 +40,7 @@ logging:
 Halo 使用的缺省配置如下：
 ```groovy
 halo {
-    version = '2.5.2'
+    version = '2.9.1'
     superAdminUsername = 'admin'
     superAdminPassword = 'admin'
     externalUrl = 'http://localhost:8090'
@@ -102,7 +102,7 @@ Listening for transport dt_socket at address: 50781 Attach debugger
 ```groovy
 plugins {
     //... 
-    id "run.halo.plugin.devtools" version "0.0.7-SNAPSHOT"
+    id "run.halo.plugin.devtools" version "0.0.8-SNAPSHOT"
 }
 ```
 再修改 `settings.gradle` 中的配置：

@@ -31,7 +31,7 @@ public class HaloExtension {
 
     private String serverWorkDir = "/root/.halo2";
 
-    private String version = "2.9.0";
+    private String version = "2.9.1";
 
     private String externalUrl = "http://localhost:8090";
 
