@@ -2,7 +2,6 @@ package run.halo.gradle.steps;
 
 import java.io.IOException;
 import java.net.URI;
-import com.fasterxml.jackson.databind.JsonNode;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.hc.client5.http.classic.methods.HttpGet;
 import org.apache.hc.client5.http.classic.methods.HttpPost;
@@ -67,9 +66,8 @@ public class InitializeHaloStep {
             throws IOException, ParseException {
         var globalInfoHttpGet = new HttpGet(requestUri("/actuator/globalinfo"));
         var globalInfoResp = client.execute(globalInfoHttpGet);
-        var globalInfo =
-                YamlUtils.mapper.convertValue(EntityUtils.toString(globalInfoResp.getEntity()),
-                        JsonNode.class);
+        var bodyStr = EntityUtils.toString(globalInfoResp.getEntity());
+        var globalInfo = YamlUtils.mapper.readTree(bodyStr);
         var userInitialized = globalInfo.get("userInitialized");
         if (userInitialized != null && userInitialized.asBoolean()) {
             return;
