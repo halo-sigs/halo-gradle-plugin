@@ -16,7 +16,7 @@ pluginManagement {
 plugins {
     // ...
     // 添加此 gradle 插件依赖
-    id "run.halo.plugin.devtools" version "0.0.7"
+    id "run.halo.plugin.devtools" version "0.0.9"
 }
 ```
 
@@ -102,7 +102,7 @@ Listening for transport dt_socket at address: 50781 Attach debugger
 ```groovy
 plugins {
     //... 
-    id "run.halo.plugin.devtools" version "0.0.8-SNAPSHOT"
+    id "run.halo.plugin.devtools" version "0.0.10-SNAPSHOT"
 }
 ```
 再修改 `settings.gradle` 中的配置：
