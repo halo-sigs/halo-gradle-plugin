@@ -196,6 +196,9 @@ public class DockerCreateContainer extends DockerExistingImage {
                     .formatted(suspend, debugPort)
             );
         }
+        envs.add("SPRINGDOC_API_DOCS_ENABLED=true");
+        envs.add("SPRINGDOC_SWAGGER_UI_ENABLED=true");
+        envs.add("SPRINGDOC_API_DOCS_VERSION=OPENAPI_3_0");
         envs.add("HALO_PLUGIN_RUNTIMEMODE=development");
         envs.add("HALO_PLUGIN_FIXEDPLUGINPATH=" + buildPluginDestPath(pluginName));
         envs.add("HALO_WORKDIR=" + haloWorkDir());
