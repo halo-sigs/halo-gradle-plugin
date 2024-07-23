@@ -7,6 +7,7 @@ import org.gradle.api.Action;
 import org.gradle.api.NamedDomainObjectContainer;
 import org.gradle.api.Project;
 import org.gradle.api.provider.Property;
+import run.halo.gradle.openapi.OpenApiExtension;
 import run.halo.gradle.watch.WatchTarget;
 
 @Data
@@ -24,14 +25,7 @@ public class HaloPluginExtension {
 
     private final Property<String> mainClass;
 
-    /**
-     * Returns the fully-qualified name of the plugin's main class.
-     *
-     * @return the fully-qualified name of the plugin's main class
-     */
-    public Property<String> getMainClass() {
-        return this.mainClass;
-    }
+    private OpenApiExtension openApi;
 
     private File manifestFile;
 
@@ -40,6 +34,12 @@ public class HaloPluginExtension {
     public HaloPluginExtension(Project project) {
         this.watchDomains = project.container(WatchTarget.class);
         this.mainClass = project.getObjects().property(String.class);
+        this.openApi = project.getObjects()
+            .newInstance(OpenApiExtension.class, project.getExtensions());
+    }
+
+    public void openApi(Action<OpenApiExtension> action) {
+        action.execute(openApi);
     }
 
     public String getRequires() {

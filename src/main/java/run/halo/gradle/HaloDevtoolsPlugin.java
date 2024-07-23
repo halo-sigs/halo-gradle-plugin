@@ -3,10 +3,10 @@ package run.halo.gradle;
 import static org.gradle.api.plugins.JavaPlugin.JAR_TASK_NAME;
 import static run.halo.gradle.ResolvePluginMainClassName.TASK_NAME;
 
-import javax.inject.Inject;
 import java.io.File;
 import java.util.Set;
 import java.util.concurrent.Callable;
+import javax.inject.Inject;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
@@ -31,9 +31,15 @@ import org.gradle.api.tasks.SourceSetContainer;
 import org.gradle.api.tasks.TaskProvider;
 import org.gradle.internal.build.event.BuildEventListenerRegistryInternal;
 import org.gradle.jvm.tasks.Jar;
-import run.halo.gradle.docker.*;
+import run.halo.gradle.docker.AbstractDockerRemoteApiTask;
+import run.halo.gradle.docker.DockerClientService;
+import run.halo.gradle.docker.DockerCreateContainer;
+import run.halo.gradle.docker.DockerPullImage;
+import run.halo.gradle.docker.DockerRemoveContainer;
+import run.halo.gradle.openapi.ApiClientGeneratorTask;
+import run.halo.gradle.openapi.CleanupApiServerContainer;
+import run.halo.gradle.openapi.OpenApiDocsGeneratorTask;
 import run.halo.gradle.watch.WatchTask;
-
 
 /**
  * @author guqing
@@ -163,9 +169,31 @@ public class HaloDevtoolsPlugin implements Plugin<Project> {
                 it.dependsOn("createHaloContainer");
             });
 
+            project.getTasks().create(OpenApiDocsGeneratorTask.TASK_NAME,
+                OpenApiDocsGeneratorTask.class, it -> {
+                    it.setGroup(GROUP);
+                    it.setDescription("Generate open api docs.");
+                    it.dependsOn("build", "pullHaloImage");
+                    it.getImageId().set(imageName);
+                });
+
+            project.getTasks().create("generateApiClient", ApiClientGeneratorTask.class, it -> {
+                it.setGroup(GROUP);
+                it.setDescription("Generate api client code from open api spec.");
+                it.dependsOn("generateOpenApiDocs");
+            });
+
             project.getTasks().withType(AbstractDockerRemoteApiTask.class)
                 .configureEach(task -> task.getDockerClientService().set(serviceProvider));
 
+            Provider<CleanupApiServerContainer> cleanupOpenApiDocServerContainer =
+                project.getGradle().getSharedServices()
+                    .registerIfAbsent("cleanupOpenApiDocServerContainer",
+                        CleanupApiServerContainer.class,
+                        spec -> spec.parameters(
+                            parameters -> parameters.getDockerClientService().set(serviceProvider))
+                    );
+            buildEvents.onOperationCompletion(cleanupOpenApiDocServerContainer);
 
             Provider<HaloServerBuildOperationListener> haloServerBuildOperationListenerProvider =
                 project.getGradle().getSharedServices()
@@ -186,7 +214,8 @@ public class HaloDevtoolsPlugin implements Plugin<Project> {
         });
     }
 
-    private TaskProvider<ReloadPluginTask> configureReloadPluginTask(Project project, String pluginName) {
+    private TaskProvider<ReloadPluginTask> configureReloadPluginTask(Project project,
+        String pluginName) {
         return project.getTasks()
             .register(ReloadPluginTask.TASK_NAME, ReloadPluginTask.class, (reloadTask) -> {
                 reloadTask.setDescription("Reloads the plugin by name.");
