@@ -75,7 +75,7 @@ dependencies {
         exclude group: 'com.fasterxml.jackson.core'
     }
 
-    implementation('org.openapitools:openapi-generator-cli:6.6.0') {
+    implementation('org.openapitools:openapi-generator:6.6.0') {
         exclude group: 'org.slf4j'
     }
 
