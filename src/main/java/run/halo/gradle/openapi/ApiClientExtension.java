@@ -39,6 +39,7 @@ public class ApiClientExtension {
         this.additionalProperties.convention(properties);
 
         var typeMappings = new HashMap<String, String>();
+        typeMappings.put("set", "Array");
         this.typeMappings.convention(typeMappings);
     }
 }
