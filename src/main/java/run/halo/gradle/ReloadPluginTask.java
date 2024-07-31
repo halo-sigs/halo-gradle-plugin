@@ -6,6 +6,8 @@ import org.gradle.api.provider.Property;
 import org.gradle.api.tasks.Input;
 import org.gradle.api.tasks.TaskAction;
 import org.gradle.work.DisableCachingByDefault;
+import run.halo.gradle.extension.HaloExtension;
+import run.halo.gradle.extension.HaloPluginExtension;
 import run.halo.gradle.steps.HaloSiteOption;
 import run.halo.gradle.steps.ReloadPluginStep;
 

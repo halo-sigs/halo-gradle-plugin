@@ -4,6 +4,7 @@ import java.util.concurrent.CompletableFuture;
 import lombok.extern.slf4j.Slf4j;
 import org.gradle.api.tasks.TaskAction;
 import run.halo.gradle.docker.DockerStartContainer;
+import run.halo.gradle.extension.HaloExtension;
 import run.halo.gradle.steps.HaloSiteOption;
 import run.halo.gradle.steps.InitializeHaloStep;
 

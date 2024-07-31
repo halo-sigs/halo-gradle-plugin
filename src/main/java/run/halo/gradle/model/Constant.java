@@ -1,4 +1,4 @@
-package run.halo.gradle;
+package run.halo.gradle.model;
 
 /**
  * @author guqing

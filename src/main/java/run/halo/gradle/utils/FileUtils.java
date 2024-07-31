@@ -1,4 +1,4 @@
-package run.halo.gradle;
+package run.halo.gradle.utils;
 
 import static java.nio.file.FileVisitOption.FOLLOW_LINKS;
 

@@ -15,7 +15,6 @@ import org.apache.commons.lang3.StringUtils;
 import org.objectweb.asm.ClassReader;
 import org.objectweb.asm.ClassVisitor;
 import org.objectweb.asm.Opcodes;
-import run.halo.gradle.Assert;
 
 public class MainClassFinder {
     private static final String DOT_CLASS = ".class";
