@@ -1,4 +1,4 @@
-package run.halo.gradle;
+package run.halo.gradle.utils;
 
 import lombok.extern.slf4j.Slf4j;
 

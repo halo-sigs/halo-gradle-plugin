@@ -1,4 +1,4 @@
-package run.halo.gradle;
+package run.halo.gradle.utils;
 
 import java.util.function.Supplier;
 import javax.annotation.Nullable;

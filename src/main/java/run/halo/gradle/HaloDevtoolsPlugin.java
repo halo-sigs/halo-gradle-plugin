@@ -3,10 +3,10 @@ package run.halo.gradle;
 import static org.gradle.api.plugins.JavaPlugin.JAR_TASK_NAME;
 import static run.halo.gradle.ResolvePluginMainClassName.TASK_NAME;
 
-import javax.inject.Inject;
 import java.io.File;
 import java.util.Set;
 import java.util.concurrent.Callable;
+import javax.inject.Inject;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
@@ -31,7 +31,14 @@ import org.gradle.api.tasks.SourceSetContainer;
 import org.gradle.api.tasks.TaskProvider;
 import org.gradle.internal.build.event.BuildEventListenerRegistryInternal;
 import org.gradle.jvm.tasks.Jar;
-import run.halo.gradle.docker.*;
+import run.halo.gradle.docker.AbstractDockerRemoteApiTask;
+import run.halo.gradle.docker.DockerClientService;
+import run.halo.gradle.docker.DockerCreateContainer;
+import run.halo.gradle.docker.DockerPullImage;
+import run.halo.gradle.docker.DockerRemoveContainer;
+import run.halo.gradle.extension.HaloExtension;
+import run.halo.gradle.extension.HaloPluginExtension;
+import run.halo.gradle.utils.YamlUtils;
 import run.halo.gradle.watch.WatchTask;
 
 
@@ -74,7 +81,6 @@ public class HaloDevtoolsPlugin implements Plugin<Project> {
 
         HaloPluginExtension pluginExtension = project.getExtensions()
             .create(HaloPluginExtension.EXTENSION_NAME, HaloPluginExtension.class, project);
-        pluginExtension.setWorkDir(project.getProjectDir().toPath().resolve("workplace"));
         // populate plugin manifest info
         File manifestFile = getPluginManifest(project);
         pluginExtension.setManifestFile(manifestFile);
@@ -136,6 +142,9 @@ public class HaloDevtoolsPlugin implements Plugin<Project> {
                     .create("createHaloContainer", DockerCreateContainer.class, it -> {
                         it.getImageId().set(imageName);
                         it.getContainerName().set(haloExtension.getContainerName());
+                        it.getPluginWorkplaceDir().set(pluginExtension.getWorkDir());
+                        it.getAdditionalApplicationConfig()
+                            .set(haloExtension.getAdditionalConfigFile());
                         it.setGroup(GROUP);
                         it.setDescription("Create halo server container.");
                         it.dependsOn("build", "pullHaloImage");
@@ -186,7 +195,8 @@ public class HaloDevtoolsPlugin implements Plugin<Project> {
         });
     }
 
-    private TaskProvider<ReloadPluginTask> configureReloadPluginTask(Project project, String pluginName) {
+    private TaskProvider<ReloadPluginTask> configureReloadPluginTask(Project project,
+        String pluginName) {
         return project.getTasks()
             .register(ReloadPluginTask.TASK_NAME, ReloadPluginTask.class, (reloadTask) -> {
                 reloadTask.setDescription("Reloads the plugin by name.");

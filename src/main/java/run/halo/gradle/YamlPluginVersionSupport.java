@@ -13,6 +13,7 @@ import org.gradle.api.Action;
 import org.gradle.api.Project;
 import org.gradle.api.Task;
 import org.gradle.api.tasks.SourceSetContainer;
+import run.halo.gradle.utils.YamlUtils;
 
 public class YamlPluginVersionSupport {
 

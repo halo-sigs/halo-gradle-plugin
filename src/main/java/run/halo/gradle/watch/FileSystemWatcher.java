@@ -13,7 +13,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicInteger;
-import run.halo.gradle.Assert;
+import run.halo.gradle.utils.Assert;
 
 /**
  * From

@@ -1,7 +1,6 @@
 package run.halo.gradle.utils;
 
 import org.junit.jupiter.api.Test;
-import run.halo.gradle.Assert;
 
 class VersionUtilsTest {
 

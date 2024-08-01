@@ -2,7 +2,7 @@ package run.halo.gradle.watch;
 
 import java.io.File;
 import org.apache.commons.io.FilenameUtils;
-import run.halo.gradle.Assert;
+import run.halo.gradle.utils.Assert;
 
 /**
  * @author guqing
