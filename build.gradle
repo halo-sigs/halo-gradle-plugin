@@ -64,6 +64,7 @@ ext {
     semver4j = '0.9.0'
     asm = '9.4'
     dockerJava = '3.3.0'
+    openApiGenerator = '7.7.0'
 }
 
 dependencies {
@@ -75,7 +76,7 @@ dependencies {
         exclude group: 'com.fasterxml.jackson.core'
     }
 
-    implementation('org.openapitools:openapi-generator:6.6.0') {
+    implementation("org.openapitools:openapi-generator:$openApiGenerator") {
         exclude group: 'org.slf4j'
     }
 
