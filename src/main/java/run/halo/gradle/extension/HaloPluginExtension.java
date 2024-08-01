@@ -1,11 +1,11 @@
-package run.halo.gradle;
+package run.halo.gradle.extension;
 
 import java.io.File;
-import java.nio.file.Path;
 import lombok.Data;
 import org.gradle.api.Action;
 import org.gradle.api.NamedDomainObjectContainer;
 import org.gradle.api.Project;
+import org.gradle.api.file.DirectoryProperty;
 import org.gradle.api.provider.Property;
 import run.halo.gradle.openapi.OpenApiExtension;
 import run.halo.gradle.watch.WatchTarget;
@@ -15,7 +15,7 @@ public class HaloPluginExtension {
     public static final String[] MANIFEST = {"plugin.yaml", "plugin.yml"};
     public static final String EXTENSION_NAME = "haloPlugin";
 
-    private Path workDir;
+    private DirectoryProperty workDir;
 
     private String pluginName;
 
@@ -34,8 +34,11 @@ public class HaloPluginExtension {
     public HaloPluginExtension(Project project) {
         this.watchDomains = project.container(WatchTarget.class);
         this.mainClass = project.getObjects().property(String.class);
+        this.workDir = project.getObjects().directoryProperty();
         this.openApi = project.getObjects()
             .newInstance(OpenApiExtension.class, project.getExtensions());
+
+        this.workDir.convention(project.getLayout().getProjectDirectory().dir("workplace"));
     }
 
     public void openApi(Action<OpenApiExtension> action) {
@@ -52,5 +55,4 @@ public class HaloPluginExtension {
     public void watchDomain(Action<NamedDomainObjectContainer<WatchTarget>> action) {
         action.execute(watchDomains);
     }
-
 }

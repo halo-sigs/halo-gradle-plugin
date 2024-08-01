@@ -2,7 +2,7 @@ package run.halo.gradle.steps;
 
 import java.net.URI;
 import org.apache.commons.lang3.StringUtils;
-import run.halo.gradle.HaloExtension;
+import run.halo.gradle.extension.HaloExtension;
 
 public record HaloSiteOption(String username, String password, URI externalUrl) {
 

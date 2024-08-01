@@ -1,4 +1,4 @@
-package run.halo.gradle;
+package run.halo.gradle.extension;
 
 import javax.annotation.Nonnull;
 import lombok.Data;
@@ -6,6 +6,7 @@ import org.apache.commons.lang3.ObjectUtils;
 import org.apache.commons.lang3.SystemUtils;
 import org.gradle.api.Action;
 import org.gradle.api.Project;
+import org.gradle.api.file.RegularFileProperty;
 import org.gradle.api.model.ObjectFactory;
 import org.gradle.api.plugins.ExtensionContainer;
 import org.gradle.api.provider.Property;
@@ -47,6 +48,8 @@ public class HaloExtension {
 
     private Boolean suspend = false;
 
+    private RegularFileProperty additionalConfigFile;
+
     @Nonnull
     public Boolean getSuspend() {
         return ObjectUtils.defaultIfNull(suspend, false);
@@ -78,6 +81,7 @@ public class HaloExtension {
 
     public HaloExtension(ObjectFactory objectFactory) {
         this.docker = new Docker(objectFactory);
+        this.additionalConfigFile = objectFactory.fileProperty();
     }
 
     public void docker(Action<? super Docker> action) {

@@ -18,6 +18,7 @@ import org.gradle.jvm.tasks.Jar;
 import org.gradle.work.DisableCachingByDefault;
 import org.objectweb.asm.ClassReader;
 import run.halo.gradle.utils.AsmConst;
+import run.halo.gradle.utils.Assert;
 
 @Slf4j
 @DisableCachingByDefault(because = "Not worth caching")

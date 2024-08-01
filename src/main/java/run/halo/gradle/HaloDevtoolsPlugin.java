@@ -36,6 +36,9 @@ import run.halo.gradle.docker.DockerClientService;
 import run.halo.gradle.docker.DockerCreateContainer;
 import run.halo.gradle.docker.DockerPullImage;
 import run.halo.gradle.docker.DockerRemoveContainer;
+import run.halo.gradle.extension.HaloExtension;
+import run.halo.gradle.extension.HaloPluginExtension;
+import run.halo.gradle.utils.YamlUtils;
 import run.halo.gradle.openapi.ApiClientGeneratorTask;
 import run.halo.gradle.openapi.CleanupApiServerContainer;
 import run.halo.gradle.openapi.OpenApiDocsGeneratorTask;
@@ -80,7 +83,6 @@ public class HaloDevtoolsPlugin implements Plugin<Project> {
 
         HaloPluginExtension pluginExtension = project.getExtensions()
             .create(HaloPluginExtension.EXTENSION_NAME, HaloPluginExtension.class, project);
-        pluginExtension.setWorkDir(project.getProjectDir().toPath().resolve("workplace"));
         // populate plugin manifest info
         File manifestFile = getPluginManifest(project);
         pluginExtension.setManifestFile(manifestFile);
@@ -142,6 +144,9 @@ public class HaloDevtoolsPlugin implements Plugin<Project> {
                     .create("createHaloContainer", DockerCreateContainer.class, it -> {
                         it.getImageId().set(imageName);
                         it.getContainerName().set(haloExtension.getContainerName());
+                        it.getPluginWorkplaceDir().set(pluginExtension.getWorkDir());
+                        it.getAdditionalApplicationConfig()
+                            .set(haloExtension.getAdditionalConfigFile());
                         it.setGroup(GROUP);
                         it.setDescription("Create halo server container.");
                         it.dependsOn("build", "pullHaloImage");

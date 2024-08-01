@@ -6,7 +6,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.apache.hc.client5.http.classic.HttpClient;
 import org.apache.hc.client5.http.classic.methods.HttpPut;
 import org.apache.hc.core5.http.HttpResponse;
-import run.halo.gradle.Assert;
+import run.halo.gradle.utils.Assert;
 
 /**
  * @author guqing

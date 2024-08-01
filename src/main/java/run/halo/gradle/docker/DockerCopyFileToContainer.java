@@ -17,7 +17,7 @@ import org.gradle.api.provider.Property;
 import org.gradle.api.tasks.Input;
 import org.gradle.api.tasks.Internal;
 import org.gradle.api.tasks.Optional;
-import run.halo.gradle.Assert;
+import run.halo.gradle.utils.Assert;
 
 /**
  * @author guqing

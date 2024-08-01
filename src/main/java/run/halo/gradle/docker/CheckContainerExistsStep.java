@@ -6,7 +6,7 @@ import com.github.dockerjava.api.command.InspectContainerResponse;
 import com.github.dockerjava.api.model.ContainerConfig;
 import java.util.Map;
 import lombok.extern.slf4j.Slf4j;
-import run.halo.gradle.Constant;
+import run.halo.gradle.model.Constant;
 
 /**
  * @author guqing
@@ -27,7 +27,7 @@ public class CheckContainerExistsStep {
             InspectContainerResponse containerResponse = inspectContainerCmd.exec();
             return validateContainerResponse(containerResponse);
         } catch (Exception e) {
-            log.debug("Failed to inspect container with ID: " + containerId);
+            log.debug("Failed to inspect container with ID: {}", containerId);
         }
         return false;
     }

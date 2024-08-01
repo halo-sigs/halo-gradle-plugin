@@ -64,6 +64,7 @@ ext {
     semver4j = '0.9.0'
     asm = '9.4'
     dockerJava = '3.3.0'
+    jsonPatch = '1.13'
     openApiGenerator = '7.7.0'
 }
 
@@ -88,9 +89,12 @@ dependencies {
     implementation "org.ow2.asm:asm:$asm"
     implementation "org.ow2.asm:asm-commons:$asm"
     implementation 'commons-io:commons-io:2.11.0'
+    implementation "com.github.java-json-tools:json-patch:$jsonPatch"
 
     testImplementation 'org.junit.jupiter:junit-jupiter-api:5.9.0'
     testRuntimeOnly 'org.junit.jupiter:junit-jupiter-engine:5.9.0'
+    testImplementation 'org.assertj:assertj-core:3.24.2'
+    testImplementation 'org.skyscreamer:jsonassert:1.5.1'
 }
 
 test {

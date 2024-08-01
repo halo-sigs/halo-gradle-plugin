@@ -1,7 +1,7 @@
 package run.halo.gradle.watch;
 
 import java.io.File;
-import run.halo.gradle.Assert;
+import run.halo.gradle.utils.Assert;
 
 /**
  * A snapshot of a File at a given point in time.

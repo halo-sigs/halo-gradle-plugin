@@ -15,7 +15,7 @@ import org.gradle.tooling.internal.consumer.DefaultBuildLauncher;
 import org.gradle.tooling.internal.consumer.DefaultGradleConnector;
 import org.gradle.wrapper.GradleUserHomeLookup;
 import org.slf4j.Logger;
-import run.halo.gradle.Assert;
+import run.halo.gradle.utils.Assert;
 import run.halo.gradle.WatchExecutionParameters;
 
 /**
