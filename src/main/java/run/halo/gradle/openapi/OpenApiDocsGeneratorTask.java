@@ -1,10 +1,15 @@
 package run.halo.gradle.openapi;
 
+import static run.halo.gradle.utils.HaloServerConfigure.buildPluginConfigYamlPath;
+import static run.halo.gradle.utils.HaloServerConfigure.buildPluginDestPath;
+
 import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.ObjectWriter;
 import com.fasterxml.jackson.databind.SerializationFeature;
 import com.fasterxml.jackson.databind.json.JsonMapper;
+import com.fasterxml.jackson.databind.node.JsonNodeFactory;
 import com.github.dockerjava.api.DockerClient;
 import com.github.dockerjava.api.command.CreateContainerCmd;
 import com.github.dockerjava.api.exception.NotFoundException;
@@ -36,6 +41,7 @@ import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
+import javax.annotation.Nonnull;
 import javax.net.ssl.HttpsURLConnection;
 import javax.net.ssl.KeyManager;
 import javax.net.ssl.SSLContext;
@@ -52,15 +58,17 @@ import org.gradle.api.provider.Property;
 import org.gradle.api.tasks.Input;
 import org.gradle.api.tasks.Internal;
 import org.gradle.api.tasks.Optional;
-import run.halo.gradle.Assert;
-import run.halo.gradle.Constant;
-import run.halo.gradle.FileUtils;
-import run.halo.gradle.HaloExtension;
-import run.halo.gradle.HaloPluginExtension;
 import run.halo.gradle.docker.DockerExistingImage;
 import run.halo.gradle.docker.FrameConsumerResultCallback;
 import run.halo.gradle.docker.OutputFrame;
 import run.halo.gradle.docker.ToStringConsumer;
+import run.halo.gradle.extension.HaloExtension;
+import run.halo.gradle.extension.HaloPluginExtension;
+import run.halo.gradle.model.Constant;
+import run.halo.gradle.utils.Assert;
+import run.halo.gradle.utils.FileUtils;
+import run.halo.gradle.utils.HaloServerConfigure;
+import run.halo.gradle.utils.YamlUtils;
 
 @Getter
 @Slf4j
@@ -112,13 +120,18 @@ public class OpenApiDocsGeneratorTask extends DockerExistingImage {
     final Property<String> containerId = getProject().getObjects().property(String.class);
 
     @Internal
-    final MapProperty<String, GroupedOpenApiExtension> groupingRules = getProject().getObjects()
-        .mapProperty(String.class, GroupedOpenApiExtension.class);
+    final List<SpringDocGroupConfig> springDocGroupConfigs = new ArrayList<>();
 
     public OpenApiDocsGeneratorTask() {
         var openApi = pluginExtension.getOpenApi();
-
-        this.groupingRules.convention(openApi.getGroupingRules().getAsMap());
+        openApi.getGroupingRules().getAsMap().forEach((group, config) -> {
+            springDocGroupConfigs.add(SpringDocGroupConfig.builder()
+                .group(group)
+                .displayName(config.getDisplayName().get())
+                .pathsToMatch(config.getPathsToMatch().get())
+                .pathsToExclude(config.getPathsToExclude().get())
+                .build());
+        });
         groupedApiMappings.convention(openApi.getGroupedApiMappings());
         requestHeaders.convention(openApi.getRequestHeaders());
         waitTimeInSeconds.convention(openApi.getWaitTimeInSeconds());
@@ -401,22 +414,13 @@ public class OpenApiDocsGeneratorTask extends DockerExistingImage {
         String pluginName = pluginExtension.getPluginName();
 
         List<String> envs = new ArrayList<>();
-        envs.add("SERVER_PORT=" + containerPort);
-        envs.add("HALO_EXTERNAL_URL=" + haloExtension.getExternalUrl());
-        envs.add("HALO_SECURITY_INITIALIZER_SUPERADMINPASSWORD="
-            + haloExtension.getSuperAdminPassword());
-        envs.add("SPRINGDOC_API_DOCS_ENABLED=true");
-        envs.add("SPRINGDOC_SWAGGER_UI_ENABLED=true");
-        envs.add("SPRINGDOC_API_DOCS_VERSION=" + apiDocsVersion.get());
-        envs.add("SPRINGDOC_SHOW_ACTUATOR=true");
-        // Add grouped openapi config envs
-        envs.addAll(generateSpringDocGroupEnvs());
-
-        envs.add("HALO_SECURITY_INITIALIZER_SUPERADMINUSERNAME="
-            + haloExtension.getSuperAdminUsername());
-
-        envs.add("HALO_PLUGIN_RUNTIMEMODE=development");
-        envs.add("HALO_PLUGIN_FIXEDPLUGINPATH=" + buildPluginDestPath(pluginName));
+        var applicationJson = HaloServerConfigure.builder()
+            .port(containerPort)
+            .externalUrl(haloExtension.getExternalUrl())
+            .fixedPluginPath(buildPluginDestPath(pluginName))
+            .build()
+            .mergeWithUserConfigAsJson(generateUserDefinedApplicationConfig());
+        envs.add("SPRING_APPLICATION_JSON=" + applicationJson);
         containerCommand.withEnv(envs);
 
         containerCommand.withImage(getImageId().get());
@@ -436,41 +440,74 @@ public class OpenApiDocsGeneratorTask extends DockerExistingImage {
         List<Bind> binds = new ArrayList<>();
         binds.add(new Bind(projectDir.toString(),
             new Volume(buildPluginDestPath(pluginName) + "build")));
+
+        var pluginConfigYaml = pluginExtension.getConfigurationPropertiesFile()
+            .getAsFile().getOrNull();
+        if (pluginConfigYaml != null && Files.exists(pluginConfigYaml.toPath())) {
+            binds.add(new Bind(pluginConfigYaml.getAbsolutePath(),
+                new Volume(
+                    buildPluginConfigYamlPath(haloExtension.getServerWorkDir(), pluginName))));
+        }
+
         hostConfig.withBinds(binds);
 
         containerCommand.withHostConfig(hostConfig);
     }
 
-    List<String> generateSpringDocGroupEnvs() {
-        if (!groupingRules.isPresent()) {
-            return List.of();
+    JsonNode generateUserDefinedApplicationConfig() {
+        var springDocYaml = generateSpringDocConfigString(this.springDocGroupConfigs);
+        if (StringUtils.isBlank(springDocYaml)) {
+            return JsonNodeFactory.instance.missingNode();
         }
-        var groupMap = groupingRules.get();
-        var envs = new ArrayList<String>();
-        int i = 0;
-        for (var entry : groupMap.entrySet()) {
-            var group = entry.getKey();
-            var config = entry.getValue();
-            var pathsToMatch = config.getPathsToMatch().get();
-            var pathsToExclude = config.getPathsToExclude().get();
-            var displayName = config.getDisplayName().getOrElse(group);
-
-            envs.add("SPRINGDOC_GROUPCONFIGS_" + i + "_GROUP=" + group);
-            envs.add("SPRINGDOC_GROUPCONFIGS_" + i + "_DISPLAYNAME=" + displayName);
-            if (!pathsToMatch.isEmpty()) {
-                envs.add("SPRINGDOC_GROUPCONFIGS_" + i + "_PATHSTOMATCH="
-                    + String.join(",", pathsToMatch));
-            }
-            if (!pathsToExclude.isEmpty()) {
-                envs.add("SPRINGDOC_GROUPCONFIGS_" + i + "_PATHSTOEXCLUDE="
-                    + String.join(",", pathsToExclude));
-            }
-            i++;
-        }
-        return envs;
+        return YamlUtils.read(springDocYaml, JsonNode.class);
     }
 
-    String buildPluginDestPath(String pluginName) {
-        return "/data/plugins/" + pluginName + "/";
+    static String generateSpringDocConfigString(@Nonnull List<SpringDocGroupConfig> configs) {
+        if (configs.isEmpty()) {
+            return null;
+        }
+        StringBuilder yamlBuilder = new StringBuilder();
+        yamlBuilder.append("springdoc:\n")
+            .append("  group-configs:\n");
+        for (var entry : configs) {
+            var group = entry.group();
+            var pathsToMatch = entry.pathsToMatch;
+            var pathsToExclude = entry.pathsToExclude();
+            var displayName = entry.displayName();
+            yamlBuilder.append("    - group: ").append(group).append("\n")
+                .append("      displayName: ").append(displayName).append("\n");
+
+            if (!pathsToMatch.isEmpty()) {
+                yamlBuilder.append("      paths-to-match:\n");
+                for (String path : pathsToMatch) {
+                    yamlBuilder.append("        - ").append(path).append("\n");
+                }
+            }
+
+            if (!pathsToExclude.isEmpty()) {
+                yamlBuilder.append("      paths-to-exclude:\n");
+                for (String path : pathsToExclude) {
+                    yamlBuilder.append("        - ").append(path).append("\n");
+                }
+            }
+        }
+        return yamlBuilder.toString();
+    }
+
+    @Builder
+    record SpringDocGroupConfig(String group, String displayName,
+                                List<String> pathsToMatch,
+                                List<String> pathsToExclude) {
+        public SpringDocGroupConfig {
+            if (StringUtils.isBlank(displayName)) {
+                displayName = group;
+            }
+            if (pathsToMatch == null) {
+                pathsToMatch = Collections.emptyList();
+            }
+            if (pathsToExclude == null) {
+                pathsToExclude = Collections.emptyList();
+            }
+        }
     }
 }

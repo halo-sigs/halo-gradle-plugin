@@ -20,7 +20,7 @@ import org.gradle.api.model.ObjectFactory;
 import org.gradle.api.plugins.ExtensionContainer;
 import org.gradle.api.provider.MapProperty;
 import org.gradle.api.provider.Property;
-import run.halo.gradle.HaloExtension;
+import run.halo.gradle.extension.HaloExtension;
 
 @Data
 @ToString

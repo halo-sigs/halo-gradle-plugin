@@ -14,8 +14,8 @@ import org.gradle.api.tasks.Optional;
 import org.gradle.api.tasks.TaskAction;
 import org.openapitools.codegen.DefaultGenerator;
 import org.openapitools.codegen.config.CodegenConfigurator;
-import run.halo.gradle.FileUtils;
-import run.halo.gradle.HaloPluginExtension;
+import run.halo.gradle.extension.HaloPluginExtension;
+import run.halo.gradle.utils.FileUtils;
 
 @Getter
 public class ApiClientGeneratorTask extends DefaultTask {
