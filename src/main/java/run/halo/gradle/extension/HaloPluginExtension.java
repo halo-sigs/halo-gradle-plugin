@@ -6,7 +6,9 @@ import org.gradle.api.Action;
 import org.gradle.api.NamedDomainObjectContainer;
 import org.gradle.api.Project;
 import org.gradle.api.file.DirectoryProperty;
+import org.gradle.api.file.RegularFileProperty;
 import org.gradle.api.provider.Property;
+import run.halo.gradle.openapi.OpenApiExtension;
 import run.halo.gradle.watch.WatchTarget;
 
 @Data
@@ -24,7 +26,11 @@ public class HaloPluginExtension {
 
     private final Property<String> mainClass;
 
+    private OpenApiExtension openApi;
+
     private File manifestFile;
+
+    private RegularFileProperty configurationPropertiesFile;
 
     private NamedDomainObjectContainer<WatchTarget> watchDomains;
 
@@ -32,8 +38,26 @@ public class HaloPluginExtension {
         this.watchDomains = project.container(WatchTarget.class);
         this.mainClass = project.getObjects().property(String.class);
         this.workDir = project.getObjects().directoryProperty();
+        this.configurationPropertiesFile = project.getObjects().fileProperty();
+        this.openApi = project.getObjects()
+            .newInstance(OpenApiExtension.class, project.getExtensions());
 
+        this.configurationPropertiesFile.map(file -> {
+            var yaml = file.getAsFile();
+            if (!yaml.exists()) {
+                return null;
+            }
+            var yamlPath = yaml.toPath();
+            if (yamlPath.endsWith(".yaml") || yamlPath.endsWith(".yml")) {
+                return yaml;
+            }
+            throw new IllegalArgumentException("Plugin configuration file must be a YAML file.");
+        });
         this.workDir.convention(project.getLayout().getProjectDirectory().dir("workplace"));
+    }
+
+    public void openApi(Action<OpenApiExtension> action) {
+        action.execute(openApi);
     }
 
     public String getRequires() {

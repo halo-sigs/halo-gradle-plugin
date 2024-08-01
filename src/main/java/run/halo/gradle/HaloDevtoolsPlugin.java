@@ -39,8 +39,10 @@ import run.halo.gradle.docker.DockerRemoveContainer;
 import run.halo.gradle.extension.HaloExtension;
 import run.halo.gradle.extension.HaloPluginExtension;
 import run.halo.gradle.utils.YamlUtils;
+import run.halo.gradle.openapi.ApiClientGeneratorTask;
+import run.halo.gradle.openapi.CleanupApiServerContainer;
+import run.halo.gradle.openapi.OpenApiDocsGeneratorTask;
 import run.halo.gradle.watch.WatchTask;
-
 
 /**
  * @author guqing
@@ -172,9 +174,31 @@ public class HaloDevtoolsPlugin implements Plugin<Project> {
                 it.dependsOn("createHaloContainer");
             });
 
+            project.getTasks().create(OpenApiDocsGeneratorTask.TASK_NAME,
+                OpenApiDocsGeneratorTask.class, it -> {
+                    it.setGroup(GROUP);
+                    it.setDescription("Generate open api docs.");
+                    it.dependsOn("build", "pullHaloImage");
+                    it.getImageId().set(imageName);
+                });
+
+            project.getTasks().create("generateApiClient", ApiClientGeneratorTask.class, it -> {
+                it.setGroup(GROUP);
+                it.setDescription("Generate api client code from open api spec.");
+                it.dependsOn("generateOpenApiDocs");
+            });
+
             project.getTasks().withType(AbstractDockerRemoteApiTask.class)
                 .configureEach(task -> task.getDockerClientService().set(serviceProvider));
 
+            Provider<CleanupApiServerContainer> cleanupOpenApiDocServerContainer =
+                project.getGradle().getSharedServices()
+                    .registerIfAbsent("cleanupOpenApiDocServerContainer",
+                        CleanupApiServerContainer.class,
+                        spec -> spec.parameters(
+                            parameters -> parameters.getDockerClientService().set(serviceProvider))
+                    );
+            buildEvents.onOperationCompletion(cleanupOpenApiDocServerContainer);
 
             Provider<HaloServerBuildOperationListener> haloServerBuildOperationListenerProvider =
                 project.getGradle().getSharedServices()

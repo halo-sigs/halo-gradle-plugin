@@ -1,5 +1,7 @@
 package run.halo.gradle.docker;
 
+import static run.halo.gradle.utils.HaloServerConfigure.buildPluginConfigYamlPath;
+
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.JsonNodeFactory;
 import com.github.dockerjava.api.command.CreateContainerCmd;
@@ -229,7 +231,7 @@ public class DockerCreateContainer extends DockerExistingImage {
         HostConfig hostConfig = new HostConfig();
         hostConfig.withPortBindings(portBindings);
 
-        File projectDir = getProject().getBuildDir();
+        File projectDir = getProject().getLayout().getBuildDirectory().getAsFile().get();
 
         List<Bind> binds = new ArrayList<>();
         binds.add(new Bind(projectDir.toString(),
@@ -238,6 +240,15 @@ public class DockerCreateContainer extends DockerExistingImage {
             var sourceDir = pluginWorkplaceDir.getAsFile().get().getAbsolutePath();
             binds.add(new Bind(sourceDir, new Volume(haloWorkDir())));
         }
+
+        var pluginConfigYaml = pluginExtension.getConfigurationPropertiesFile()
+            .getAsFile().getOrNull();
+        if (pluginConfigYaml != null && Files.exists(pluginConfigYaml.toPath())) {
+            binds.add(new Bind(pluginConfigYaml.getAbsolutePath(),
+                new Volume(
+                    buildPluginConfigYamlPath(haloExtension.getServerWorkDir(), pluginName))));
+        }
+
         hostConfig.withBinds(binds);
 
         containerCommand.withHostConfig(hostConfig);

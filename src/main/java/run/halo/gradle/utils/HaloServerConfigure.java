@@ -120,4 +120,8 @@ public class HaloServerConfigure {
     public static String buildPluginDestPath(String pluginName) {
         return "/data/plugins/" + pluginName + "/";
     }
+
+    public static String buildPluginConfigYamlPath(String haloWorkDir, String pluginName) {
+        return PathUtils.combinePath(haloWorkDir, "plugins/configs/" + pluginName + ".yaml");
+    }
 }

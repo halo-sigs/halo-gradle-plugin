@@ -6,7 +6,14 @@ plugins {
 }
 
 group 'run.halo.gradle'
+java {
+    toolchain {
+        languageVersion = JavaLanguageVersion.of(17)
+    }
+}
+
 sourceCompatibility = JavaVersion.VERSION_17
+targetCompatibility = JavaVersion.VERSION_17
 
 repositories {
     mavenCentral()
@@ -58,11 +65,21 @@ ext {
     asm = '9.4'
     dockerJava = '3.3.0'
     jsonPatch = '1.13'
+    openApiGenerator = '7.7.0'
 }
 
 dependencies {
-    implementation "com.github.docker-java:docker-java-transport-httpclient5:$dockerJava"
-    implementation "com.github.docker-java:docker-java-core:$dockerJava"
+    implementation("com.github.docker-java:docker-java-transport-httpclient5:$dockerJava") {
+        exclude group: 'org.slf4j'
+    }
+    implementation("com.github.docker-java:docker-java-core:$dockerJava") {
+        exclude group: 'org.slf4j'
+        exclude group: 'com.fasterxml.jackson.core'
+    }
+
+    implementation("org.openapitools:openapi-generator:$openApiGenerator") {
+        exclude group: 'org.slf4j'
+    }
 
     implementation "com.fasterxml.jackson.dataformat:jackson-dataformat-yaml:$jackjson"
     implementation "com.fasterxml.jackson.core:jackson-databind:$jackjson"

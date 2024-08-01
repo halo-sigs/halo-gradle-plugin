@@ -28,6 +28,14 @@ public class YamlUtils {
         }
     }
 
+    public static <T> T read(String yamlSource, Class<T> clazz) {
+        try {
+            return mapper.readValue(yamlSource, clazz);
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
     public static String writeAsString(JsonNode jsonNode) {
         try {
             return mapper.writeValueAsString(jsonNode);
