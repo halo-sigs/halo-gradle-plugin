@@ -31,7 +31,8 @@ jobs:
       - name: Extract version from GitHub tag
         id: extract_version
         run: |
-          version=${{ github.event.release.tag_name }}
+          tag_name=${{ github.event.release.tag_name }}
+          VERSION=${tag_name#v}
           echo "Extracted Version: $VERSION"
           echo "VERSION=$VERSION" >> $GITHUB_ENV
 
