@@ -4,6 +4,8 @@ import static org.gradle.api.plugins.JavaPlugin.JAR_TASK_NAME;
 import static run.halo.gradle.ResolvePluginMainClassName.TASK_NAME;
 
 import java.io.File;
+import java.io.IOException;
+import java.nio.file.Files;
 import java.util.Set;
 import java.util.concurrent.Callable;
 import javax.inject.Inject;
@@ -38,10 +40,10 @@ import run.halo.gradle.docker.DockerPullImage;
 import run.halo.gradle.docker.DockerRemoveContainer;
 import run.halo.gradle.extension.HaloExtension;
 import run.halo.gradle.extension.HaloPluginExtension;
-import run.halo.gradle.utils.YamlUtils;
 import run.halo.gradle.openapi.ApiClientGeneratorTask;
 import run.halo.gradle.openapi.CleanupApiServerContainer;
 import run.halo.gradle.openapi.OpenApiDocsGeneratorTask;
+import run.halo.gradle.utils.YamlUtils;
 import run.halo.gradle.watch.WatchTask;
 
 /**
@@ -144,7 +146,18 @@ public class HaloDevtoolsPlugin implements Plugin<Project> {
                     .create("createHaloContainer", DockerCreateContainer.class, it -> {
                         it.getImageId().set(imageName);
                         it.getContainerName().set(haloExtension.getContainerName());
-                        it.getPluginWorkplaceDir().set(pluginExtension.getWorkDir());
+                        var workDir = pluginExtension.getWorkDir();
+                        if (workDir.isPresent()) {
+                            File dirFile = workDir.get().getAsFile();
+                            if (!dirFile.exists()) {
+                                try {
+                                    Files.createDirectories(dirFile.toPath());
+                                } catch (IOException e) {
+                                    throw new RuntimeException(e);
+                                }
+                            }
+                        }
+                        it.getPluginWorkplaceDir().set(workDir);
                         it.getAdditionalApplicationConfig()
                             .set(haloExtension.getAdditionalConfigFile());
                         it.setGroup(GROUP);
