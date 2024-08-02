@@ -23,9 +23,8 @@ publishing {
     repositories {
         maven {
             name = "SonatypePackages"
-            def releasesRepoUrl = 'https://s01.oss.sonatype.org/content/repositories/releases/'
-            def snapshotsRepoUrl = 'https://s01.oss.sonatype.org/content/repositories/snapshots/'
-            url = version.endsWith('-SNAPSHOT') ? snapshotsRepoUrl : releasesRepoUrl
+            url = version.endsWith('-SNAPSHOT') ? 'https://s01.oss.sonatype.org/content/repositories/snapshots/' :
+                    'https://s01.oss.sonatype.org/content/repositories/releases/'
             credentials {
                 username = project.findProperty("ossr.user") ?: System.getenv("OSSR_USERNAME")
                 password = project.findProperty("ossr.password") ?: System.getenv("OSSR_PASSWORD")
@@ -35,6 +34,37 @@ publishing {
     publications {
         ossr(MavenPublication) {
             from(components.java)
+            groupId = 'run.halo.gradle'
+            artifactId = 'A plugin devtools for Halo'
+            version = project.hasProperty('version') ? project.property('version') : 'unspecified'
+
+            pom {
+                name = 'HaloPluginDevtools'
+                description = 'Halo Gradle Plugin'
+                url = 'https://github.com/halo-sigs/halo-gradle-plugin'
+
+                licenses {
+                    license {
+                        name = 'The Apache License, Version 2.0'
+                        url = 'http://www.apache.org/licenses/LICENSE-2.0.txt'
+                    }
+                }
+
+                developers {
+                    developer {
+                        id = 'guqing'
+                        name = 'guqing'
+                        email = 'i@guqing.email'
+                    }
+                }
+
+                scm {
+                    connection = 'scm:git:git://github.com/halo-sigs/halo-gradle-plugin.git'
+                    developerConnection = 'scm:git:ssh://git@github.com:/halo-sigs/halo-gradle-plugin.git'
+                    url = 'https://github.com/halo-sigs/halo-gradle-plugin'
+                }
+            }
+
             versionMapping {
                 usage('java-api') {
                     fromResolutionOf('runtimeClasspath')
@@ -49,10 +79,10 @@ publishing {
 
 gradlePlugin {
     plugins {
-        pluginDevelopment {
+        create('HaloPluginDevtools') {
             id = 'run.halo.plugin.devtools'
-            displayName = "Halo Gradle Plugin"
-            description = "Halo Gradle Plugin For Plugin Developer"
+            displayName = 'Halo Plugin Devtools'
+            description = 'A plugin devtools for Halo'
             implementationClass = 'run.halo.gradle.HaloDevtoolsPlugin'
         }
     }
