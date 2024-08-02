@@ -31,12 +31,7 @@ jobs:
       - name: Extract version from GitHub tag
         id: extract_version
         run: |
-          TAG_NAME=${{ github.ref_name }}
-          if [[ $TAG_NAME == v* ]]; then
-            VERSION=${TAG_NAME:1}
-          else
-            VERSION=$TAG_NAME
-          fi
+          version=${{ github.event.release.tag_name }}
           echo "Extracted Version: $VERSION"
           echo "VERSION=$VERSION" >> $GITHUB_ENV
 
