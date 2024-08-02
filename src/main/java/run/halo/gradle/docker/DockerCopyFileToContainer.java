@@ -15,6 +15,7 @@ import org.gradle.api.internal.file.FileOperations;
 import org.gradle.api.internal.project.ProjectInternal;
 import org.gradle.api.provider.Property;
 import org.gradle.api.tasks.Input;
+import org.gradle.api.tasks.InputFile;
 import org.gradle.api.tasks.Internal;
 import org.gradle.api.tasks.Optional;
 import run.halo.gradle.utils.Assert;
@@ -42,7 +43,7 @@ public class DockerCopyFileToContainer extends DockerExistingContainer {
     /**
      * Tar file we will copy into container
      */
-    @Input
+    @InputFile
     @Optional
     final RegularFileProperty tarFile = getProject().getObjects().fileProperty();
 

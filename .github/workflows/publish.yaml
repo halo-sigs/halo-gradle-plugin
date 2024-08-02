@@ -1,0 +1,50 @@
+name: Publish Halo Devtools Gradle Plugin to Maven
+
+on:
+  release:
+    types: [published]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v3
+        with:
+          java-version: '17'
+          distribution: 'temurin'
+
+      - name: Cache Gradle packages
+        uses: actions/cache@v3
+        with:
+          path: |
+            ~/.gradle/caches
+            ~/.gradle/wrapper
+          key: ${{ runner.os }}-gradle-${{ hashFiles('**/*.gradle*', '**/gradle-wrapper.properties') }}
+          restore-keys: |
+            ${{ runner.os }}-gradle-
+
+      - name: Extract version from GitHub tag
+        id: extract_version
+        run: |
+          TAG_NAME=${{ github.ref_name }}
+          if [[ $TAG_NAME == v* ]]; then
+            VERSION=${TAG_NAME:1}
+          else
+            VERSION=$TAG_NAME
+          fi
+          echo "Extracted Version: $VERSION"
+          echo "VERSION=$VERSION" >> $GITHUB_ENV
+
+      - name: Build with Gradle
+        run: ./gradlew clean build -Pversion=${{ env.VERSION }}
+
+      - name: Publish to Maven
+        env:
+          OSSR_USERNAME: ${{ secrets.MAVEN_USERNAME }}
+          OSSR_PASSWORD: ${{ secrets.MAVEN_PASSWORD }}
+        run: ./gradlew publish -Pversion=${{ env.VERSION }}
