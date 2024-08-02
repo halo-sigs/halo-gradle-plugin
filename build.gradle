@@ -35,7 +35,7 @@ publishing {
         ossr(MavenPublication) {
             from(components.java)
             groupId = 'run.halo.gradle'
-            artifactId = 'A plugin devtools for Halo'
+            artifactId = 'halo-gradle-plugin'
             version = project.hasProperty('version') ? project.property('version') : 'unspecified'
 
             pom {
