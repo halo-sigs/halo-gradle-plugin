@@ -107,9 +107,7 @@ dependencies {
         exclude group: 'com.fasterxml.jackson.core'
     }
 
-    implementation("org.openapitools:openapi-generator:$openApiGenerator") {
-        exclude group: 'org.slf4j'
-    }
+    implementation("org.openapitools:openapi-generator:$openApiGenerator")
 
     implementation "com.fasterxml.jackson.dataformat:jackson-dataformat-yaml:$jackjson"
     implementation "com.fasterxml.jackson.core:jackson-databind:$jackjson"
