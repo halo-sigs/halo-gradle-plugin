@@ -37,11 +37,14 @@ public class SetupHaloStep {
         try (var client = HttpClients.createDefault()) {
             waitForReadiness(client);
             setup(client);
-            System.out.printf("Halo 初始化成功，访问： %s\n用户名：%s\n密码：%s%n",
-                requestUri("/console"),
+            var output = ConsoleOutputFormatter.printFormatted(
+                "> Halo 启动成功！",
+                requestUri("/console?language=zh-CN"),
                 haloSiteOption.username(),
-                haloSiteOption.password()
+                haloSiteOption.password(),
+                requestUri("swagger-ui.html")
             );
+            System.out.println(output);
         } catch (IOException | ParseException e) {
             throw new RuntimeException(e);
         }
@@ -118,5 +121,82 @@ public class SetupHaloStep {
 
     private static boolean isSuccessful(CloseableHttpResponse response) {
         return response.getCode() >= 200 && response.getCode() < 300;
+    }
+
+    static class ConsoleOutputFormatter {
+
+        public static String printFormatted(String title, URI url, String username,
+            String password, URI apiDoc) {
+            String[] lines = {
+                String.format("%s", title),
+                String.format("访问地址：%s", url),
+                String.format("用户名：%s", username),
+                String.format("密码：%s", password),
+                String.format("API 文档：%s", apiDoc),
+                "插件开发文档：https://docs.halo.run/developer-guide/plugin/introduction"
+            };
+
+            int maxWidth = 0;
+            for (String line : lines) {
+                int width = getDisplayWidth(line);
+                if (width > maxWidth) {
+                    maxWidth = width;
+                }
+            }
+
+            // ANSI escape sequence for setting text color to green
+            final String ANSI_GREEN = "\u001B[32m";
+            final String ANSI_RESET = "\u001B[0m";
+
+            String border = repeatChar('=', maxWidth);
+
+            // Output top border
+            var sb = new StringBuilder();
+            sb.append(ANSI_GREEN).append(border).append(ANSI_RESET).append("\n");
+            for (String line : lines) {
+                String paddedLine = padRight(line, maxWidth);
+                sb.append(paddedLine).append("\n");
+            }
+            // Output bottom border
+            sb.append(ANSI_GREEN).append(border).append(ANSI_RESET).append("\n");
+            return sb.toString();
+        }
+
+        public static int getDisplayWidth(String s) {
+            int width = 0;
+            for (int offset = 0; offset < s.length(); ) {
+                int codePoint = s.codePointAt(offset);
+                int charCount = Character.charCount(codePoint);
+                if (isFullWidth(codePoint)) {
+                    width += 2;
+                } else {
+                    width += 1;
+                }
+                offset += charCount;
+            }
+            return width;
+        }
+
+        public static boolean isFullWidth(int codePoint) {
+            return (codePoint >= 0x1100 && codePoint <= 0x115F) || // Hangul Jamo
+                (codePoint >= 0x2E80 && codePoint <= 0xA4CF) ||
+                // CJK Radicals Supplement..Yi Radicals
+                (codePoint >= 0xAC00 && codePoint <= 0xD7A3) || // Hangul Syllables
+                (codePoint >= 0xF900 && codePoint <= 0xFAFF) || // CJK Compatibility Ideographs
+                (codePoint >= 0xFE10 && codePoint <= 0xFE19) || // Vertical forms
+                (codePoint >= 0xFE30 && codePoint <= 0xFE6F) || // CJK Compatibility Forms
+                (codePoint >= 0xFF00 && codePoint <= 0xFF60) || // Fullwidth Forms
+                (codePoint >= 0xFFE0 && codePoint <= 0xFFE6);   // Fullwidth Symbol Variants
+        }
+
+        public static String padRight(String s, int totalWidth) {
+            int displayWidth = getDisplayWidth(s);
+            int paddingWidth = totalWidth - displayWidth;
+            return s + " ".repeat(Math.max(0, paddingWidth));
+        }
+
+        public static String repeatChar(char ch, int count) {
+            return String.valueOf(ch).repeat(Math.max(0, count));
+        }
     }
 }
