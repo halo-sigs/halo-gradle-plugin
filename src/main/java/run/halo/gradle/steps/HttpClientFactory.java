@@ -10,7 +10,7 @@ import run.halo.gradle.utils.Assert;
 
 /**
  * @author guqing
- * @since 2.0.0
+ * @since 0.0.1
  */
 public class HttpClientFactory {
     private final HaloSiteOption haloSiteOption;

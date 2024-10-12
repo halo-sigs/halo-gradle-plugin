@@ -6,7 +6,7 @@ import org.gradle.api.tasks.TaskAction;
 import run.halo.gradle.docker.DockerStartContainer;
 import run.halo.gradle.extension.HaloExtension;
 import run.halo.gradle.steps.HaloSiteOption;
-import run.halo.gradle.steps.InitializeHaloStep;
+import run.halo.gradle.steps.SetupHaloStep;
 
 /**
  * @author guqing
@@ -23,7 +23,7 @@ public class HaloServerTask extends DockerStartContainer {
     public void runRemoteCommand() {
         var haloSiteOption = HaloSiteOption.from(haloExtension);
         CompletableFuture<Void> initializeFuture = CompletableFuture.runAsync(
-                () -> new InitializeHaloStep(haloSiteOption).execute());
+                () -> new SetupHaloStep(haloSiteOption).execute());
 
         initializeFuture.exceptionally(e -> {
             log.error(e.getMessage(), e);

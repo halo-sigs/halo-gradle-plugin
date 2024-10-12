@@ -27,7 +27,7 @@ import run.halo.gradle.extension.HaloPluginExtension;
 import run.halo.gradle.WatchExecutionParameters;
 import run.halo.gradle.docker.DockerStartContainer;
 import run.halo.gradle.steps.HaloSiteOption;
-import run.halo.gradle.steps.InitializeHaloStep;
+import run.halo.gradle.steps.SetupHaloStep;
 import run.halo.gradle.steps.ReloadPluginStep;
 
 /**
@@ -92,7 +92,7 @@ public class WatchTask extends DockerStartContainer {
         System.out.println("运行........");
 
         CompletableFuture<Void> initializeFuture = CompletableFuture.runAsync(() -> {
-            new InitializeHaloStep(haloSiteOption).execute();
+            new SetupHaloStep(haloSiteOption).execute();
             reloadPluginStep.execute(getPluginName());
         });
         initializeFuture.exceptionally(e -> {
