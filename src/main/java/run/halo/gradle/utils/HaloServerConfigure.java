@@ -50,6 +50,9 @@ public class HaloServerConfigure {
                       no-cache: true
                     use-last-modified: false
             halo:
+              security:
+                basic-auth:
+                  disabled: false
               external-url: {externalUrl}
               plugin:
                 runtime-mode: development
