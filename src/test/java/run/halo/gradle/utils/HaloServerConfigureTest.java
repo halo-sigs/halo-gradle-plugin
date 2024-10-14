@@ -42,6 +42,11 @@ class HaloServerConfigureTest {
                     }
                 },
                 "halo": {
+                  "security": {
+                    "basic-auth": {
+                       "disabled": false
+                     }
+                   },
                     "external-url": "http://localhost:8090",
                     "plugin": {
                         "runtime-mode": "development",
@@ -114,6 +119,11 @@ class HaloServerConfigureTest {
                     }
                 },
                 "halo": {
+                   "security" : {
+                     "basic-auth" : {
+                       "disabled" : false
+                     }
+                   },
                     "external-url": "http://localhost:8080",
                     "plugin": {
                         "runtime-mode": "development",
