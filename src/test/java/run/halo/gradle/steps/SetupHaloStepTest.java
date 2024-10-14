@@ -44,13 +44,14 @@ class SetupHaloStepTest {
             );
             assertThat(result).isEqualTo(
                 """
-                    \u001B[32m======================================================\u001B[0m
-                    Halo 初始化成功                                      \s
-                    访问地址：http://localhost:8090/console?language=zh-CN
-                    用户名：admin                                        \s
-                    密码：admin                                          \s
-                    API 文档：http://localhost:8090/swagger-ui.html      \s
-                    \u001B[32m======================================================\u001B[0m
+                    \u001B[32m=======================================================================\u001B[0m
+                    Halo 初始化成功                                                       \s
+                    访问地址：http://localhost:8090/console?language=zh-CN                \s
+                    用户名：admin                                                         \s
+                    密码：admin                                                           \s
+                    API 文档：http://localhost:8090/swagger-ui.html                       \s
+                    插件开发文档：https://docs.halo.run/developer-guide/plugin/introduction
+                    \u001B[32m=======================================================================\u001B[0m
                     """);
         }
     }
