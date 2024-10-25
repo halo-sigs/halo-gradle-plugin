@@ -283,7 +283,7 @@ haloPlugin {
 }
 ```
 
-在项目目录中执行以下命令即可生成 `roleTemplates.yaml` 文件到 `worplace` 目录：
+在项目目录中执行以下命令即可生成 `roleTemplates.yaml` 文件到 `workplace` 目录：
 
 ```shell
 ./gradlew generateRoleTemplates
