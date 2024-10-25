@@ -252,6 +252,43 @@ const { data } = await momentsConsoleApiClient.moment.listTags({
 > [!WARNING]
 > 执行 `generateApiClient` 任务时会先删除 `openApi.generator.outputDir` 下的所有文件，因此建议将 API client 的输出目录设置为一个独立的目录，以避免误删其他文件。
 
+### generateRoleTemplates 任务
+
+在 Halo 插件开发中，权限管理是一个关键问题，尤其是配置[角色模板](https://docs.halo.run/developer-guide/plugin/security/rbac#%E8%A7%92%E8%89%B2%E6%A8%A1%E6%9D%BF)时，角色的 `rules` 部分往往让开发者感到困惑。具体来说，如何区分资源、apiGroup、verb 等概念是许多开发者的痛点。
+
+`generateRoleTemplates` Task 的出现正是为了简化这一过程，该任务能够根据 [配置 Generate Api Client](#配置-generateapiclient) 中的配置获取到 OpenAPI docs 的 JSON 文件，并自动生成 Halo 的 Role YAML 文件，让开发者可以专注于自己的业务逻辑，而不是纠结于复杂的角色 `rules` 配置。
+
+在生成的 `roleTemplate.yaml` 文件中，rules 部分是基于 OpenAPI docs 中 API 资源和请求方式自动生成的，覆盖了可能的操作。
+然而，在实际的生产环境中，Role 通常会根据具体的需求被划分为不同的权限级别，例如：
+
+- 查看权限的角色模板：通常只包含对资源的读取权限，如 get、list、watch 等。
+- 管理权限的角色模板：则可能包含创建、修改、删除等权限，如 create、update、delete。
+
+> watch verb 是对于 WebSocket API，不会在 roleTemplates.yaml 中体现为 watch，而是体现为 list，因此需要开发者根据实际情况进行调整。
+
+因此，生成的 YAML 文件只是一个基础模板，涵盖了所有可用的操作。开发者需要根据自己的实际需求，对这些 rules 进行调整。比如，针对只需要查看资源的场景，开发者可以从生成的 YAML 中删除`修改`和`删除`相关的操作，保留读取权限。
+而对于需要管理资源的场景，可以保留`创建`、`更新`和`删除`权限，对于角色模板的依赖关系和聚合关系，开发者也可以根据实际情况进行调整。
+
+通过这种方式，开发者可以使用生成的 YAML 文件作为基础，快速定制出符合不同场景的权限配置，而不必从头开始编写复杂的规则以减少出错的可能性。
+
+#### 如何使用
+
+在 build.gradle 文件中，使用 haloPlugin 块来配置 OpenAPI 文档生成和 Role 模板生成的相关设置：
+
+```groovy
+haloPlugin {
+    openApi {
+        // 参考配置 generateApiClient 中的配置
+    }
+}
+```
+
+在项目目录中执行以下命令即可生成 `roleTemplates.yaml` 文件到 `workplace` 目录：
+
+```shell
+./gradlew generateRoleTemplates
+```
+
 ## Debug
 
 如果你想要调试 Halo 插件项目，可以使用 IntelliJ IDEA 的 Debug 模式运行 `haloServer` 或 `watch` 任务，而后会在日志开头看到类似如下信息：
