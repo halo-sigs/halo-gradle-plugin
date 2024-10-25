@@ -43,6 +43,7 @@ import run.halo.gradle.extension.HaloPluginExtension;
 import run.halo.gradle.openapi.ApiClientGeneratorTask;
 import run.halo.gradle.openapi.CleanupApiServerContainer;
 import run.halo.gradle.openapi.OpenApiDocsGeneratorTask;
+import run.halo.gradle.role.RoleTemplateGenerateTask;
 import run.halo.gradle.utils.YamlUtils;
 import run.halo.gradle.watch.WatchTask;
 
@@ -200,6 +201,13 @@ public class HaloDevtoolsPlugin implements Plugin<Project> {
                 it.setDescription("Generate api client code from open api spec.");
                 it.dependsOn("generateOpenApiDocs");
             });
+
+            project.getTasks()
+                .create("generateRoleTemplates", RoleTemplateGenerateTask.class, it -> {
+                    it.setGroup(GROUP);
+                    it.setDescription("Generate role templates from open api spec.");
+                    it.dependsOn("generateOpenApiDocs");
+                });
 
             project.getTasks().withType(AbstractDockerRemoteApiTask.class)
                 .configureEach(task -> task.getDockerClientService().set(serviceProvider));

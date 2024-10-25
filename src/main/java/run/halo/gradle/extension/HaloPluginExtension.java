@@ -8,7 +8,6 @@ import org.gradle.api.Project;
 import org.gradle.api.file.DirectoryProperty;
 import org.gradle.api.file.RegularFileProperty;
 import org.gradle.api.provider.Property;
-import run.halo.gradle.openapi.OpenApiExtension;
 import run.halo.gradle.watch.WatchTarget;
 
 @Data

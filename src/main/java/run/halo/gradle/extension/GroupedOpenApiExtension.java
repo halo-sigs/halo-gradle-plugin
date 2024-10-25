@@ -1,4 +1,4 @@
-package run.halo.gradle.openapi;
+package run.halo.gradle.extension;
 
 import java.util.List;
 import javax.annotation.Nonnull;

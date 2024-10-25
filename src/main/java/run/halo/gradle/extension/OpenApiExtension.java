@@ -1,4 +1,4 @@
-package run.halo.gradle.openapi;
+package run.halo.gradle.extension;
 
 import static java.util.Collections.emptyMap;
 
@@ -20,7 +20,7 @@ import org.gradle.api.model.ObjectFactory;
 import org.gradle.api.plugins.ExtensionContainer;
 import org.gradle.api.provider.MapProperty;
 import org.gradle.api.provider.Property;
-import run.halo.gradle.extension.HaloExtension;
+import run.halo.gradle.openapi.ApiClientExtension;
 
 @Data
 @ToString
