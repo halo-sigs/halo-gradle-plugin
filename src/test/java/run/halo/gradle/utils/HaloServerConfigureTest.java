@@ -16,11 +16,11 @@ class HaloServerConfigureTest {
 
     @Test
     void mergeUserDefinedTest() throws JSONException, JsonProcessingException {
-        var configure = HaloServerConfigure.builder()
+        var applicationJson = HaloServerConfigure.builder()
             .workDir("/root/.halo2")
             .fixedPluginPath("/fake-project")
-            .build();
-        var applicationJson = configure.getServerConfig();
+            .build()
+            .toApplicationJsonString();
         JSONAssert.assertEquals("""
             {
                 "server": {
@@ -85,7 +85,7 @@ class HaloServerConfigureTest {
                     }
                 }
             }
-            """, applicationJson.toPrettyString(), true);
+            """, applicationJson, true);
 
         var userDefined = YamlUtils.mapper.readValue("""
             server:
@@ -97,7 +97,12 @@ class HaloServerConfigureTest {
               external-url: http://localhost:8080
               work-dir: /root/.halo-dev2
             """, JsonNode.class);
-        var newApplicationJsonString = configure.mergeWithUserConfigAsJson(userDefined);
+        var newApplicationJsonString = HaloServerConfigure.builder()
+            .workDir("/root/.halo2")
+            .fixedPluginPath("/fake-project")
+            .otherConfig(userDefined)
+            .build()
+            .toApplicationJsonString();
         JSONAssert.assertEquals("""
             {
                 "server": {

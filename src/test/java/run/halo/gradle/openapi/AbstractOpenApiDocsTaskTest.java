@@ -6,25 +6,25 @@ import java.util.List;
 import org.junit.jupiter.api.Test;
 
 /**
- * Tests for {@link OpenApiDocsGeneratorTask}.
+ * Tests for {@link AbstractOpenApiDocsTask}.
  *
  * @author guqing
- * @since 0.0.10
+ * @since 0.4.0
  */
-class OpenApiDocsGeneratorTaskTest {
+class AbstractOpenApiDocsTaskTest {
 
     @Test
-    void generateSpringDocConfigStringTest() {
-        var result = OpenApiDocsGeneratorTask.generateSpringDocConfigString(List.of());
+    void generateSpringDocApplicationConfig() {
+        var result = AbstractOpenApiDocsTask.generateSpringDocConfigString(List.of());
         assertThat(result).isNull();
 
-        var config = OpenApiDocsGeneratorTask.SpringDocGroupConfig.builder()
+        var config = AbstractOpenApiDocsTask.SpringDocGroupConfig.builder()
             .group("postShareLinkExtensionV1alpha1Api")
             .displayName("Extension API for Post Share Link")
             .pathsToMatch(List.of("/api/v1alpha1/share/**"))
             .pathsToExclude(List.of("/api/v1alpha1/do-not-share/**"))
             .build();
-        result = OpenApiDocsGeneratorTask.generateSpringDocConfigString(List.of(config));
+        result = AbstractOpenApiDocsTask.generateSpringDocConfigString(List.of(config));
         assertThat(result).isEqualTo("""
             springdoc:
               group-configs:

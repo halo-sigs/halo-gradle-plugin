@@ -4,12 +4,10 @@ import static run.halo.gradle.utils.HaloServerConfigure.buildPluginConfigYamlPat
 import static run.halo.gradle.utils.HaloServerConfigure.buildPluginDestPath;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.ObjectWriter;
 import com.fasterxml.jackson.databind.SerializationFeature;
 import com.fasterxml.jackson.databind.json.JsonMapper;
-import com.fasterxml.jackson.databind.node.JsonNodeFactory;
 import com.github.dockerjava.api.DockerClient;
 import com.github.dockerjava.api.command.CreateContainerCmd;
 import com.github.dockerjava.api.exception.NotFoundException;
@@ -41,7 +39,6 @@ import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
-import javax.annotation.Nonnull;
 import javax.net.ssl.HttpsURLConnection;
 import javax.net.ssl.KeyManager;
 import javax.net.ssl.SSLContext;
@@ -52,33 +49,25 @@ import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 import org.gradle.api.Action;
 import org.gradle.api.GradleException;
-import org.gradle.api.file.DirectoryProperty;
 import org.gradle.api.provider.MapProperty;
 import org.gradle.api.provider.Property;
 import org.gradle.api.tasks.Input;
 import org.gradle.api.tasks.Internal;
 import org.gradle.api.tasks.Optional;
-import run.halo.gradle.docker.DockerExistingImage;
 import run.halo.gradle.docker.FrameConsumerResultCallback;
 import run.halo.gradle.docker.OutputFrame;
 import run.halo.gradle.docker.ToStringConsumer;
 import run.halo.gradle.extension.HaloExtension;
-import run.halo.gradle.extension.HaloPluginExtension;
 import run.halo.gradle.model.Constant;
 import run.halo.gradle.utils.Assert;
 import run.halo.gradle.utils.FileUtils;
 import run.halo.gradle.utils.HaloServerConfigure;
-import run.halo.gradle.utils.YamlUtils;
 
 @Getter
 @Slf4j
-public class OpenApiDocsGeneratorTask extends DockerExistingImage {
+public class OpenApiDocsGeneratorTask extends AbstractOpenApiDocsTask {
     public static final String CONTAINER_NAME = "halo-openapi-docs-generator";
     public static final String TASK_NAME = "generateOpenApiDocs";
-
-    @Internal
-    final HaloPluginExtension pluginExtension =
-        getProject().getExtensions().getByType(HaloPluginExtension.class);
 
     @Input
     @Optional
@@ -90,10 +79,6 @@ public class OpenApiDocsGeneratorTask extends DockerExistingImage {
         .mapProperty(String.class, String.class);
 
     @Input
-    final MapProperty<String, String> groupedApiMappings = getProject().getObjects()
-        .mapProperty(String.class, String.class);
-
-    @Input
     @Optional
     final Property<String> trustStore = getProject().getObjects().property(String.class);
 
@@ -101,44 +86,20 @@ public class OpenApiDocsGeneratorTask extends DockerExistingImage {
     @Optional
     final Property<char[]> trustStorePassword = getProject().getObjects().property(char[].class);
 
-    @Input
-    final Property<String> apiDocsVersion = getProject().getObjects().property(String.class);
-
     @Internal
     final Property<Integer> waitTimeInSeconds = getProject().getObjects().property(Integer.class);
-
-    @Internal
-    final Property<String> apiDocsUrl = getProject().getObjects().property(String.class);
 
     @Internal
     final Property<Integer> port = getProject().getObjects().property(Integer.class);
 
     @Internal
-    final DirectoryProperty outputDir = getProject().getObjects().directoryProperty();
-
-    @Internal
     final Property<String> containerId = getProject().getObjects().property(String.class);
 
-    @Internal
-    final List<SpringDocGroupConfig> springDocGroupConfigs = new ArrayList<>();
-
     public OpenApiDocsGeneratorTask() {
-        var openApi = pluginExtension.getOpenApi();
-        openApi.getGroupingRules().getAsMap().forEach((group, config) -> {
-            springDocGroupConfigs.add(SpringDocGroupConfig.builder()
-                .group(group)
-                .displayName(config.getDisplayName().get())
-                .pathsToMatch(config.getPathsToMatch().get())
-                .pathsToExclude(config.getPathsToExclude().get())
-                .build());
-        });
-        groupedApiMappings.convention(openApi.getGroupedApiMappings());
+        var openApi = getPluginExtension().getOpenApi();
         requestHeaders.convention(openApi.getRequestHeaders());
         waitTimeInSeconds.convention(openApi.getWaitTimeInSeconds());
-        apiDocsUrl.convention(openApi.getApiDocsUrl());
         port.convention(openApi.getApiDocsPort());
-        outputDir.convention(openApi.getOutputDir());
-        apiDocsVersion.convention(openApi.getApiDocsVersion());
     }
 
     @Override
@@ -148,7 +109,7 @@ public class OpenApiDocsGeneratorTask extends DockerExistingImage {
                 + "in the 'haloPlugin.openApi' in the build.gradle file first.");
         }
         // cleanup output directory
-        var outputDirFile = this.outputDir.getAsFile().get();
+        var outputDirFile = outputDir.getAsFile().get();
         var outputFilePath = outputDirFile.toPath();
         if (Files.exists(outputFilePath)) {
             FileUtils.deleteRecursively(outputFilePath);
@@ -164,7 +125,7 @@ public class OpenApiDocsGeneratorTask extends DockerExistingImage {
                 .waitTimeInSeconds(waitTimeInSeconds.get())
                 .build();
             groupedApiMappings.get().forEach((k, v) -> {
-                var url = joinUrl(apiDocsUrl.get(), k);
+                var url = joinUrl(getApiDocsUrl().get(), k);
                 ReadinessCheck.builder()
                     .dockerClient(dockerClient)
                     .containerId(this.containerId.get())
@@ -219,7 +180,7 @@ public class OpenApiDocsGeneratorTask extends DockerExistingImage {
             ReadinessCheck.builder()
                 .dockerClient(dockerClient)
                 .containerId(container.getId())
-                .endpoint(joinUrl(apiDocsUrl.get(), "/actuator/health"))
+                .endpoint(joinUrl(getApiDocsUrl().get(), "/actuator/health"))
                 .requestHeaders(requestHeaders.get())
                 .waitTimeInSeconds(180)
                 .build()
@@ -411,15 +372,16 @@ public class OpenApiDocsGeneratorTask extends DockerExistingImage {
         int containerPort = port.get();
         containerCommand.withCmd("--rm");
 
-        String pluginName = pluginExtension.getPluginName();
+        String pluginName = getPluginExtension().getPluginName();
 
         List<String> envs = new ArrayList<>();
         var applicationJson = HaloServerConfigure.builder()
             .port(containerPort)
             .externalUrl(haloExtension.getExternalUrl())
             .fixedPluginPath(buildPluginDestPath(pluginName))
+            .otherConfig(generateSpringDocApplicationConfig())
             .build()
-            .mergeWithUserConfigAsJson(generateUserDefinedApplicationConfig());
+            .toApplicationJsonString();
         envs.add("SPRING_APPLICATION_JSON=" + applicationJson);
         containerCommand.withEnv(envs);
 
@@ -441,7 +403,7 @@ public class OpenApiDocsGeneratorTask extends DockerExistingImage {
         binds.add(new Bind(projectDir.toString(),
             new Volume(buildPluginDestPath(pluginName) + "build")));
 
-        var pluginConfigYaml = pluginExtension.getConfigurationPropertiesFile()
+        var pluginConfigYaml = getPluginExtension().getConfigurationPropertiesFile()
             .getAsFile().getOrNull();
         if (pluginConfigYaml != null && Files.exists(pluginConfigYaml.toPath())) {
             binds.add(new Bind(pluginConfigYaml.getAbsolutePath(),
@@ -452,62 +414,5 @@ public class OpenApiDocsGeneratorTask extends DockerExistingImage {
         hostConfig.withBinds(binds);
 
         containerCommand.withHostConfig(hostConfig);
-    }
-
-    JsonNode generateUserDefinedApplicationConfig() {
-        var springDocYaml = generateSpringDocConfigString(this.springDocGroupConfigs);
-        if (StringUtils.isBlank(springDocYaml)) {
-            return JsonNodeFactory.instance.missingNode();
-        }
-        return YamlUtils.read(springDocYaml, JsonNode.class);
-    }
-
-    static String generateSpringDocConfigString(@Nonnull List<SpringDocGroupConfig> configs) {
-        if (configs.isEmpty()) {
-            return null;
-        }
-        StringBuilder yamlBuilder = new StringBuilder();
-        yamlBuilder.append("springdoc:\n")
-            .append("  group-configs:\n");
-        for (var entry : configs) {
-            var group = entry.group();
-            var pathsToMatch = entry.pathsToMatch;
-            var pathsToExclude = entry.pathsToExclude();
-            var displayName = entry.displayName();
-            yamlBuilder.append("    - group: ").append(group).append("\n")
-                .append("      displayName: ").append(displayName).append("\n");
-
-            if (!pathsToMatch.isEmpty()) {
-                yamlBuilder.append("      paths-to-match:\n");
-                for (String path : pathsToMatch) {
-                    yamlBuilder.append("        - ").append(path).append("\n");
-                }
-            }
-
-            if (!pathsToExclude.isEmpty()) {
-                yamlBuilder.append("      paths-to-exclude:\n");
-                for (String path : pathsToExclude) {
-                    yamlBuilder.append("        - ").append(path).append("\n");
-                }
-            }
-        }
-        return yamlBuilder.toString();
-    }
-
-    @Builder
-    record SpringDocGroupConfig(String group, String displayName,
-                                List<String> pathsToMatch,
-                                List<String> pathsToExclude) {
-        public SpringDocGroupConfig {
-            if (StringUtils.isBlank(displayName)) {
-                displayName = group;
-            }
-            if (pathsToMatch == null) {
-                pathsToMatch = Collections.emptyList();
-            }
-            if (pathsToExclude == null) {
-                pathsToExclude = Collections.emptyList();
-            }
-        }
     }
 }

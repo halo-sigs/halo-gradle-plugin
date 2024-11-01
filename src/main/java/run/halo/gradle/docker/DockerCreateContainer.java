@@ -46,15 +46,13 @@ import org.gradle.api.tasks.Internal;
 import org.gradle.api.tasks.Optional;
 import org.gradle.api.tasks.OutputFile;
 import run.halo.gradle.extension.HaloExtension;
-import run.halo.gradle.extension.HaloPluginExtension;
 import run.halo.gradle.model.Constant;
+import run.halo.gradle.openapi.AbstractOpenApiDocsTask;
 import run.halo.gradle.utils.HaloServerConfigure;
 import run.halo.gradle.utils.YamlUtils;
 
 @Slf4j
-public class DockerCreateContainer extends DockerExistingImage {
-    private final HaloPluginExtension pluginExtension =
-        getProject().getExtensions().getByType(HaloPluginExtension.class);
+public class DockerCreateContainer extends AbstractOpenApiDocsTask {
 
     private final HaloExtension haloExtension =
         getProject().getExtensions().getByType(HaloExtension.class);
@@ -102,6 +100,7 @@ public class DockerCreateContainer extends DockerExistingImage {
     final Property<String> platform = getProject().getObjects().property(String.class);
 
     public DockerCreateContainer() {
+        super();
         containerId.convention(containerIdFile.map(new RegularFileToStringTransformer()));
 
         additionalApplicationConfig.convention(getProject().provider(() -> {
@@ -188,7 +187,7 @@ public class DockerCreateContainer extends DockerExistingImage {
         }
         containerCommand.withCmd("--rm");
 
-        String pluginName = pluginExtension.getPluginName();
+        String pluginName = getPluginExtension().getPluginName();
         Integer port = haloExtension.getPort();
 
         // Set environment variables and port bindings
@@ -198,8 +197,10 @@ public class DockerCreateContainer extends DockerExistingImage {
             .externalUrl(haloExtension.getExternalUrl())
             .workDir(haloWorkDir())
             .fixedPluginPath(HaloServerConfigure.buildPluginDestPath(pluginName))
+            .otherConfig(readExternalConfig())
+            .otherConfig(generateSpringDocApplicationConfig())
             .build()
-            .mergeWithUserConfigAsJson(readExternalConfig());
+            .toApplicationJsonString();
         envs.add("SPRING_APPLICATION_JSON=" + applicationJson);
 
         boolean isDebugMode = isDebugMode();
@@ -241,7 +242,7 @@ public class DockerCreateContainer extends DockerExistingImage {
             binds.add(new Bind(sourceDir, new Volume(haloWorkDir())));
         }
 
-        var pluginConfigYaml = pluginExtension.getConfigurationPropertiesFile()
+        var pluginConfigYaml = getPluginExtension().getConfigurationPropertiesFile()
             .getAsFile().getOrNull();
         if (pluginConfigYaml != null && Files.exists(pluginConfigYaml.toPath())) {
             binds.add(new Bind(pluginConfigYaml.getAbsolutePath(),
