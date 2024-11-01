@@ -5,12 +5,14 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.github.fge.jsonpatch.JsonPatchException;
 import com.github.fge.jsonpatch.mergepatch.JsonMergePatch;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import lombok.Builder;
-import lombok.RequiredArgsConstructor;
+import lombok.Getter;
+import lombok.Singular;
 
 @Builder
-@RequiredArgsConstructor
+@Getter
 public class HaloServerConfigure {
     private final String workDir;
 
@@ -22,7 +24,27 @@ public class HaloServerConfigure {
 
     private final String fixedPluginPath;
 
-    public JsonNode getServerConfig() {
+    @Singular("otherConfig")
+    private List<JsonNode> otherConfigs;
+
+    public String toApplicationJsonString() {
+        return toApplicationJson().toPrettyString();
+    }
+
+    public JsonNode toApplicationJson() {
+        var defaultConfig = getServerConfig();
+
+        JsonNode finalConfig = defaultConfig;
+        for (JsonNode userDefinedConfig : otherConfigs) {
+            if (userDefinedConfig.isMissingNode()) {
+                continue;
+            }
+            finalConfig = mergeJson(defaultConfig, userDefinedConfig);
+        }
+        return finalConfig;
+    }
+
+    private JsonNode getServerConfig() {
         try {
             return YamlUtils.mapper.readValue(renderConfig(), JsonNode.class);
         } catch (JsonProcessingException e) {
@@ -103,19 +125,17 @@ public class HaloServerConfigure {
         return result.toString();
     }
 
-    public String mergeWithUserConfigAsJson(JsonNode userDefined) {
-        Assert.notNull(userDefined, "The 'userDefined' must not be null");
-        if (userDefined.isMissingNode() || userDefined.isNull()) {
-            return getServerConfig().toPrettyString();
-        }
-        var defaultConfig = getServerConfig();
+    public static JsonNode mergeJson(JsonNode existing, JsonNode patch) {
+        Assert.notNull(existing, "The 'existing' must not be null");
+        Assert.notNull(patch, "The 'patch' must not be null");
         try {
             // patch
-            JsonMergePatch jsonMergePatch = JsonMergePatch.fromJson(userDefined);
+            JsonMergePatch jsonMergePatch = JsonMergePatch.fromJson(patch);
             // apply patch to original
-            JsonNode patchedNode = jsonMergePatch.apply(defaultConfig);
-            return patchedNode.toPrettyString();
+            return jsonMergePatch.apply(existing);
         } catch (JsonPatchException e) {
+            System.out.println(existing);
+            System.out.println(patch);
             throw new RuntimeException(e);
         }
     }
