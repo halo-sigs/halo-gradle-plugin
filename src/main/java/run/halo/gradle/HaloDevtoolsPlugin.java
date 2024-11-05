@@ -159,8 +159,20 @@ public class HaloDevtoolsPlugin implements Plugin<Project> {
                             }
                         }
                         it.getPluginWorkplaceDir().set(workDir);
-                        it.getAdditionalApplicationConfig()
-                            .set(haloExtension.getAdditionalConfigFile());
+                        it.getAdditionalApplicationConfig().set(project.provider(() -> {
+                            var configFile = pluginExtension.getConfigurationPropertiesFile();
+                            if (configFile.isPresent()) {
+                                return configFile.get();
+                            }
+                            return workDir.file("config/application.yaml")
+                                .map(file -> {
+                                    if (file.getAsFile().exists()) {
+                                        return file;
+                                    }
+                                    return null;
+                                })
+                                .getOrNull();
+                        }));
                         it.setGroup(GROUP);
                         it.setDescription("Create halo server container.");
                         it.dependsOn("build", "pullHaloImage");
@@ -247,7 +259,6 @@ public class HaloDevtoolsPlugin implements Plugin<Project> {
                 reloadTask.setDescription("Reloads the plugin by name.");
                 reloadTask.setGroup(GROUP);
                 reloadTask.dependsOn("build");
-                reloadTask.getPluginName().set(pluginName);
             });
     }
 

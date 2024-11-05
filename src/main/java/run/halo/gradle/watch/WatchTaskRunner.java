@@ -9,14 +9,13 @@ import org.gradle.api.logging.Logging;
 import org.gradle.internal.classpath.ClassPath;
 import org.gradle.tooling.BuildException;
 import org.gradle.tooling.GradleConnector;
-import org.gradle.tooling.ProgressListener;
 import org.gradle.tooling.ProjectConnection;
 import org.gradle.tooling.internal.consumer.DefaultBuildLauncher;
 import org.gradle.tooling.internal.consumer.DefaultGradleConnector;
 import org.gradle.wrapper.GradleUserHomeLookup;
 import org.slf4j.Logger;
-import run.halo.gradle.utils.Assert;
 import run.halo.gradle.WatchExecutionParameters;
+import run.halo.gradle.utils.Assert;
 
 /**
  * @author guqing
@@ -41,7 +40,7 @@ public class WatchTaskRunner implements AutoCloseable {
         Assert.notNull(parameters, "WatchExecutionParameters must not be null");
         DefaultBuildLauncher launcher = (DefaultBuildLauncher) connection
             .newBuild()
-            .setStandardOutput(new NoCloseOutputStream(parameters.getStandardError()))
+            .setStandardOutput(new NoCloseOutputStream(parameters.getStandardOutput()))
             .setStandardError(new NoCloseOutputStream(parameters.getStandardError()));
 
         if (parameters.getStandardInput() != null) {
@@ -60,16 +59,7 @@ public class WatchTaskRunner implements AutoCloseable {
         launcher.setJvmArguments(parameters.getJvmArgs().toArray(new String[0]));
         launcher.setEnvironmentVariables(parameters.getEnvironment());
 
-        final int[] taskNum = new int[1];
-        launcher.addProgressListener((ProgressListener) event -> {
-            if ("Execute tasks".equals(event.getDescription())) {
-                taskNum[0]++;
-            }
-        });
-        System.out.println("Executed " + taskNum[0] + " tasks.");
-
         try {
-
             launcher.run();
         } catch (BuildException e) {
             // ignore...

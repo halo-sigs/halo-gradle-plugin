@@ -22,13 +22,11 @@ import org.gradle.api.internal.file.pattern.PatternMatcher;
 import org.gradle.api.internal.file.pattern.PatternMatcherFactory;
 import org.gradle.internal.classpath.ClassPath;
 import org.gradle.internal.classpath.DefaultClassPath;
-import run.halo.gradle.extension.HaloExtension;
-import run.halo.gradle.extension.HaloPluginExtension;
 import run.halo.gradle.WatchExecutionParameters;
 import run.halo.gradle.docker.DockerStartContainer;
-import run.halo.gradle.steps.HaloSiteOption;
+import run.halo.gradle.extension.HaloPluginExtension;
+import run.halo.gradle.steps.PluginClient;
 import run.halo.gradle.steps.SetupHaloStep;
-import run.halo.gradle.steps.ReloadPluginStep;
 
 /**
  * @author guqing
@@ -37,11 +35,13 @@ import run.halo.gradle.steps.ReloadPluginStep;
 @Slf4j
 public class WatchTask extends DockerStartContainer {
 
-    private final HaloPluginExtension pluginExtension =
-        getProject().getExtensions().getByType(HaloPluginExtension.class);
+    private final PluginClient pluginClient;
+    private final HaloPluginExtension pluginExtension;
 
-    private final HaloExtension haloExtension =
-        getProject().getExtensions().getByType(HaloExtension.class);
+    public WatchTask() {
+        this.pluginClient = new PluginClient(getProject());
+        this.pluginExtension = pluginClient.getPluginExtension();
+    }
 
     WatchExecutionParameters getParameters(List<String> buildArgs) {
         return WatchExecutionParameters.builder()
@@ -87,13 +87,9 @@ public class WatchTask extends DockerStartContainer {
             quietPeriod, SnapshotStateRepository.STATIC);
         configWatchFiles(watcher);
 
-        var haloSiteOption = HaloSiteOption.from(haloExtension);
-        ReloadPluginStep reloadPluginStep = new ReloadPluginStep(haloSiteOption);
-        System.out.println("运行........");
-
         CompletableFuture<Void> initializeFuture = CompletableFuture.runAsync(() -> {
-            new SetupHaloStep(haloSiteOption).execute();
-            reloadPluginStep.execute(getPluginName());
+            new SetupHaloStep(pluginClient.getSiteOption()).execute();
+            pluginClient.checkPluginState();
         });
         initializeFuture.exceptionally(e -> {
             log.error(e.getMessage(), e);
@@ -105,7 +101,7 @@ public class WatchTask extends DockerStartContainer {
             watcher.addListener(changeSet -> {
                 System.out.println("File changed......" + changeSet);
                 runner.run(parameters);
-                reloadPluginStep.execute(getPluginName());
+                pluginClient.reloadPlugin();
             });
             watcher.start();
             // start docker container and waiting
@@ -165,7 +161,8 @@ public class WatchTask extends DockerStartContainer {
     }
 
     private File getPluginBuildFile() {
-        Path buildLibPath = getProject().getBuildDir().toPath().resolve("libs");
+        Path buildLibPath = getProject().getLayout().getBuildDirectory()
+            .dir("libs").get().getAsFile().toPath();
         try (Stream<Path> pathStream = Files.find(buildLibPath, 1, (path, basicFileAttributes) -> {
             String fileName = path.getFileName().toString();
             return fileName.endsWith(".jar");
@@ -176,9 +173,5 @@ public class WatchTask extends DockerStartContainer {
         } catch (IOException e) {
             throw new IllegalStateException("未找到插件jar包", e);
         }
-    }
-
-    private String getPluginName() {
-        return pluginExtension.getPluginName();
     }
 }

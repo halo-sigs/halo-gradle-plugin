@@ -1,21 +1,16 @@
 package run.halo.gradle;
 
-import lombok.Getter;
 import org.gradle.api.DefaultTask;
-import org.gradle.api.provider.Property;
-import org.gradle.api.tasks.Input;
 import org.gradle.api.tasks.TaskAction;
 import org.gradle.work.DisableCachingByDefault;
 import run.halo.gradle.extension.HaloExtension;
 import run.halo.gradle.extension.HaloPluginExtension;
-import run.halo.gradle.steps.HaloSiteOption;
-import run.halo.gradle.steps.ReloadPluginStep;
+import run.halo.gradle.steps.PluginClient;
 
 /**
  * A task to reload plugin by name.
  *
  * @author guqing
- * @see ReloadPluginStep
  * @see HaloExtension
  * @see HaloPluginExtension
  * @since 1.0.0
@@ -24,20 +19,14 @@ import run.halo.gradle.steps.ReloadPluginStep;
 public class ReloadPluginTask extends DefaultTask {
     public static final String TASK_NAME = "reloadPlugin";
 
-    @Input
-    @Getter
-    private final Property<String> pluginName = getProject().getObjects().property(String.class);
-
-    private final ReloadPluginStep reloadPluginStep;
+    private final PluginClient pluginClient;
 
     public ReloadPluginTask() {
-        HaloExtension haloExt = getProject().getExtensions().getByType(HaloExtension.class);
-        var siteOption = HaloSiteOption.from(haloExt);
-        reloadPluginStep = new ReloadPluginStep(siteOption);
+        this.pluginClient = new PluginClient(getProject());
     }
 
     @TaskAction
     public void reloadPlugin() {
-        reloadPluginStep.execute(pluginName.get());
+        pluginClient.reloadPlugin();
     }
 }

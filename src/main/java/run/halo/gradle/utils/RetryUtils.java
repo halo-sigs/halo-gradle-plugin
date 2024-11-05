@@ -25,6 +25,7 @@ public class RetryUtils {
             try {
                 boolean result = call.process();
                 if (result) {
+                    thrown = null;
                     break;
                 }
             } catch (Exception e) {

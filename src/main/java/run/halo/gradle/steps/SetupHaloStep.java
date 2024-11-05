@@ -1,6 +1,5 @@
 package run.halo.gradle.steps;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import java.io.IOException;
 import java.net.URI;
@@ -17,7 +16,6 @@ import org.apache.hc.core5.http.ParseException;
 import org.apache.hc.core5.http.io.entity.EntityUtils;
 import org.apache.hc.core5.http.message.BasicNameValuePair;
 import run.halo.gradle.utils.Assert;
-import run.halo.gradle.utils.RetryUtils;
 import run.halo.gradle.utils.YamlUtils;
 
 /**
@@ -35,7 +33,7 @@ public class SetupHaloStep {
 
     public void execute() {
         try (var client = HttpClients.createDefault()) {
-            waitForReadiness(client);
+            HttpUtils.waitForReadiness(haloSiteOption.externalUrl(), client);
             setup(client);
             var output = ConsoleOutputFormatter.printFormatted(
                 "> Halo 启动成功！",
@@ -48,26 +46,6 @@ public class SetupHaloStep {
         } catch (IOException | ParseException e) {
             throw new RuntimeException(e);
         }
-    }
-
-    private void waitForReadiness(CloseableHttpClient client) {
-        var httpGet = new HttpGet(requestUri("/actuator/health"));
-        RetryUtils.withRetry(20, 400, () -> {
-            try {
-                var response = client.execute(httpGet);
-                var body = EntityUtils.toString(response.getEntity());
-                return isSuccessful(response) && isUp(body);
-            } catch (Exception e) {
-                // ignore
-                return false;
-            }
-        });
-    }
-
-    static boolean isUp(String body) throws JsonProcessingException {
-        return YamlUtils.mapper.readTree(body)
-            .path("status").asText()
-            .equalsIgnoreCase("UP");
     }
 
     private void setup(CloseableHttpClient client) throws IOException, ParseException {

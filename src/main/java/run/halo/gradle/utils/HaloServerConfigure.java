@@ -32,14 +32,12 @@ public class HaloServerConfigure {
     }
 
     public JsonNode toApplicationJson() {
-        var defaultConfig = getServerConfig();
-
-        JsonNode finalConfig = defaultConfig;
+        JsonNode finalConfig = getServerConfig();
         for (JsonNode userDefinedConfig : otherConfigs) {
             if (userDefinedConfig.isMissingNode()) {
                 continue;
             }
-            finalConfig = mergeJson(defaultConfig, userDefinedConfig);
+            finalConfig = mergeJson(finalConfig, userDefinedConfig);
         }
         return finalConfig;
     }
