@@ -68,6 +68,7 @@ public class DockerCreateContainer extends AbstractOpenApiDocsTask {
     final DirectoryProperty pluginWorkplaceDir = getProject().getObjects().directoryProperty();
 
     @InputFile
+    @Optional
     @Getter
     final RegularFileProperty additionalApplicationConfig =
         getProject().getObjects().fileProperty();
