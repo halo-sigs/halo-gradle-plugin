@@ -24,13 +24,13 @@ public class HttpClientFactory {
         var headers = new ArrayList<Header>();
         headers.add(new BasicHeader("Authorization", getBasicAuthenticationHeader(haloSiteOption)));
         return HttpClients.custom()
-                .setDefaultHeaders(headers)
-                .build();
+            .setDefaultHeaders(headers)
+            .build();
     }
 
     private static String getBasicAuthenticationHeader(HaloSiteOption haloSiteOption) {
         String valueToEncode = haloSiteOption.username() + ":" + haloSiteOption.password();
         return "Basic " + Base64.getEncoder()
-                .encodeToString(valueToEncode.getBytes());
+            .encodeToString(valueToEncode.getBytes());
     }
 }
