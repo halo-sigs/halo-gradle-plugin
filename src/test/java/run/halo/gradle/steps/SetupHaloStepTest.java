@@ -2,7 +2,6 @@ package run.halo.gradle.steps;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
 import java.net.URI;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -14,21 +13,6 @@ import org.junit.jupiter.api.Test;
  * @since 0.2.0
  */
 class SetupHaloStepTest {
-
-    @Test
-    void isUp() throws JsonProcessingException {
-        var bodyStr = """
-            {
-              "status": "UP",
-              "groups": [
-                "liveness",
-                "readiness"
-              ]
-            }
-            """;
-        var result = SetupHaloStep.isUp(bodyStr);
-        assert result;
-    }
 
     @Nested
     class ConsoleOutputFormatterTest {
