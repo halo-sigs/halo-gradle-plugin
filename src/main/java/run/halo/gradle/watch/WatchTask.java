@@ -22,13 +22,13 @@ import org.gradle.api.internal.file.pattern.PatternMatcher;
 import org.gradle.api.internal.file.pattern.PatternMatcherFactory;
 import org.gradle.internal.classpath.ClassPath;
 import org.gradle.internal.classpath.DefaultClassPath;
-import run.halo.gradle.extension.HaloExtension;
-import run.halo.gradle.extension.HaloPluginExtension;
 import run.halo.gradle.WatchExecutionParameters;
 import run.halo.gradle.docker.DockerStartContainer;
+import run.halo.gradle.extension.HaloExtension;
+import run.halo.gradle.extension.HaloPluginExtension;
 import run.halo.gradle.steps.HaloSiteOption;
-import run.halo.gradle.steps.SetupHaloStep;
 import run.halo.gradle.steps.ReloadPluginStep;
+import run.halo.gradle.steps.SetupHaloStep;
 
 /**
  * @author guqing
@@ -101,16 +101,15 @@ public class WatchTask extends DockerStartContainer {
         });
 
         WatchExecutionParameters parameters = getParameters(List.of("build"));
-        try (WatchTaskRunner runner = new WatchTaskRunner(getProject());) {
-            watcher.addListener(changeSet -> {
-                System.out.println("File changed......" + changeSet);
-                runner.run(parameters);
-                reloadPluginStep.execute(getPluginName());
-            });
-            watcher.start();
-            // start docker container and waiting
-            super.runRemoteCommand();
-        }
+        WatchTaskRunner runner = new WatchTaskRunner(getProject());
+        watcher.addListener(changeSet -> {
+            System.out.println("File changed......" + changeSet);
+            runner.run(parameters);
+            reloadPluginStep.execute(getPluginName());
+        });
+        watcher.start();
+        // start docker container and waiting
+        super.runRemoteCommand();
     }
 
     private void configWatchFiles(FileSystemWatcher watcher) {
