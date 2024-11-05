@@ -97,16 +97,15 @@ public class WatchTask extends DockerStartContainer {
         });
 
         WatchExecutionParameters parameters = getParameters(List.of("build"));
-        try (WatchTaskRunner runner = new WatchTaskRunner(getProject());) {
-            watcher.addListener(changeSet -> {
-                System.out.println("File changed......" + changeSet);
-                runner.run(parameters);
-                pluginClient.reloadPlugin();
-            });
-            watcher.start();
-            // start docker container and waiting
-            super.runRemoteCommand();
-        }
+        WatchTaskRunner runner = new WatchTaskRunner(getProject());
+        watcher.addListener(changeSet -> {
+            System.out.println("File changed......" + changeSet);
+            runner.run(parameters);
+            pluginClient.reloadPlugin();
+        });
+        watcher.start();
+        // start docker container and waiting
+        super.runRemoteCommand();
     }
 
     private void configWatchFiles(FileSystemWatcher watcher) {

@@ -3,9 +3,9 @@ package run.halo.gradle.watch;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import javax.annotation.Nonnull;
 import org.gradle.StartParameter;
 import org.gradle.api.Project;
-import org.gradle.api.logging.Logging;
 import org.gradle.internal.classpath.ClassPath;
 import org.gradle.tooling.BuildException;
 import org.gradle.tooling.GradleConnector;
@@ -13,7 +13,6 @@ import org.gradle.tooling.ProjectConnection;
 import org.gradle.tooling.internal.consumer.DefaultBuildLauncher;
 import org.gradle.tooling.internal.consumer.DefaultGradleConnector;
 import org.gradle.wrapper.GradleUserHomeLookup;
-import org.slf4j.Logger;
 import run.halo.gradle.WatchExecutionParameters;
 import run.halo.gradle.utils.Assert;
 
@@ -21,10 +20,9 @@ import run.halo.gradle.utils.Assert;
  * @author guqing
  * @since 2.0.0
  */
-public class WatchTaskRunner implements AutoCloseable {
+public class WatchTaskRunner {
 
-    private static final Logger LOG = Logging.getLogger(WatchTaskRunner.class);
-    private final ProjectConnection connection;
+    private final GradleConnector gradleConnector;
 
     public WatchTaskRunner(Project project) {
         // StartParameter parameter = project.getGradle().getStartParameter();
@@ -32,12 +30,22 @@ public class WatchTaskRunner implements AutoCloseable {
             (DefaultGradleConnector) GradleConnector.newConnector();
         gradleConnector.useGradleUserHomeDir(project.getGradle().getGradleUserHomeDir());
         gradleConnector.useDistributionBaseDir(GradleUserHomeLookup.gradleUserHome());
-        connection = gradleConnector.forProjectDirectory(project.getProjectDir())
-            .connect();
+        this.gradleConnector = gradleConnector.forProjectDirectory(project.getProjectDir());
     }
 
     public void run(WatchExecutionParameters parameters) {
         Assert.notNull(parameters, "WatchExecutionParameters must not be null");
+        try (var connection = gradleConnector.connect()) {
+            var launcher = createBuildLauncher(parameters, connection);
+            launcher.run();
+        } catch (BuildException e) {
+            System.err.println(e.getMessage());
+        }
+    }
+
+    @Nonnull
+    private static DefaultBuildLauncher createBuildLauncher(
+        WatchExecutionParameters parameters, ProjectConnection connection) {
         DefaultBuildLauncher launcher = (DefaultBuildLauncher) connection
             .newBuild()
             .setStandardOutput(new NoCloseOutputStream(parameters.getStandardOutput()))
@@ -58,20 +66,10 @@ public class WatchTaskRunner implements AutoCloseable {
 
         launcher.setJvmArguments(parameters.getJvmArgs().toArray(new String[0]));
         launcher.setEnvironmentVariables(parameters.getEnvironment());
-
-        try {
-            launcher.run();
-        } catch (BuildException e) {
-            // ignore...
-            e.printStackTrace();
-        }
+        return launcher;
     }
 
-    public void close() {
-        connection.close();
-    }
-
-    private String[] getArguments(StartParameter parameter) {
+    static String[] getArguments(StartParameter parameter) {
         List<String> args = new ArrayList<>();
         for (Map.Entry<String, String> e : parameter.getProjectProperties().entrySet()) {
             args.add("-P" + e.getKey() + "=" + e.getValue());
