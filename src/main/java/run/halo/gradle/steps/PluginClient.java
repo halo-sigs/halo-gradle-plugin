@@ -19,14 +19,16 @@ public class PluginClient {
     private final String pluginName;
     private final HttpClientFactory clientFactory;
     private final HaloSiteOption siteOption;
-    private final HaloPluginExtension pluginExtension;
     private final URI baseUri;
 
     public PluginClient(Project project) {
-        var haloExt = project.getExtensions().getByType(HaloExtension.class);
-        this.pluginExtension = project.getExtensions().getByType(HaloPluginExtension.class);
-        this.pluginName = pluginExtension.getPluginName();
-        this.siteOption = HaloSiteOption.from(haloExt);
+        this(project.getExtensions().getByType(HaloPluginExtension.class).getPluginName(),
+            HaloSiteOption.from(project.getExtensions().getByType(HaloExtension.class)));
+    }
+
+    public PluginClient(String pluginName, HaloSiteOption siteOption) {
+        this.pluginName = pluginName;
+        this.siteOption = siteOption;
         this.baseUri = siteOption.externalUrl();
         this.clientFactory = new HttpClientFactory(siteOption);
     }
