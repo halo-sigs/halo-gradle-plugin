@@ -22,6 +22,7 @@ import java.io.FileWriter;
 import java.io.IOException;
 import java.net.HttpURLConnection;
 import java.net.SocketException;
+import java.net.URI;
 import java.net.URL;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
@@ -54,11 +55,16 @@ import org.gradle.api.provider.Property;
 import org.gradle.api.tasks.Input;
 import org.gradle.api.tasks.Internal;
 import org.gradle.api.tasks.Optional;
+import org.jetbrains.annotations.NotNull;
 import run.halo.gradle.docker.FrameConsumerResultCallback;
 import run.halo.gradle.docker.OutputFrame;
 import run.halo.gradle.docker.ToStringConsumer;
 import run.halo.gradle.extension.HaloExtension;
+import run.halo.gradle.extension.HaloPluginExtension;
 import run.halo.gradle.model.Constant;
+import run.halo.gradle.steps.HaloSiteOption;
+import run.halo.gradle.steps.PluginClient;
+import run.halo.gradle.steps.SetupHaloStep;
 import run.halo.gradle.utils.Assert;
 import run.halo.gradle.utils.FileUtils;
 import run.halo.gradle.utils.HaloServerConfigure;
@@ -124,15 +130,10 @@ public class OpenApiDocsGeneratorTask extends AbstractOpenApiDocsTask {
                 .trustStorePassword(trustStorePassword)
                 .waitTimeInSeconds(waitTimeInSeconds.get())
                 .build();
+
+            System.out.println("Start generating API documentation...");
             groupedApiMappings.get().forEach((k, v) -> {
                 var url = joinUrl(getApiDocsUrl().get(), k);
-                ReadinessCheck.builder()
-                    .dockerClient(dockerClient)
-                    .containerId(this.containerId.get())
-                    .endpoint(url)
-                    .requestHeaders(requestHeaders.get())
-                    .build()
-                    .awaitReadiness();
                 apiDocGenerator.generateApiDocs(url, v);
             });
 
@@ -177,14 +178,10 @@ public class OpenApiDocsGeneratorTask extends AbstractOpenApiDocsTask {
                 .withLogs(true)
                 .exec(callback);
 
-            ReadinessCheck.builder()
-                .dockerClient(dockerClient)
-                .containerId(container.getId())
-                .endpoint(joinUrl(getApiDocsUrl().get(), "/actuator/health"))
-                .requestHeaders(requestHeaders.get())
-                .waitTimeInSeconds(180)
-                .build()
-                .awaitReadiness();
+            var siteOption = createHaloSiteOption();
+            waitForSetup(siteOption);
+            waitForPluginReady(siteOption);
+
         } catch (Exception e) {
             throw new GradleException("Failed to start Halo application", e);
         }
@@ -213,7 +210,8 @@ public class OpenApiDocsGeneratorTask extends AbstractOpenApiDocsTask {
             boolean isYaml = url.toLowerCase(Locale.getDefault()).matches(".+[./]yaml(/.+)*");
             try {
                 SSLContext sslContext = getCustomSslContext();
-                log.info("Generating OpenApi Docs..");
+
+                System.out.println("Generating OpenApi Docs for url: " + url);
                 HttpURLConnection connection = getHttpURLConnection(url, sslContext);
 
                 String response =
@@ -283,83 +281,21 @@ public class OpenApiDocsGeneratorTask extends AbstractOpenApiDocsTask {
         }
     }
 
-    @Builder
-    record ReadinessCheck(DockerClient dockerClient, String containerId, String endpoint,
-                          Map<String, String> requestHeaders,
-                          Integer waitTimeInSeconds) {
-        private static final int MAX_HTTP_STATUS_CODE = 299;
-        private static final int INITIAL_DELAY = 0;
-        private static final int PERIOD = 1;
-        private static final TimeUnit TIME_UNIT = TimeUnit.SECONDS;
-        private static final int TIMEOUT = 60;
+    private void waitForSetup(HaloSiteOption siteOption) {
+        new SetupHaloStep(siteOption).execute();
+    }
 
-        public ReadinessCheck {
-            Assert.notNull(endpoint, "Endpoint must not be null");
-            Assert.notNull(dockerClient, "DockerClient must not be null");
-            Assert.notNull(containerId, "ContainerId must not be null");
-            if (requestHeaders == null) {
-                requestHeaders = Collections.emptyMap();
-            }
-            if (waitTimeInSeconds == null) {
-                waitTimeInSeconds = TIMEOUT;
-            }
-        }
+    private void waitForPluginReady(HaloSiteOption siteOption) {
+        var pluginName = getPluginExtension().getPluginName();
+        var client = new PluginClient(pluginName, siteOption);
+        client.checkPluginState();
+    }
 
-        private boolean containerIsRunning() {
-            var containerInfo = dockerClient.inspectContainerCmd(containerId).exec();
-            return Boolean.TRUE.equals(containerInfo.getState().getRunning());
-        }
-
-        public void awaitReadiness() {
-            ScheduledExecutorService scheduler = Executors.newScheduledThreadPool(1);
-
-            try {
-                CompletableFuture<Boolean> readinessFuture = new CompletableFuture<>();
-                ScheduledFuture<?> scheduledFuture = scheduler.scheduleAtFixedRate(() -> {
-                    try {
-                        if (!containerIsRunning()) {
-                            readinessFuture.completeExceptionally(
-                                new GradleException("Container is stopped unexpectedly"));
-                        }
-                        if (isReadiness()) {
-                            readinessFuture.complete(true);
-                        }
-                    } catch (Exception e) {
-                        readinessFuture.completeExceptionally(e);
-                    }
-                }, INITIAL_DELAY, PERIOD, TIME_UNIT);
-
-                readinessFuture.whenComplete((result, throwable) -> {
-                    if (throwable != null) {
-                        log.error("Filed to start Halo application", throwable);
-                    }
-                    scheduledFuture.cancel(true);
-                });
-                readinessFuture.get(TIMEOUT, TIME_UNIT);
-            } catch (TimeoutException e) {
-                log.error("Timeout to wait for container readiness");
-            } catch (ExecutionException | InterruptedException e) {
-                throw new RuntimeException(e);
-            } finally {
-                scheduler.shutdown();
-            }
-        }
-
-        private boolean isReadiness() throws Exception {
-            URL url = new URL(endpoint);
-            HttpURLConnection connection = (HttpURLConnection) url.openConnection();
-            connection.setRequestMethod("GET");
-            requestHeaders.forEach(connection::setRequestProperty);
-            try {
-                int responseCode = connection.getResponseCode();
-                log.trace("apiDocsUrl = {} status code = {}", url, responseCode);
-                return responseCode < MAX_HTTP_STATUS_CODE;
-            } catch (SocketException e) {
-                return false;
-            } finally {
-                connection.disconnect();
-            }
-        }
+    private HaloSiteOption createHaloSiteOption() {
+        var haloExt = getProject().getExtensions().getByType(HaloExtension.class);
+        var baseUri = URI.create(getApiDocsUrl().get());
+        return new HaloSiteOption(haloExt.getSuperAdminUsername(),
+            haloExt.getSuperAdminPassword(), baseUri);
     }
 
     private void setContainerCommandConfig(CreateContainerCmd containerCommand) {

@@ -40,7 +40,8 @@ public class WatchTask extends DockerStartContainer {
 
     public WatchTask() {
         this.pluginClient = new PluginClient(getProject());
-        this.pluginExtension = pluginClient.getPluginExtension();
+        this.pluginExtension = getProject().getExtensions()
+            .getByType(HaloPluginExtension.class);
     }
 
     WatchExecutionParameters getParameters(List<String> buildArgs) {
