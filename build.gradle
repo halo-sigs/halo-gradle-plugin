@@ -92,7 +92,7 @@ ext {
     jackjson = '2.14.0'
     lang3 = '3.12.0'
     semver4j = '0.9.0'
-    asm = '9.4'
+    asm = '9.8'
     dockerJava = '3.3.0'
     jsonPatch = '1.13'
     openApiGenerator = '7.7.0'
