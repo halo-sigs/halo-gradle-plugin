@@ -1,7 +1,7 @@
 plugins {
     id 'java'
-    id 'java-gradle-plugin'
-    id 'maven-publish'
+    id 'signing'
+    id 'com.gradle.plugin-publish' version '1.3.1'
     id "io.freefair.lombok" version "8.13.1"
 }
 
@@ -22,70 +22,29 @@ repositories {
 publishing {
     repositories {
         maven {
-            name = "SonatypePackages"
-            url = version.endsWith('-SNAPSHOT') ? 'https://s01.oss.sonatype.org/content/repositories/snapshots/' :
-                    'https://s01.oss.sonatype.org/content/repositories/releases/'
-            credentials {
-                username = project.findProperty("ossr.user") ?: System.getenv("OSSR_USERNAME")
-                password = project.findProperty("ossr.password") ?: System.getenv("OSSR_PASSWORD")
-            }
-        }
-    }
-    publications {
-        ossr(MavenPublication) {
-            from(components.java)
-            groupId = 'run.halo.gradle'
-            artifactId = 'halo-gradle-plugin'
-            version = project.hasProperty('version') ? project.property('version') : 'unspecified'
-
-            pom {
-                name = 'HaloPluginDevtools'
-                description = 'Halo Gradle Plugin'
-                url = 'https://github.com/halo-sigs/halo-gradle-plugin'
-
-                licenses {
-                    license {
-                        name = 'The Apache License, Version 2.0'
-                        url = 'http://www.apache.org/licenses/LICENSE-2.0.txt'
-                    }
-                }
-
-                developers {
-                    developer {
-                        id = 'guqing'
-                        name = 'guqing'
-                        email = 'i@guqing.email'
-                    }
-                }
-
-                scm {
-                    connection = 'scm:git:git://github.com/halo-sigs/halo-gradle-plugin.git'
-                    developerConnection = 'scm:git:ssh://git@github.com:/halo-sigs/halo-gradle-plugin.git'
-                    url = 'https://github.com/halo-sigs/halo-gradle-plugin'
-                }
-            }
-
-            versionMapping {
-                usage('java-api') {
-                    fromResolutionOf('runtimeClasspath')
-                }
-                usage('java-runtime') {
-                    fromResolutionResult()
-                }
-            }
+            name = "internal"
+            url = layout.buildDirectory.dir('repo/internal')
         }
     }
 }
 
 gradlePlugin {
+    website = 'https://github.com/halo-sigs/halo-gradle-plugin'
+    vcsUrl = 'https://github.com/halo-sigs/halo-gradle-plugin.git'
+
     plugins {
-        create('HaloPluginDevtools') {
+        create('haloPluginDevtoolsPlugin') {
             id = 'run.halo.plugin.devtools'
             displayName = 'Halo Plugin Devtools'
-            description = 'A plugin devtools for Halo'
+            description = 'A plugin devtools for Halo plugin'
             implementationClass = 'run.halo.gradle.HaloDevtoolsPlugin'
+            tags.addAll('halo', 'java', 'devtools')
         }
     }
+}
+
+signing {
+    sign publishing.publications
 }
 
 ext {

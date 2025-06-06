@@ -7,7 +7,7 @@ import org.apache.commons.lang3.StringUtils;
 
 /**
  * @see
- * <a href="https://github.com/halo-dev/halo/blob/17e9f2be1f63cbfe328d806987a284c702be79fe/application/src/main/java/run/halo/app/security/authorization/RequestInfoFactory.java#L17>Halo RequestInfoFactory</a>
+ * <a href="https://github.com/halo-dev/halo/blob/17e9f2be1f63cbfe328d806987a284c702be79fe/application/src/main/java/run/halo/app/security/authorization/RequestInfoFactory.java#L17">Halo RequestInfoFactory</a>
  */
 public class RequestInfoFactory {
     public static final RequestInfoFactory INSTANCE =
