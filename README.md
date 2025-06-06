@@ -2,9 +2,11 @@
 
 This is a Gradle plugin for building Halo plugins, written in Java.
 
-## how to use
+> For Chinese users, you can refer to [README_zh.md](./README_zh.md)
 
-由于目前还是 Snapshot 版本，需要在项目的 `settings.gradle` 中添加如下配置：
+## How to Use
+
+Since this is currently a Snapshot version, you need to add the following configuration to the `settings.gradle` file of your project:
 
 ```groovy
 pluginManagement {
@@ -15,27 +17,27 @@ pluginManagement {
 }
 ```
 
-然后在项目的 `build.gradle` 中添加如下配置：
+Then, add the following configuration to the `build.gradle` file of your project:
 
 ```groovy
 plugins {
     // ...
-    // 添加此 gradle 插件依赖
+    // Add this Gradle plugin dependency
     id "run.halo.plugin.devtools" version "0.0.9"
 }
 ```
 
-## 任务
+## Tasks
 
-本插件提供了 haloServer 和 watch 两个任务，使用 haloServer 和 watch 这两个任务的前提条件是需要具有 Docker 环境。
+This plugin provides two tasks: `haloServer` and `watch`. To use these tasks, you need to have a Docker environment.
 
-对于 Windows 和 Mac 用户，可以直接安装 Docker Desktop，对于 Linux 用户，可以参考 [Docker 官方文档](https://docs.docker.com/engine/install/) 安装 Docker。
+For Windows and Mac users, you can directly install Docker Desktop. For Linux users, you can refer to the [official Docker documentation](https://docs.docker.com/engine/install/) to install Docker.
 
-然后启动 Docker 服务，即可使用 haloServer 和 watch 任务。
+After starting the Docker service, you can use the `haloServer` and `watch` tasks.
 
-这两个任务会将 Halo 的工作目录挂在到插件项目的 `workplace` 目录下，以确保重启任务时不会丢失数据。
+These tasks will mount Halo's working directory to the `workplace` directory of the plugin project to ensure that data is not lost when restarting tasks.
 
-如果你想要修改 Halo 的配置，可以在 `workplace` 目录下创建一个 `config` 目录并添加一个 `application.yaml` 文件，然后在此文件中添加 Halo 的配置以覆盖 Halo 的 `default` 配置, 如：
+If you want to modify Halo's configuration, you can create a `config` directory under the `workplace` directory and add an `application.yaml` file. Then, add Halo's configuration in this file to override Halo's default configuration, for example:
 
 ```yaml
 # workplace/config/application.yaml
@@ -44,7 +46,7 @@ logging:
         run.halo.app: DEBUG
 ```
 
-Halo 使用的缺省配置如下：
+The default configuration used by Halo is as follows:
 
 ```groovy
 halo {
@@ -53,79 +55,72 @@ halo {
     superAdminPassword = 'admin'
     externalUrl = 'http://localhost:8090'
     docker {
-        // windows 默认为 npipe:////./pipe/docker_engine
+        // For Windows, the default is npipe:////./pipe/docker_engine
         url = 'unix:///var/run/docker.sock'
         apiVersion = '1.42'
     }
 }
 ```
 
-如需修改，你可以在 `build.gradle` 配置。
+If needed, you can modify this configuration in `build.gradle`.
 
-### haloServer 任务
+### haloServer Task
 
-使用方式：
+Usage:
 
 ```shell
 ./gradlew haloServer
 ```
 
-此任务用于启动 Halo 服务并自动将使用此 Gradle 插件的 Halo 插件项目以开发模式加载到 Halo 服务中。
-但当修改插件后，需要先停止此任务，然后再重新执行此任务才能生效。
-或者使用 Halo 提供的重启插件的 API, 这可以在不停止 haloServer 任务的情况下重新加载插件：
+This task is used to start the Halo service and automatically load the Halo plugin project using this Gradle plugin in development mode into the Halo service. However, after modifying the plugin, you need to stop this task and then re-execute it for the changes to take effect. Alternatively, you can use Halo's API to restart the plugin, which allows you to reload the plugin without stopping the `haloServer` task:
 
 ```shell
 ./gradlew clean build -x test
-# 替换 {your-username} 和 {your-password} 为 Halo 的用户名和密码, {your-plugin-name} 为插件的名称
+# Replace {your-username} and {your-password} with Halo's username and password, and {your-plugin-name} with the plugin name
 curl -u {your-username}:{your-password} -X PUT http://localhost:8090/apis/api.console.halo.run/v1alpha1/plugins/{your-plugin-name}/reload
 ```
 
-#### watch 任务
+### watch Task
 
-使用方式：
+Usage:
 
 ```shell
 ./gradlew watch
 ```
 
-此任务用于监视 Halo 插件项目的变化并自动重新加载到 Halo 服务中。
-默认只监听 `src/main/java` 和 `src/main/resources` 目录下的文件变化，如果需要监听其他目录，可以在项目的 `build.gradle` 中添加如下配置：
+This task monitors changes in the Halo plugin project and automatically reloads them into the Halo service. By default, it only monitors file changes in the `src/main/java` and `src/main/resources` directories. If you need to monitor other directories, you can add the following configuration to the `build.gradle` file of your project:
 
 ```groovy
 haloPlugin {
     watchDomains {
-        // consoleSource 为自定义的名称，可以随意取
+        // consoleSource is a custom name and can be arbitrary
         consoleSource {
-            // 监听 console/src/ 目录下的文件变化
+            // Monitor file changes in the console/src/ directory
             files files('console/src/')
         }
-        // ... 可以添加多个
+        // ... You can add more
     }
 }
 ```
 
-### 生成 API client
+### Generating API Client
 
-#### 什么是 API client
+#### What is an API Client
 
-API client 是一种工具或库，旨在简化前端应用程序与后端服务器之间的通信，尤其是在使用 RESTful API 或 GraphQL API 的情况下。
-它提供了一种简洁且类型安全的方式来调用服务器端的 API，并处理请求和响应。
+An API client is a tool or library designed to simplify communication between front-end applications and back-end servers, especially when using RESTful APIs or GraphQL APIs. It provides a concise and type-safe way to call server-side APIs and handle requests and responses.
 
-在 TypeScript 环境中，使用 API client 有以下几个优点：
+In a TypeScript environment, using an API client has the following advantages:
 
-- 自动化 HTTP 请求：API 客户端封装了 HTTP 请求的细节，如构建 URL、设置请求头、处理查询参数等。开发者只需调用客户端提供的函数即可发送请求。
+- **Automated HTTP Requests**: The API client encapsulates the details of HTTP requests, such as building URLs, setting request headers, and handling query parameters. Developers only need to call the functions provided by the client to send requests.
+- **Type Safety**: By combining TypeScript type definitions generated from OpenAPI specifications, the API client ensures that the data types of requests and responses are validated at compile time. This helps reduce runtime errors and improves code readability and maintainability.
+- **Unified Error Handling**: The API client can provide a unified error-handling mechanism, such as automatic retries and error logging, so developers don't need to write repetitive error-handling logic for each API call.
+- **Improved Development Efficiency**: By using an API client, developers can focus on implementing business logic without worrying about the underlying HTTP details. This not only improves development efficiency but also reduces code redundancy.
 
-- 类型安全：通过结合 OpenAPI 等规范生成的 TypeScript 类型定义，API 客户端可以确保请求和响应的数据类型在编译时就能得到验证。这可以帮助减少运行时的错误，并提高代码的可读性和可维护性。
+#### How to Generate an API Client
 
-- 统一的错误处理：API 客户端可以提供统一的错误处理机制，比如自动重试、错误日志记录等，这样开发者无需在每个 API 调用中重复编写相同的错误处理逻辑。
+This plugin provides a `generateApiClient` task to generate an API client for the plugin project. The generation rules are based on the OpenAPI specification to automatically generate client code.
 
-- 提高开发效率：通过使用 API 客户端，开发者可以专注于业务逻辑的实现，而不用关心底层的 HTTP 细节。这不仅提高了开发效率，还减少了代码冗余。
-
-#### 如何生成 API client
-
-本插件提供了一个 `generateApiClient` 任务，用于为插件项目生成 API client，生成规则基于 OpenAPI 规范来自动生成客户端代码。
-
-能生成 API 客户端代码的前提是插件项目中需要对自定义的 API 进行文档声明如：
+To generate API client code, the plugin project needs to declare custom APIs in the documentation, for example:
 
 ```java
 final var tag = "CommentV1alpha1Console";
@@ -143,38 +138,38 @@ return SpringdocRouteBuilder.route()
     .build();
 ```
 
-或者是在插件中定义了自定义模型，自定义模型自动生成的 CRUD APIs 是已经支持的。
+Or define custom models in the plugin. Automatically generated CRUD APIs for custom models are already supported.
 
-以下是如何配置和使用 `generateApiClient` 的详细步骤：
+Here are the detailed steps to configure and use `generateApiClient`:
 
-##### 配置 `generateApiClient`
+##### Configuring `generateApiClient`
 
-在 build.gradle 文件中，使用 haloPlugin 块来配置 OpenAPI 文档生成和 API 客户端生成的相关设置：
+In the `build.gradle` file, use the `haloPlugin` block to configure settings related to OpenAPI documentation generation and API client generation:
 
 ```groovy
 haloPlugin {
     openApi {
-        // outputDir = file("$rootDir/api-docs/openapi/v3_0") // 指定 OpenAPI 文档的输出目录默认输出到 build 目录下，不建议修改，除非需要提交到代码仓库
+        // outputDir = file("$rootDir/api-docs/openapi/v3_0") // Specify the output directory for OpenAPI documentation. By default, it outputs to the build directory. It is not recommended to modify this unless you need to commit it to the code repository.
         groupingRules {
-            // 定义 API 分组规则，用于为插件项目中的 APIs 分组然后只对此分组生成 API 客户端代码
-            // 定义了一个名为 extensionApis 的分组，task 会通过 /v3/api-docs/extensionApis 访问到 api docs 然后生成 API 客户端代码
-            // extensionApis 名称可以替换为其他名称，但需要与 groupedApiMappings 中的名称一致
+            // Define API grouping rules to group APIs in the plugin project and generate API client code only for this group.
+            // A group named extensionApis is defined. The task will access the API docs through /v3/api-docs/extensionApis and generate API client code.
+            // The name extensionApis can be replaced with another name, but it must match the name in groupedApiMappings.
             extensionApis {
-                // 分组显示名称，避免与其他分组重名建议替换 {your-plugin-name} 为插件名称
+                // Display name for the group. To avoid name conflicts, it is recommended to replace {your-plugin-name} with the plugin name.
                 displayName = 'Extension API for {your-plugin-name}'
-                // 分组的 API 规则用于匹配插件项目中的 API 将其划分到此分组，它是一个 Ant 风格的路径匹配规则可以写多个
+                // API rules for the group, used to match APIs in the plugin project and assign them to this group. It is an Ant-style path matching rule and can have multiple entries.
                 pathsToMatch = ['/apis/staticpage.halo.run/v1alpha1/**']
             }
         }
         groupedApiMappings = [
-            // 这里为固定写法，照搬即可，除非是 groupingRules 中 extensionApis 的名字修改了
+            // This is a fixed format. Copy it as is unless the name extensionApis in groupingRules is changed.
             '/v3/api-docs/extensionApis': 'extensionApis.json'
         ]
         generator {
-             // 指定 API 客户端代码的输出目录如 console 或 ui
+             // Specify the output directory for API client code, such as console or ui
             outputDir = file("${projectDir}/console/src/api/generated")
 
-            // 定制生成，以下是默认配置可以不需要添加到 build.gradle 中
+            // Customization options. The following are default configurations and do not need to be added to build.gradle.
             additionalProperties = [
                 useES6: true,
                 useSingleRequestParameter: true,
@@ -182,7 +177,7 @@ haloPlugin {
                 apiPackage: "api",
                 modelPackage: "models"
             ]
-            // 类型映射，用于将 OpenAPI 中的类型映射到 TypeScript 中的类型，以下是默认配置可以不需要添加到 build.gradle 中
+            // Type mappings, used to map types in OpenAPI to TypeScript types. The following are default configurations and do not need to be added to build.gradle.
             typeMappings = [
                 set: "Array"
             ]
@@ -191,33 +186,33 @@ haloPlugin {
 }
 ```
 
-##### 执行 `generateApiClient`
+##### Executing `generateApiClient`
 
-在项目目录中执行以下命令即可生成 API 客户端代码到指定目录：
+Run the following command in the project directory to generate API client code in the specified directory:
 
 ```shell
 ./gradlew generateApiClient
 ```
 
-然后在 `openApi.generator.outputDir` 目录创建一个 `index.ts` 文件并创建实例，以瞬间插件为例
+Then, create an `index.ts` file in the `openApi.generator.outputDir` directory and create instances. For example, for the Moments plugin:
 
 ```typescript
 // console/src/api/index.ts
-// 先引入 axiosInstance 用于请求
+// First, import axiosInstance for requests
 import { axiosInstance } from "@halo-dev/api-client";
-// 这里导入的是声明 API doc 时指定的 tag 名称，如上文中定义的 CommentV1alpha1Console
+// Import the tag names specified when declaring the API doc, such as CommentV1alpha1Console defined above
 import {
   ConsoleApiMomentHaloRunV1alpha1MomentApi,
   MomentV1alpha1Api,
   UcApiMomentHaloRunV1alpha1MomentApi,
 } from "./generated";
 
-// MomentV1alpha1Api 是自定义模型生成的 API tag 这里创建了一个 momentsCoreApiClient 实例
+// MomentV1alpha1Api is the API tag generated for custom models. Here, a momentsCoreApiClient instance is created.
 const momentsCoreApiClient = {
   moment: new MomentV1alpha1Api(undefined, "", axiosInstance),
 };
 
-// ConsoleApiMomentHaloRunV1alpha1MomentApi 是用于在 console 端调用的 APIs 的 tag，这里创建了一个 momentsConsoleApiClient 实例用于在 console 端调用
+// ConsoleApiMomentHaloRunV1alpha1MomentApi is the API tag for console-side APIs. Here, a momentsConsoleApiClient instance is created for console-side calls.
 const momentsConsoleApiClient = {
   moment: new ConsoleApiMomentHaloRunV1alpha1MomentApi(
     undefined,
@@ -226,64 +221,61 @@ const momentsConsoleApiClient = {
   ),
 };
 
-// 用于在个人中心调用的 APIs，单独创建一个 momentsUcApiClient 实例
+// For APIs called in the personal center, a separate momentsUcApiClient instance is created.
 const momentsUcApiClient = {
   moment: new UcApiMomentHaloRunV1alpha1MomentApi(undefined, "", axiosInstance),
 };
-// 导出实例
+// Export instances
 export { momentsConsoleApiClient, momentsCoreApiClient, momentsUcApiClient };
 ```
 
-使用定义的实例:
+Usage example:
 
 ```typescript
 import { momentsConsoleApiClient } from "@/api";
 
-// 查询瞬间的标签
+// Query tags for moments
 const { data } = await momentsConsoleApiClient.moment.listTags({
     name: props.keyword?.value,
 });
 ```
 
 > [!NOTE]
-> 它会先执行 `generateOpenApiDocs` 任务根据配置访问 `/v3/api-docs/extensionApis` 获取 OpenAPI 文档，
-> 并将 OpenAPI 的 Schema 文件保存到 `openApi.outputDir` 目录下，然后再由 `generateApiClient` 任务根据 Schema 文件生成 API 客户端代码到 `openApi.generator.outputDir` 目录下。
+> It will first execute the `generateOpenApiDocs` task to access `/v3/api-docs/extensionApis` based on the configuration, retrieve the OpenAPI documentation, and save the schema file to the `openApi.outputDir` directory. Then, the `generateApiClient` task will generate API client code in the `openApi.generator.outputDir` directory based on the schema file.
 
 > [!WARNING]
-> 执行 `generateApiClient` 任务时会先删除 `openApi.generator.outputDir` 下的所有文件，因此建议将 API client 的输出目录设置为一个独立的目录，以避免误删其他文件。
+> Executing the `generateApiClient` task will first delete all files in the `openApi.generator.outputDir` directory. Therefore, it is recommended to set the output directory for the API client to a separate directory to avoid accidentally deleting other files.
 
-### generateRoleTemplates 任务
+### generateRoleTemplates Task
 
-在 Halo 插件开发中，权限管理是一个关键问题，尤其是配置[角色模板](https://docs.halo.run/developer-guide/plugin/security/rbac#%E8%A7%92%E8%89%B2%E6%A8%A1%E6%9D%BF)时，角色的 `rules` 部分往往让开发者感到困惑。具体来说，如何区分资源、apiGroup、verb 等概念是许多开发者的痛点。
+In Halo plugin development, permission management is a critical issue, especially when configuring [role templates](https://docs.halo.run/developer-guide/plugin/security/rbac#%E8%A7%92%E8%89%B2%E6%A8%A1%E6%9D%BF). The `rules` section of roles often confuses developers. Specifically, distinguishing between concepts like resource, apiGroup, and verb is a common pain point.
 
-`generateRoleTemplates` Task 的出现正是为了简化这一过程，该任务能够根据 [配置 Generate Api Client](#配置-generateapiclient) 中的配置获取到 OpenAPI docs 的 JSON 文件，并自动生成 Halo 的 Role YAML 文件，让开发者可以专注于自己的业务逻辑，而不是纠结于复杂的角色 `rules` 配置。
+The `generateRoleTemplates` task simplifies this process. It can retrieve OpenAPI docs JSON files based on the configuration in [Configuring Generate API Client](#configuring-generateapiclient) and automatically generate Halo's Role YAML files. This allows developers to focus on their business logic instead of dealing with complex role `rules` configurations.
 
-在生成的 `roleTemplate.yaml` 文件中，rules 部分是基于 OpenAPI docs 中 API 资源和请求方式自动生成的，覆盖了可能的操作。
-然而，在实际的生产环境中，Role 通常会根据具体的需求被划分为不同的权限级别，例如：
+In the generated `roleTemplate.yaml` file, the `rules` section is automatically generated based on API resources and request methods in the OpenAPI docs, covering possible operations. However, in actual production environments, roles are usually divided into different permission levels based on specific needs, such as:
 
-- 查看权限的角色模板：通常只包含对资源的读取权限，如 get、list、watch 等。
-- 管理权限的角色模板：则可能包含创建、修改、删除等权限，如 create、update、delete。
+- **View-only Role Templates**: Typically include only read permissions for resources, such as `get`, `list`, and `watch`.
+- **Management Role Templates**: May include create, modify, and delete permissions, such as `create`, `update`, and `delete`.
 
-> watch verb 是对于 WebSocket API，不会在 roleTemplates.yaml 中体现为 watch，而是体现为 list，因此需要开发者根据实际情况进行调整。
+> The `watch` verb is for WebSocket APIs and will not appear as `watch` in `roleTemplates.yaml`. Instead, it will appear as `list`. Developers need to adjust this based on actual scenarios.
 
-因此，生成的 YAML 文件只是一个基础模板，涵盖了所有可用的操作。开发者需要根据自己的实际需求，对这些 rules 进行调整。比如，针对只需要查看资源的场景，开发者可以从生成的 YAML 中删除`修改`和`删除`相关的操作，保留读取权限。
-而对于需要管理资源的场景，可以保留`创建`、`更新`和`删除`权限，对于角色模板的依赖关系和聚合关系，开发者也可以根据实际情况进行调整。
+Therefore, the generated YAML file is just a basic template covering all possible operations. Developers need to adjust these `rules` based on their actual needs. For example, for scenarios that only require viewing resources, developers can remove `modify` and `delete` operations from the YAML and retain read permissions. For scenarios that require managing resources, developers can retain `create`, `update`, and `delete` permissions. Developers can also adjust role template dependencies and aggregation relationships based on actual needs.
 
-通过这种方式，开发者可以使用生成的 YAML 文件作为基础，快速定制出符合不同场景的权限配置，而不必从头开始编写复杂的规则以减少出错的可能性。
+This way, developers can use the generated YAML file as a foundation to quickly customize permission configurations for different scenarios without having to write complex rules from scratch, reducing the likelihood of errors.
 
-#### 如何使用
+#### How to Use
 
-在 build.gradle 文件中，使用 haloPlugin 块来配置 OpenAPI 文档生成和 Role 模板生成的相关设置：
+In the `build.gradle` file, use the `haloPlugin` block to configure settings related to OpenAPI documentation generation and Role template generation:
 
 ```groovy
 haloPlugin {
     openApi {
-        // 参考配置 generateApiClient 中的配置
+        // Refer to the configuration in generateApiClient
     }
 }
 ```
 
-在项目目录中执行以下命令即可生成 `roleTemplates.yaml` 文件到 `workplace` 目录：
+Run the following command in the project directory to generate the `roleTemplates.yaml` file in the `workplace` directory:
 
 ```shell
 ./gradlew generateRoleTemplates
@@ -291,23 +283,23 @@ haloPlugin {
 
 ## Debug
 
-如果你想要调试 Halo 插件项目，可以使用 IntelliJ IDEA 的 Debug 模式运行 `haloServer` 或 `watch` 任务，而后会在日志开头看到类似如下信息：
+If you want to debug a Halo plugin project, you can use IntelliJ IDEA's Debug mode to run the `haloServer` or `watch` task. You will see information similar to the following at the beginning of the logs:
 
 ```shell
 Listening for transport dt_socket at address: 50781 Attach debugger
 ```
 
-然后点击 `Attach debugger` 即可开启调试面板。
+Then click `Attach debugger` to open the debug panel.
 
-## 使用 Snapshot 版本
+## Using Snapshot Versions
 
-克隆本项目到本地，然后执行
+Clone this project locally, then execute:
 
 ```shell
 ./gradlew clean build -x test && ./gradlew publishToMavenLocal
 ```
 
-即可将插件发布到本地 Maven 仓库，然后在 Halo 插件项目的 `build.gradle` 中添加如下配置：
+This will publish the plugin to the local Maven repository. Then, add the following configuration to the `build.gradle` file of your Halo plugin project:
 
 ```groovy
 plugins {
@@ -316,7 +308,7 @@ plugins {
 }
 ```
 
-再修改 `settings.gradle` 中的配置：
+Next, modify the configuration in `settings.gradle`:
 
 ```groovy
 pluginManagement {
@@ -328,4 +320,4 @@ pluginManagement {
 }
 ```
 
-完成上述步骤后，即可使用本插件。
+After completing the above steps, you can use this plugin.
