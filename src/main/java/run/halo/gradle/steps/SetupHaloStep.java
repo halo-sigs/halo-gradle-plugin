@@ -86,7 +86,8 @@ public class SetupHaloStep {
             new BasicNameValuePair("siteTitle", "Halo"),
             new BasicNameValuePair("username", haloSiteOption.username()),
             new BasicNameValuePair("password", haloSiteOption.password()),
-            new BasicNameValuePair("email", "custom@halo.run")
+            new BasicNameValuePair("email", "custom@halo.run"),
+            new BasicNameValuePair("externalUrl", haloSiteOption.externalUrl().toString())
         ));
         setupRequest.setEntity(entity);
         setupRequest.addHeader(HttpHeaders.ACCEPT, "application/json");
