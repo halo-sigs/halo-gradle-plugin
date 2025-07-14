@@ -8,10 +8,12 @@ import com.github.dockerjava.api.command.CreateContainerCmd;
 import com.github.dockerjava.api.command.CreateContainerResponse;
 import com.github.dockerjava.api.command.InspectContainerCmd;
 import com.github.dockerjava.api.exception.DockerException;
+import com.github.dockerjava.api.model.AccessMode;
 import com.github.dockerjava.api.model.Bind;
 import com.github.dockerjava.api.model.ExposedPort;
 import com.github.dockerjava.api.model.HostConfig;
 import com.github.dockerjava.api.model.PortBinding;
+import com.github.dockerjava.api.model.SELContext;
 import com.github.dockerjava.api.model.Volume;
 import java.io.File;
 import java.io.IOException;
@@ -180,7 +182,6 @@ public class DockerCreateContainer extends AbstractOpenApiDocsTask {
         if (platform.getOrNull() != null) {
             containerCommand.withPlatform(platform.get());
         }
-        containerCommand.withCmd("--rm");
 
         String pluginName = getPluginExtension().getPluginName();
         Integer port = haloExtension.getPort();
@@ -230,19 +231,30 @@ public class DockerCreateContainer extends AbstractOpenApiDocsTask {
         File projectDir = getProject().getLayout().getBuildDirectory().getAsFile().get();
 
         List<Bind> binds = new ArrayList<>();
-        binds.add(new Bind(projectDir.toString(),
-            new Volume(HaloServerConfigure.buildPluginDestPath(pluginName) + "build")));
+        binds.add(new Bind(
+            projectDir.toString(),
+            new Volume(HaloServerConfigure.buildPluginDestPath(pluginName) + "build"),
+            AccessMode.ro, SELContext.shared
+        ));
         if (pluginWorkplaceDir.isPresent()) {
             var sourceDir = pluginWorkplaceDir.getAsFile().get().getAbsolutePath();
-            binds.add(new Bind(sourceDir, new Volume(haloWorkDir())));
+            binds.add(new Bind(
+                sourceDir,
+                new Volume(haloWorkDir()),
+                AccessMode.rw,
+                SELContext.shared
+            ));
         }
 
         var pluginConfigYaml = getPluginExtension().getConfigurationPropertiesFile()
             .getAsFile().getOrNull();
         if (pluginConfigYaml != null && Files.exists(pluginConfigYaml.toPath())) {
-            binds.add(new Bind(pluginConfigYaml.getAbsolutePath(),
-                new Volume(
-                    buildPluginConfigYamlPath(haloExtension.getServerWorkDir(), pluginName))));
+            binds.add(new Bind(
+                pluginConfigYaml.getAbsolutePath(),
+                new Volume(buildPluginConfigYamlPath(haloExtension.getServerWorkDir(), pluginName)),
+                AccessMode.ro,
+                SELContext.shared
+            ));
         }
 
         hostConfig.withBinds(binds);

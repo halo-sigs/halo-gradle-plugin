@@ -3,7 +3,6 @@ package run.halo.gradle.extension;
 import javax.annotation.Nonnull;
 import lombok.Data;
 import org.apache.commons.lang3.ObjectUtils;
-import org.apache.commons.lang3.SystemUtils;
 import org.gradle.api.Action;
 import org.gradle.api.Project;
 import org.gradle.api.file.RegularFileProperty;
@@ -90,18 +89,12 @@ public class HaloExtension {
 
     public static class Docker {
 
-        static final String DEFAULT_DOCKER_HOST = "unix:///var/run/docker.sock";
-
-        static final String WINDOWS_DEFAULT_DOCKER_HOST = "npipe:////./pipe/docker_engine";
-
         private final Property<String> url;
 
         private final Property<String> apiVersion;
 
         public Docker(ObjectFactory objectFactory) {
             url = objectFactory.property(String.class);
-            url.convention(getDefaultDockerUrl());
-
             apiVersion = objectFactory.property(String.class);
         }
 
@@ -130,8 +123,5 @@ public class HaloExtension {
             this.apiVersion.set(apiVersion);
         }
 
-        String getDefaultDockerUrl() {
-            return SystemUtils.IS_OS_WINDOWS ? WINDOWS_DEFAULT_DOCKER_HOST : DEFAULT_DOCKER_HOST;
-        }
     }
 }
