@@ -81,7 +81,9 @@ public abstract class DockerClientService
         // Create configuration
         DefaultDockerClientConfig.Builder dockerClientConfigBuilder =
             DefaultDockerClientConfig.createDefaultConfigBuilder();
-        dockerClientConfigBuilder.withDockerHost(dockerUrl);
+        if (dockerUrl != null && !dockerUrl.isBlank()) {
+            dockerClientConfigBuilder.withDockerHost(dockerUrl);
+        }
 
         if (dockerCertPath != null) {
             String canonicalCertPath;
@@ -121,6 +123,10 @@ public abstract class DockerClientService
      * @return Docker host URL as string
      */
     private String getDockerHostUrl(DockerClientConfiguration dockerClientConfiguration) {
+        if (dockerClientConfiguration.getUrl() == null
+            || dockerClientConfiguration.getUrl().isBlank()) {
+            return null;
+        }
         String url =
             thingOrProperty(objects.property(String.class), dockerClientConfiguration.getUrl(),
                 getParameters().getUrl()).map(String::toLowerCase).get();
