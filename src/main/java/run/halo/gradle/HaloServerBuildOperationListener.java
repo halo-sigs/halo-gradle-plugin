@@ -12,6 +12,7 @@ import javax.annotation.Nonnull;
 import org.apache.commons.lang3.StringUtils;
 import org.gradle.api.internal.tasks.execution.ExecuteTaskBuildOperationDetails;
 import org.gradle.api.provider.Property;
+import org.gradle.api.provider.SetProperty;
 import org.gradle.api.services.BuildService;
 import org.gradle.api.services.BuildServiceParameters;
 import org.gradle.internal.operations.BuildOperationDescriptor;
@@ -25,9 +26,6 @@ import run.halo.gradle.docker.DockerClientService;
 
 public abstract class HaloServerBuildOperationListener
     implements BuildService<HaloServerBuildOperationListener.Params>, BuildOperationListener {
-
-    private final static Set<String> SUPPORTED_TASK_NAME =
-        Set.of(HaloServerTask.TASK_NAME, "watch");
 
     public interface Params extends BuildServiceParameters {
 
@@ -44,6 +42,13 @@ public abstract class HaloServerBuildOperationListener
          * @return The container id
          */
         Property<File> getContainerId();
+
+        /**
+         * The task paths that should trigger cleanup when completed.
+         *
+         * @return supported task paths
+         */
+        SetProperty<String> getSupportedTaskPaths();
     }
 
     @Override
@@ -62,8 +67,9 @@ public abstract class HaloServerBuildOperationListener
         @Nonnull OperationFinishEvent finishEvent) {
         Object details = buildOperation.getDetails();
         if (details instanceof ExecuteTaskBuildOperationDetails executeTaskDetails) {
-            String name = executeTaskDetails.getTask().getName();
-            if (!SUPPORTED_TASK_NAME.contains(name)) {
+            String path = executeTaskDetails.getTask().getPath();
+            Set<String> supportedTaskPaths = getParameters().getSupportedTaskPaths().get();
+            if (!supportedTaskPaths.contains(path)) {
                 return;
             }
             DockerClientService dockerClientService =
