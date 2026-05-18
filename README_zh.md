@@ -4,24 +4,13 @@ This is a Gradle plugin for building Halo plugins, written in Java.
 
 ## how to use
 
-由于目前还是 Snapshot 版本，需要在项目的 `settings.gradle` 中添加如下配置：
-
-```groovy
-pluginManagement {
-    repositories {
-        maven { url 'https://s01.oss.sonatype.org/content/repositories/snapshots' }
-        gradlePluginPortal()
-    }
-}
-```
-
-然后在项目的 `build.gradle` 中添加如下配置：
+在项目的 `build.gradle` 中添加如下配置：
 
 ```groovy
 plugins {
     // ...
     // 添加此 gradle 插件依赖
-    id "run.halo.plugin.devtools" version "0.0.9"
+    id "run.halo.plugin.devtools" version "0.6.2"
 }
 ```
 
@@ -52,9 +41,13 @@ halo {
     superAdminUsername = 'admin'
     superAdminPassword = 'admin'
     externalUrl = 'http://localhost:8090'
+
+    // 可选。如果不配置此块，Docker client 会使用 Docker 的默认配置和环境变量，
+    // 例如 DOCKER_HOST、DOCKER_TLS_VERIFY、DOCKER_CERT_PATH、DOCKER_API_VERSION。
     docker {
         // windows 默认为 npipe:////./pipe/docker_engine
         url = 'unix:///var/run/docker.sock'
+        // 可选，大多数情况下可以不设置。
         apiVersion = '1.42'
     }
 }
@@ -312,7 +305,7 @@ Listening for transport dt_socket at address: 50781 Attach debugger
 ```groovy
 plugins {
     //...
-    id "run.halo.plugin.devtools" version "0.0.10-SNAPSHOT"
+    id "run.halo.plugin.devtools" version "0.6.0-SNAPSHOT"
 }
 ```
 

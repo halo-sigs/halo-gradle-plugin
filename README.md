@@ -6,24 +6,13 @@ This is a Gradle plugin for building Halo plugins, written in Java.
 
 ## How to Use
 
-Since this is currently a Snapshot version, you need to add the following configuration to the `settings.gradle` file of your project:
-
-```groovy
-pluginManagement {
-    repositories {
-        maven { url 'https://s01.oss.sonatype.org/content/repositories/snapshots' }
-        gradlePluginPortal()
-    }
-}
-```
-
-Then, add the following configuration to the `build.gradle` file of your project:
+Add the following configuration to the `build.gradle` file of your project:
 
 ```groovy
 plugins {
     // ...
     // Add this Gradle plugin dependency
-    id "run.halo.plugin.devtools" version "0.0.9"
+    id "run.halo.plugin.devtools" version "0.6.2"
 }
 ```
 
@@ -54,9 +43,14 @@ halo {
     superAdminUsername = 'admin'
     superAdminPassword = 'admin'
     externalUrl = 'http://localhost:8090'
+
+    // Optional. If this block is not configured, the Docker client will use Docker's
+    // default configuration and environment variables such as DOCKER_HOST,
+    // DOCKER_TLS_VERIFY, DOCKER_CERT_PATH, and DOCKER_API_VERSION.
     docker {
         // For Windows, the default is npipe:////./pipe/docker_engine
         url = 'unix:///var/run/docker.sock'
+        // Optional. For most cases this can be left unset.
         apiVersion = '1.42'
     }
 }
@@ -304,7 +298,7 @@ This will publish the plugin to the local Maven repository. Then, add the follow
 ```groovy
 plugins {
     //...
-    id "run.halo.plugin.devtools" version "0.0.10-SNAPSHOT"
+    id "run.halo.plugin.devtools" version "0.6.0-SNAPSHOT"
 }
 ```
 
