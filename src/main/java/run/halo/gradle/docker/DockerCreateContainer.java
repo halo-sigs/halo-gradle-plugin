@@ -21,8 +21,12 @@ import java.io.Serializable;
 import java.io.UncheckedIOException;
 import java.lang.management.ManagementFactory;
 import java.lang.management.RuntimeMXBean;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
 import java.util.ArrayList;
+import java.util.HexFormat;
 import java.util.List;
 import java.util.Map;
 import java.util.regex.Matcher;
@@ -77,8 +81,7 @@ public class DockerCreateContainer extends AbstractOpenApiDocsTask {
 
     /**
      * Output file containing the container ID of the container created.
-     * Defaults to "$buildDir/.docker/$taskpath-containerId.txt".
-     * If path contains ':' it will be replaced by '_'.
+     * Defaults to "$rootDir/.gradle/halo-devtools/containers/$projectPathHash-containerId.txt".
      */
     @Getter
     @OutputFile
@@ -105,11 +108,25 @@ public class DockerCreateContainer extends AbstractOpenApiDocsTask {
         super();
         containerId.convention(containerIdFile.map(new RegularFileToStringTransformer()));
 
-        String safeTaskPath = getPath().replaceFirst("^:", "").replaceAll(":", "_");
-        containerIdFile.convention(getProject().getLayout().getBuildDirectory()
-            .file(".docker/" + safeTaskPath + "-containerId.txt"));
+        containerIdFile.convention(getProject().getRootProject().getLayout().getProjectDirectory()
+            .file(containerIdFilePath(getProject().getPath())));
 
         getOutputs().upToDateWhen(getUpToDateWhenSpec());
+    }
+
+    public static String containerIdFilePath(String projectPath) {
+        return ".gradle/halo-devtools/containers/" + projectPathHash(projectPath)
+            + "-containerId.txt";
+    }
+
+    static String projectPathHash(String projectPath) {
+        try {
+            MessageDigest digest = MessageDigest.getInstance("SHA-256");
+            byte[] hash = digest.digest(projectPath.getBytes(StandardCharsets.UTF_8));
+            return HexFormat.of().formatHex(hash, 0, 8);
+        } catch (NoSuchAlgorithmException e) {
+            throw new IllegalStateException("SHA-256 is not available", e);
+        }
     }
 
     private Spec<Task> getUpToDateWhenSpec() {
@@ -164,7 +181,9 @@ public class DockerCreateContainer extends AbstractOpenApiDocsTask {
             final String localContainerName =
                 containerName.getOrNull() == null ? container.getId() : containerName.get();
             log.info("Created container with ID [{}]", localContainerName);
-            Files.writeString(containerIdFile.get().getAsFile().toPath(), container.getId());
+            File targetFile = containerIdFile.get().getAsFile();
+            Files.createDirectories(targetFile.toPath().getParent());
+            Files.writeString(targetFile.toPath(), container.getId());
             Action<? super Object> nextHandler = getNextHandler();
             if (nextHandler != null) {
                 nextHandler.execute(container);

@@ -235,21 +235,31 @@ public class HaloDevtoolsPlugin implements Plugin<Project> {
 
             Provider<HaloServerBuildOperationListener> haloServerBuildOperationListenerProvider =
                 project.getGradle().getSharedServices()
-                    .registerIfAbsent("halo-server-build-operation-listener",
+                    .registerIfAbsent(
+                        "halo-server-build-operation-listener-" + safeProjectPath(project),
                         HaloServerBuildOperationListener.class,
                         builderServiceSpec -> {
                             builderServiceSpec.parameters(parameters -> {
                                 parameters.getDockerClientService().set(serviceProvider);
-                                // TODO use a better way to get container id
-                                File containerIdFile =
-                                    new File(
-                                        project.getLayout().getBuildDirectory().getAsFile().get(),
-                                        ".docker/createHaloContainer-containerId.txt");
-                                parameters.getContainerId().set(containerIdFile);
+                                parameters.getContainerId()
+                                    .set(project.getRootProject().getLayout().getProjectDirectory()
+                                        .file(DockerCreateContainer.containerIdFilePath(
+                                            project.getPath()))
+                                        .getAsFile());
+                                parameters.getSupportedTaskPaths()
+                                    .add(project.getTasks().named(HaloServerTask.TASK_NAME)
+                                        .map(Task::getPath));
+                                parameters.getSupportedTaskPaths()
+                                    .add(project.getTasks().named("watch").map(Task::getPath));
                             });
                         });
             buildEvents.onOperationCompletion(haloServerBuildOperationListenerProvider);
         });
+    }
+
+    private String safeProjectPath(Project project) {
+        String projectPath = project.getPath().replaceFirst("^:", "").replaceAll(":", "_");
+        return StringUtils.defaultIfBlank(projectPath, "root");
     }
 
     private TaskProvider<ReloadPluginTask> configureReloadPluginTask(Project project,
