@@ -136,6 +136,15 @@ public class HaloDevtoolsPlugin implements Plugin<Project> {
                     }));
 
             String imageName = haloExtension.getImageName() + ":" + haloExtension.getVersion();
+            String defaultContainerName = DockerCreateContainer.defaultContainerName(
+                project.getName(),
+                project.getRootProject().getProjectDir(),
+                project.getPath()
+            );
+            String containerName = StringUtils.defaultIfBlank(
+                haloExtension.getContainerName(),
+                defaultContainerName
+            );
             project.getTasks().create("pullHaloImage", DockerPullImage.class, it -> {
                 it.getImage().set(imageName);
                 it.setGroup(GROUP);
@@ -146,7 +155,7 @@ public class HaloDevtoolsPlugin implements Plugin<Project> {
                 project.getTasks()
                     .create("createHaloContainer", DockerCreateContainer.class, it -> {
                         it.getImageId().set(imageName);
-                        it.getContainerName().set(haloExtension.getContainerName());
+                        it.getContainerName().set(containerName);
                         var workDir = pluginExtension.getWorkDir();
                         if (workDir.isPresent()) {
                             File dirFile = workDir.get().getAsFile();

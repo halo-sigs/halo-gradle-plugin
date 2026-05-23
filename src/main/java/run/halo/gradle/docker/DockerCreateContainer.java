@@ -119,14 +119,39 @@ public class DockerCreateContainer extends AbstractOpenApiDocsTask {
             + "-containerId.txt";
     }
 
+    public static String defaultContainerName(String projectName, File rootDir, String projectPath) {
+        String name = sanitizeContainerNamePart(projectName);
+        String hashSource = canonicalPath(rootDir) + ":" + projectPath;
+        return "halo-" + name + "-" + sha256Hex(hashSource, 8);
+    }
+
     static String projectPathHash(String projectPath) {
+        return sha256Hex(projectPath, 8);
+    }
+
+    private static String sha256Hex(String value, int byteLength) {
         try {
             MessageDigest digest = MessageDigest.getInstance("SHA-256");
-            byte[] hash = digest.digest(projectPath.getBytes(StandardCharsets.UTF_8));
-            return HexFormat.of().formatHex(hash, 0, 8);
+            byte[] hash = digest.digest(value.getBytes(StandardCharsets.UTF_8));
+            return HexFormat.of().formatHex(hash, 0, byteLength);
         } catch (NoSuchAlgorithmException e) {
             throw new IllegalStateException("SHA-256 is not available", e);
         }
+    }
+
+    private static String canonicalPath(File file) {
+        try {
+            return file.getCanonicalPath();
+        } catch (IOException e) {
+            return file.getAbsolutePath();
+        }
+    }
+
+    private static String sanitizeContainerNamePart(String name) {
+        String sanitized = StringUtils.defaultString(name)
+            .replaceAll("[^a-zA-Z0-9_.-]+", "-")
+            .replaceAll("^-+|-+$", "");
+        return StringUtils.defaultIfBlank(sanitized, "project");
     }
 
     private Spec<Task> getUpToDateWhenSpec() {

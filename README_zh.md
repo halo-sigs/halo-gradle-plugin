@@ -40,7 +40,10 @@ halo {
     version = '2.9.1'
     superAdminUsername = 'admin'
     superAdminPassword = 'admin'
+    port = 8090
     externalUrl = 'http://localhost:8090'
+    // 可选。默认会根据项目名称、根目录和 Gradle project path 自动生成容器名称。
+    // containerName = 'halo-for-plugin-development'
 
     // 可选。如果不配置此块，Docker client 会使用 Docker 的默认配置和环境变量，
     // 例如 DOCKER_HOST、DOCKER_TLS_VERIFY、DOCKER_CERT_PATH、DOCKER_API_VERSION。
@@ -54,6 +57,10 @@ halo {
 ```
 
 如需修改，你可以在 `build.gradle` 配置。
+
+如果需要同时为多个插件项目运行 `haloServer`，请为每个项目配置不同的 `port` 和
+`externalUrl`。如果启用了 debug 模式，也需要配置不同的 `debugPort`。只有需要自定义固定
+Docker 容器名时，才需要配置 `containerName`。
 
 ### haloServer 任务
 
