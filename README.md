@@ -18,13 +18,13 @@ plugins {
 
 ## Tasks
 
-This plugin provides two tasks: `haloServer` and `watch`. To use these tasks, you need to have a Docker environment.
+This plugin provides three tasks: `haloServer`, `reloadPlugin`, and `watch`. To use these tasks, you need to have a Docker environment.
 
 For Windows and Mac users, you can directly install Docker Desktop. For Linux users, you can refer to the [official Docker documentation](https://docs.docker.com/engine/install/) to install Docker.
 
 After starting the Docker service, you can use the `haloServer` and `watch` tasks.
 
-These tasks will mount Halo's working directory to the `workplace` directory of the plugin project to ensure that data is not lost when restarting tasks.
+The `haloServer` and `watch` tasks will mount Halo's working directory to the `workplace` directory of the plugin project to ensure that data is not lost when restarting tasks.
 
 If you want to modify Halo's configuration, you can create a `config` directory under the `workplace` directory and add an `application.yaml` file. Then, add Halo's configuration in this file to override Halo's default configuration, for example:
 
@@ -43,7 +43,8 @@ halo {
     superAdminUsername = 'admin'
     superAdminPassword = 'admin'
     port = 8090
-    externalUrl = 'http://localhost:8090'
+    // Optional. Defaults to "http://localhost:${port}".
+    // externalUrl = 'https://halo.example.com'
     // Optional. By default, the container name is generated from the project
     // name, root directory, and Gradle project path.
     // containerName = 'halo-for-plugin-development'
@@ -63,9 +64,10 @@ halo {
 If needed, you can modify this configuration in `build.gradle`.
 
 When running `haloServer` for multiple plugin projects at the same time, configure
-different `port` and `externalUrl` values for each project. If debug mode is enabled,
-also configure different `debugPort` values. The `containerName` option is only needed
-when you want to use a custom fixed Docker container name.
+different `port` values for each project. The `externalUrl` value follows `port`
+automatically unless you override it. If debug mode is enabled, also configure
+different `debugPort` values. The `containerName` option is only needed when you want
+to use a custom fixed Docker container name.
 
 ### haloServer Task
 
@@ -75,12 +77,10 @@ Usage:
 ./gradlew haloServer
 ```
 
-This task is used to start the Halo service and automatically load the Halo plugin project using this Gradle plugin in development mode into the Halo service. However, after modifying the plugin, you need to stop this task and then re-execute it for the changes to take effect. Alternatively, you can use Halo's API to restart the plugin, which allows you to reload the plugin without stopping the `haloServer` task:
+This task is used to start the Halo service and automatically load the Halo plugin project using this Gradle plugin in development mode into the Halo service. However, after modifying the plugin, you need to stop this task and then re-execute it for the changes to take effect. Alternatively, you can use `reloadPlugin` to rebuild and reload the plugin without stopping the `haloServer` task:
 
 ```shell
-./gradlew clean build -x test
-# Replace {your-username} and {your-password} with Halo's username and password, and {your-plugin-name} with the plugin name
-curl -u {your-username}:{your-password} -X PUT http://localhost:8090/apis/api.console.halo.run/v1alpha1/plugins/{your-plugin-name}/reload
+./gradlew reloadPlugin
 ```
 
 ### watch Task

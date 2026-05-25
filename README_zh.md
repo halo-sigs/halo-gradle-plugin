@@ -16,13 +16,13 @@ plugins {
 
 ## 任务
 
-本插件提供了 haloServer 和 watch 两个任务，使用 haloServer 和 watch 这两个任务的前提条件是需要具有 Docker 环境。
+本插件提供了 haloServer、reloadPlugin 和 watch 三个任务，使用这些任务的前提条件是需要具有 Docker 环境。
 
 对于 Windows 和 Mac 用户，可以直接安装 Docker Desktop，对于 Linux 用户，可以参考 [Docker 官方文档](https://docs.docker.com/engine/install/) 安装 Docker。
 
 然后启动 Docker 服务，即可使用 haloServer 和 watch 任务。
 
-这两个任务会将 Halo 的工作目录挂在到插件项目的 `workplace` 目录下，以确保重启任务时不会丢失数据。
+`haloServer` 和 `watch` 任务会将 Halo 的工作目录挂在到插件项目的 `workplace` 目录下，以确保重启任务时不会丢失数据。
 
 如果你想要修改 Halo 的配置，可以在 `workplace` 目录下创建一个 `config` 目录并添加一个 `application.yaml` 文件，然后在此文件中添加 Halo 的配置以覆盖 Halo 的 `default` 配置, 如：
 
@@ -41,7 +41,8 @@ halo {
     superAdminUsername = 'admin'
     superAdminPassword = 'admin'
     port = 8090
-    externalUrl = 'http://localhost:8090'
+    // 可选。默认值为 "http://localhost:${port}"。
+    // externalUrl = 'https://halo.example.com'
     // 可选。默认会根据项目名称、根目录和 Gradle project path 自动生成容器名称。
     // containerName = 'halo-for-plugin-development'
 
@@ -58,9 +59,10 @@ halo {
 
 如需修改，你可以在 `build.gradle` 配置。
 
-如果需要同时为多个插件项目运行 `haloServer`，请为每个项目配置不同的 `port` 和
-`externalUrl`。如果启用了 debug 模式，也需要配置不同的 `debugPort`。只有需要自定义固定
-Docker 容器名时，才需要配置 `containerName`。
+如果需要同时为多个插件项目运行 `haloServer`，请为每个项目配置不同的 `port`。
+`externalUrl` 会默认跟随 `port` 自动推导，除非你显式覆盖它。如果启用了 debug 模式，
+也需要配置不同的 `debugPort`。只有需要自定义固定 Docker 容器名时，才需要配置
+`containerName`。
 
 ### haloServer 任务
 
@@ -72,12 +74,10 @@ Docker 容器名时，才需要配置 `containerName`。
 
 此任务用于启动 Halo 服务并自动将使用此 Gradle 插件的 Halo 插件项目以开发模式加载到 Halo 服务中。
 但当修改插件后，需要先停止此任务，然后再重新执行此任务才能生效。
-或者使用 Halo 提供的重启插件的 API, 这可以在不停止 haloServer 任务的情况下重新加载插件：
+或者使用 `reloadPlugin` 重新构建并加载插件，这可以在不停止 haloServer 任务的情况下完成：
 
 ```shell
-./gradlew clean build -x test
-# 替换 {your-username} 和 {your-password} 为 Halo 的用户名和密码, {your-plugin-name} 为插件的名称
-curl -u {your-username}:{your-password} -X PUT http://localhost:8090/apis/api.console.halo.run/v1alpha1/plugins/{your-plugin-name}/reload
+./gradlew reloadPlugin
 ```
 
 #### watch 任务
