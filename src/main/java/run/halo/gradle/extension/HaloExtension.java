@@ -3,6 +3,7 @@ package run.halo.gradle.extension;
 import javax.annotation.Nonnull;
 import lombok.Data;
 import org.apache.commons.lang3.ObjectUtils;
+import org.apache.commons.lang3.StringUtils;
 import org.gradle.api.Action;
 import org.gradle.api.Project;
 import org.gradle.api.file.RegularFileProperty;
@@ -33,7 +34,7 @@ public class HaloExtension {
 
     private String version = "2.9.1";
 
-    private String externalUrl = "http://localhost:8090";
+    private String externalUrl;
 
     private String superAdminUsername = "admin";
 
@@ -57,6 +58,11 @@ public class HaloExtension {
     @Nonnull
     public Integer getPort() {
         return ObjectUtils.defaultIfNull(port, 8090);
+    }
+
+    @Nonnull
+    public String getExternalUrl() {
+        return StringUtils.defaultIfBlank(externalUrl, "http://localhost:" + getPort());
     }
 
     @Nonnull
