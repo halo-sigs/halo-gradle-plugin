@@ -42,7 +42,11 @@ halo {
     version = '2.9.1'
     superAdminUsername = 'admin'
     superAdminPassword = 'admin'
+    port = 8090
     externalUrl = 'http://localhost:8090'
+    // Optional. By default, the container name is generated from the project
+    // name, root directory, and Gradle project path.
+    // containerName = 'halo-for-plugin-development'
 
     // Optional. If this block is not configured, the Docker client will use Docker's
     // default configuration and environment variables such as DOCKER_HOST,
@@ -57,6 +61,11 @@ halo {
 ```
 
 If needed, you can modify this configuration in `build.gradle`.
+
+When running `haloServer` for multiple plugin projects at the same time, configure
+different `port` and `externalUrl` values for each project. If debug mode is enabled,
+also configure different `debugPort` values. The `containerName` option is only needed
+when you want to use a custom fixed Docker container name.
 
 ### haloServer Task
 

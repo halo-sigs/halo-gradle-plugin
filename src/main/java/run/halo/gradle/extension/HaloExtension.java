@@ -27,7 +27,7 @@ public class HaloExtension {
 
     private String imageName = "halohub/halo";
 
-    private String containerName = "halo-for-plugin-development";
+    private String containerName;
 
     private String serverWorkDir = "/root/.halo2";
 
