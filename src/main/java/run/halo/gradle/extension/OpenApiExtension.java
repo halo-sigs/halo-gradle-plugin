@@ -36,6 +36,7 @@ public class OpenApiExtension {
     private Property<String> apiDocsUrl;
     private Property<Integer> apiDocsPort;
     private Property<String> apiDocsVersion;
+    private Property<Boolean> useExistingServer;
 
     private ApiClientExtension generator;
 
@@ -54,6 +55,7 @@ public class OpenApiExtension {
         this.apiDocsUrl = objectFactory.property(String.class);
         this.apiDocsPort = objectFactory.property(Integer.class);
         this.apiDocsVersion = objectFactory.property(String.class);
+        this.useExistingServer = objectFactory.property(Boolean.class);
 
         this.generator = objectFactory.newInstance(ApiClientExtension.class);
         this.groupingRules = objectFactory.domainObjectContainer(GroupedOpenApiExtension.class,
@@ -66,6 +68,7 @@ public class OpenApiExtension {
         waitTimeInSeconds.convention(DEFAULT_WAIT_TIME_IN_SECONDS);
         this.apiDocsPort.convention(AvailablePortFinder.findRandomAvailablePort());
         this.apiDocsVersion.convention("OPENAPI_3_0");
+        this.useExistingServer.convention(false);
         conventionApiDocsUrl(extensions);
     }
 
@@ -79,11 +82,20 @@ public class OpenApiExtension {
 
     private void conventionApiDocsUrl(ExtensionContainer extensions) {
         var haloExtension = extensions.getByType(HaloExtension.class);
-        var externalUri = URI.create(haloExtension.getExternalUrl());
+        apiDocsUrl.convention(useExistingServer.map(useExisting -> {
+            if (useExisting) {
+                return haloExtension.getExternalUrl();
+            }
+            return createTemporaryApiDocsUrl(haloExtension.getExternalUrl(), apiDocsPort.get());
+        }));
+    }
+
+    private String createTemporaryApiDocsUrl(String externalUrl, int port) {
+        var externalUri = URI.create(externalUrl);
         try {
-            var uri = new URI(externalUri.getScheme(), null, externalUri.getHost(),
-                this.apiDocsPort.get(), null, null, null);
-            apiDocsUrl.convention(uri.toString());
+            var uri = new URI(externalUri.getScheme(), null, externalUri.getHost(), port, null,
+                null, null);
+            return uri.toString();
         } catch (URISyntaxException e) {
             throw new IllegalArgumentException("Failed to create API docs URL", e);
         }

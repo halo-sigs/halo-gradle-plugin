@@ -2,6 +2,7 @@ package run.halo.gradle.openapi;
 
 import com.github.dockerjava.api.DockerClient;
 import javax.annotation.Nonnull;
+import org.gradle.api.Task;
 import org.gradle.api.internal.tasks.execution.ExecuteTaskBuildOperationDetails;
 import org.gradle.api.provider.Property;
 import org.gradle.api.services.BuildService;
@@ -45,8 +46,8 @@ public abstract class CleanupApiServerContainer
         @Nonnull OperationFinishEvent finishEvent) {
         Object details = buildOperation.getDetails();
         if (details instanceof ExecuteTaskBuildOperationDetails executeTaskDetails) {
-            String name = executeTaskDetails.getTask().getName();
-            if (!OpenApiDocsGeneratorTask.TASK_NAME.contains(name)) {
+            Task task = executeTaskDetails.getTask();
+            if (!shouldCleanup(task)) {
                 return;
             }
             DockerClientService dockerClientService =
@@ -65,6 +66,17 @@ public abstract class CleanupApiServerContainer
 
     DockerClient getDockerClient(DockerClientService dockerClientService) {
         return dockerClientService.getDockerClient(createDockerClientConfig(dockerClientService));
+    }
+
+    boolean shouldCleanup(Task task) {
+        String name = task.getName();
+        if (!OpenApiDocsGeneratorTask.TASK_NAME.equals(name)) {
+            return false;
+        }
+        if (task instanceof OpenApiDocsGeneratorTask openApiDocsGeneratorTask) {
+            return !openApiDocsGeneratorTask.getUseExistingServer().getOrElse(false);
+        }
+        return true;
     }
 
     private DockerClientConfiguration createDockerClientConfig(

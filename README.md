@@ -153,6 +153,8 @@ In the `build.gradle` file, use the `haloPlugin` block to configure settings rel
 haloPlugin {
     openApi {
         // outputDir = file("$rootDir/api-docs/openapi/v3_0") // Specify the output directory for OpenAPI documentation. By default, it outputs to the build directory. It is not recommended to modify this unless you need to commit it to the code repository.
+        // useExistingServer = false // Set to true to read from halo.externalUrl without starting the temporary OpenAPI docs container.
+        // apiDocsUrl = 'http://localhost:8090' // Optional. Override it only when reading from another existing Halo server.
         groupingRules {
             // Define API grouping rules to group APIs in the plugin project and generate API client code only for this group.
             // A group named extensionApis is defined. The task will access the API docs through /v3/api-docs/extensionApis and generate API client code.
@@ -245,6 +247,10 @@ const { data } = await momentsConsoleApiClient.moment.listTags({
 
 > [!NOTE]
 > It will first execute the `generateOpenApiDocs` task to access `/v3/api-docs/extensionApis` based on the configuration, retrieve the OpenAPI documentation, and save the schema file to the `openApi.outputDir` directory. Then, the `generateApiClient` task will generate API client code in the `openApi.generator.outputDir` directory based on the schema file.
+> If the API docs depend on other installed plugins, start and prepare Halo first,
+> then set `openApi.useExistingServer = true`. In this mode, `generateOpenApiDocs`
+> reads from `halo.externalUrl` by default and skips the temporary docs container.
+> Set `openApi.apiDocsUrl` only when reading from another Halo server URL.
 
 > [!WARNING]
 > Executing the `generateApiClient` task will first delete all files in the `openApi.generator.outputDir` directory. Therefore, it is recommended to set the output directory for the API client to a separate directory to avoid accidentally deleting other files.

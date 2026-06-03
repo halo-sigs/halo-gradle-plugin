@@ -213,7 +213,10 @@ public class HaloDevtoolsPlugin implements Plugin<Project> {
                 OpenApiDocsGeneratorTask.class, it -> {
                     it.setGroup(GROUP);
                     it.setDescription("Generate open api docs.");
-                    it.dependsOn("build", "pullHaloImage");
+                    it.dependsOn("build");
+                    if (!pluginExtension.getOpenApi().getUseExistingServer().get()) {
+                        it.dependsOn("pullHaloImage");
+                    }
                     it.getImageId().set(imageName);
                 });
 

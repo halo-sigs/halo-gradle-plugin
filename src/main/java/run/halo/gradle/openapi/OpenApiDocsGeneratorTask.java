@@ -101,11 +101,15 @@ public class OpenApiDocsGeneratorTask extends AbstractOpenApiDocsTask {
     @Internal
     final Property<String> containerId = getProject().getObjects().property(String.class);
 
+    @Input
+    final Property<Boolean> useExistingServer = getProject().getObjects().property(Boolean.class);
+
     public OpenApiDocsGeneratorTask() {
         var openApi = getPluginExtension().getOpenApi();
         requestHeaders.convention(openApi.getRequestHeaders());
         waitTimeInSeconds.convention(openApi.getWaitTimeInSeconds());
         port.convention(openApi.getApiDocsPort());
+        useExistingServer.convention(openApi.getUseExistingServer());
     }
 
     @Override
@@ -120,25 +124,31 @@ public class OpenApiDocsGeneratorTask extends AbstractOpenApiDocsTask {
         if (Files.exists(outputFilePath)) {
             FileUtils.deleteRecursively(outputFilePath);
         }
+        if (useExistingServer.get()) {
+            generateApiDocs(outputDirFile);
+            return;
+        }
         try (var dockerClient = getDockerClient()) {
             prepareApiDocsServer(dockerClient);
-
-            var apiDocGenerator = ApiDocGenerator.builder()
-                .outputDir(outputDirFile)
-                .requestHeaders(requestHeaders.get())
-                .trustStore(trustStore)
-                .trustStorePassword(trustStorePassword)
-                .waitTimeInSeconds(waitTimeInSeconds.get())
-                .build();
-
-            System.out.println("Start generating API documentation...");
-            groupedApiMappings.get().forEach((k, v) -> {
-                var url = joinUrl(getApiDocsUrl().get(), k);
-                apiDocGenerator.generateApiDocs(url, v);
-            });
-
+            generateApiDocs(outputDirFile);
             removeContainer(dockerClient);
         }
+    }
+
+    private void generateApiDocs(File outputDirFile) {
+        var apiDocGenerator = ApiDocGenerator.builder()
+            .outputDir(outputDirFile)
+            .requestHeaders(requestHeaders.get())
+            .trustStore(trustStore)
+            .trustStorePassword(trustStorePassword)
+            .waitTimeInSeconds(waitTimeInSeconds.get())
+            .build();
+
+        System.out.println("Start generating API documentation...");
+        groupedApiMappings.get().forEach((k, v) -> {
+            var url = joinUrl(getApiDocsUrl().get(), k);
+            apiDocGenerator.generateApiDocs(url, v);
+        });
     }
 
     private String joinUrl(String baseUrl, String path) {
