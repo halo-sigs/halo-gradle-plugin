@@ -155,6 +155,8 @@ return SpringdocRouteBuilder.route()
 haloPlugin {
     openApi {
         // outputDir = file("$rootDir/api-docs/openapi/v3_0") // 指定 OpenAPI 文档的输出目录默认输出到 build 目录下，不建议修改，除非需要提交到代码仓库
+        // useExistingServer = false // 设为 true 时直接从 halo.externalUrl 读取，不启动临时 OpenAPI 文档容器。
+        // apiDocsUrl = 'http://localhost:8090' // 可选，仅在需要读取其他已有 Halo 服务时覆盖。
         groupingRules {
             // 定义 API 分组规则，用于为插件项目中的 APIs 分组然后只对此分组生成 API 客户端代码
             // 定义了一个名为 extensionApis 的分组，task 会通过 /v3/api-docs/extensionApis 访问到 api docs 然后生成 API 客户端代码
@@ -248,6 +250,9 @@ const { data } = await momentsConsoleApiClient.moment.listTags({
 > [!NOTE]
 > 它会先执行 `generateOpenApiDocs` 任务根据配置访问 `/v3/api-docs/extensionApis` 获取 OpenAPI 文档，
 > 并将 OpenAPI 的 Schema 文件保存到 `openApi.outputDir` 目录下，然后再由 `generateApiClient` 任务根据 Schema 文件生成 API 客户端代码到 `openApi.generator.outputDir` 目录下。
+> 如果 OpenAPI 文档依赖其他已安装插件，请先启动并准备好 Halo，然后设置
+> `openApi.useExistingServer = true`。此模式默认会从 `halo.externalUrl` 读取文档，
+> 并跳过临时文档容器；只有读取其他 Halo 服务时才需要设置 `openApi.apiDocsUrl`。
 
 > [!WARNING]
 > 执行 `generateApiClient` 任务时会先删除 `openApi.generator.outputDir` 下的所有文件，因此建议将 API client 的输出目录设置为一个独立的目录，以避免误删其他文件。
