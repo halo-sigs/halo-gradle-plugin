@@ -47,7 +47,16 @@ gradlePlugin {
 }
 
 signing {
-    required { !project.hasProperty('skipSigning') }
+    def signingKey = findProperty("signingKey")
+    def signingPassword = findProperty("signingPassword")
+    if (signingKey != null) {
+        def signingKeyId = findProperty("signingKeyId")
+        if (signingKeyId != null) {
+            useInMemoryPgpKeys(signingKeyId, signingKey, signingPassword)
+        } else {
+            useInMemoryPgpKeys(signingKey, signingPassword)
+        }
+    }
     sign publishing.publications
 }
 
