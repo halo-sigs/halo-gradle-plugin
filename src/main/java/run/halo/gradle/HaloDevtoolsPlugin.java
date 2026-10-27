@@ -13,6 +13,7 @@ import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 import org.gradle.api.Action;
+import org.gradle.api.InvalidUserDataException;
 import org.gradle.api.Plugin;
 import org.gradle.api.Project;
 import org.gradle.api.Task;
@@ -123,6 +124,19 @@ public class HaloDevtoolsPlugin implements Plugin<Project> {
         configurePluginJarTask(project, resolvePluginMainClassName);
 
         project.afterEvaluate(action -> {
+            String portProperty = project.getProviders().gradleProperty("port").getOrNull();
+            if (portProperty != null) {
+                try {
+                    int port = Integer.parseInt(portProperty);
+                    if (port < 1 || port > 65535) {
+                        throw new NumberFormatException();
+                    }
+                    haloExtension.setPort(port);
+                } catch (NumberFormatException e) {
+                    throw new InvalidUserDataException(
+                        "The 'port' project property must be an integer between 1 and 65535.", e);
+                }
+            }
             // configure it after evaluate
             configureReloadPluginTask(project, pluginExtension.getPluginName());
 
