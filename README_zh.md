@@ -59,6 +59,24 @@ halo {
 
 如需修改，你可以在 `build.gradle` 配置。
 
+也可以在运行任务时指定端口，无需修改 `build.gradle`：
+
+```shell
+./gradlew haloServer -Pport=8091
+./gradlew watch -Pport=8092
+./gradlew reloadPlugin
+```
+
+`port` 项目属性优先于 `halo.port`，两者均未配置时默认为 `8090`。
+端口必须是 `1` 到 `65535` 之间的整数。
+如果显式配置了 `externalUrl`，需要同步调整，或者移除该配置，让它自动跟随端口。
+
+`reloadPlugin` 会根据当前项目已记录的容器 ID，查找正在运行的 Halo 实例并读取其访问地址，
+无需重复传入 `-Pport`。如果记录中的容器已停止或不存在，任务会报错，不会回退连接其他服务。
+没有容器记录时，仍按原来的 `halo` 配置连接。
+如需显式使用当前配置指定目标，可以执行 `./gradlew reloadPlugin -Pport=8091`；
+此时显式配置的 `externalUrl` 仍然生效。
+
 如果需要同时为多个插件项目运行 `haloServer`，请为每个项目配置不同的 `port`。
 `externalUrl` 会默认跟随 `port` 自动推导，除非你显式覆盖它。如果启用了 debug 模式，
 也需要配置不同的 `debugPort`。只有需要自定义固定 Docker 容器名时，才需要配置

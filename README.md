@@ -63,6 +63,26 @@ halo {
 
 If needed, you can modify this configuration in `build.gradle`.
 
+You can also specify the port when running a task, without changing `build.gradle`:
+
+```shell
+./gradlew haloServer -Pport=8091
+./gradlew watch -Pport=8092
+./gradlew reloadPlugin
+```
+
+The `port` project property takes precedence over `halo.port`; otherwise, the default
+is `8090`. The port must be an integer between `1` and `65535`.
+If you explicitly configured `externalUrl`, update it to match or remove it to let
+it follow the port automatically.
+
+`reloadPlugin` uses the container ID recorded for the current project to find the
+running Halo instance and read its URL, so you do not need to repeat `-Pport`.
+If the recorded container has stopped or no longer exists, the task fails instead
+of falling back to another server. Without a container record, it uses the `halo`
+configuration as before. To explicitly select a server using the current configuration,
+run `./gradlew reloadPlugin -Pport=8091`; an explicitly configured `externalUrl` still applies.
+
 When running `haloServer` for multiple plugin projects at the same time, configure
 different `port` values for each project. The `externalUrl` value follows `port`
 automatically unless you override it. If debug mode is enabled, also configure
